@@ -1,0 +1,85 @@
+import { baseApi } from './baseApi'
+
+/* =========================
+   Request Interfaces
+========================= */
+
+export interface CreateSupplier {
+  name: string
+  company_name: string
+  phone: string
+  city: string
+}
+
+export interface UpdateSupplier extends CreateSupplier {
+  id: number
+}
+
+/* =========================
+   Response Interfaces
+========================= */
+
+export interface Supplier {
+    id: number
+    name: string
+    company_name: string | null
+    phone: string
+    city: string
+    user_id: string
+    created_at: string
+    updated_at: string
+    created_by_id: number
+    total_transactions: string
+    total_paid: string
+    current_balance: string
+  }
+  
+  export interface SuppliersResponse {
+    total: number
+    suppliers: Supplier[]
+  }
+
+/* =========================
+   API
+========================= */
+
+export const supplierApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    createSupplier: builder.mutation<Supplier, CreateSupplier>({
+      query: (data) => ({
+        url: '/suppliers',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+
+    getAllSuppliers: builder.query<SuppliersResponse, void>({
+      query: () => ({
+        url: '/suppliers',
+        method: 'GET',
+      }),
+    }),
+
+    getSupplierById: builder.query<Supplier, number>({
+      query: (id) => ({
+        url: `/suppliers/${id}`,
+        method: 'GET',
+      }),
+    }),
+
+    updateSupplier: builder.mutation<Supplier, UpdateSupplier>({
+      query: ({ id, ...data }) => ({
+        url: `/suppliers/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+    }),
+  }),
+})
+
+export const {
+  useCreateSupplierMutation,
+  useGetAllSuppliersQuery,
+  useGetSupplierByIdQuery,
+  useUpdateSupplierMutation,
+} = supplierApi

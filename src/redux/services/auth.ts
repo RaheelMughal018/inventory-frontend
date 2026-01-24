@@ -1,66 +1,37 @@
-import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react'
+import { baseApi } from './baseApi'
 
-export interface CreateAdminRequest {
-    name: string
-    email: string
-    password: string 
-}
-
-export interface LoginRequest{
-    email: string
-    password: string
-}
-
-export interface LoginResponse {
-  access_token: string
-  token_type: string
-  user: {
-    id: number
-    user_id: string
-    email: string
-    name: string
-    role: string
-  }
-}
-
-
-// export interface User {
-//     user_id: string
-//     name: string
-//     email: string
-// }
-
-
-export const auth = createApi({
-    reducerPath: 'auth',
-    baseQuery: fetchBaseQuery({
-        baseUrl: 'http://localhost:8000/api/v1/auth',
+export const authApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    registerAdmin: builder.mutation({
+      query: (data) => ({
+        url: '/auth/register',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['auth'],
     }),
-    tagTypes: ['auth'],
-    endpoints: (builder)=>({
-        registerAdmin: builder.mutation<CreateAdminRequest>({
-            query: (data)=>({
-                url: 'register',
-                method: 'POST',
-                body: data
-            }),
-            invalidatesTags: ['auth']
-        }),
-         loginAdmin: builder.mutation<LoginResponse,LoginRequest>({
-            query: (data)=>({
-                url: 'login',
-                method: 'POST',
-                body: data
-            }),
-            invalidatesTags: ['auth']
-        }),
-         logoutAdmin: builder.mutation<{message: string}, void>({
-            query: ()=>({
-                url: 'logout',
-                method: 'GET',
-            }),
-        })
-    })
+
+    loginAdmin: builder.mutation({
+      query: (data) => ({
+        url: '/auth/login',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['auth'],
+    }),
+
+    logoutAdmin: builder.mutation<{ message: string }, void>({
+      query: () => ({
+        url: '/auth/logout',
+        method: 'GET',
+      }),
+      invalidatesTags: ['auth'],
+    }),
+  }),
 })
 
-export const {useRegisterAdminMutation, useLoginAdminMutation, useLogoutAdminMutation} = auth;
+export const {
+  useRegisterAdminMutation,
+  useLoginAdminMutation,
+  useLogoutAdminMutation,
+} = authApi

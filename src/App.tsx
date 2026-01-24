@@ -20,6 +20,7 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./components/HOC/ProtectedRoute";
 import PublicRoute from "./components/HOC/PublicRoute";
+import SupplierPage from "./pages/Supplier/page";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
+            <Route path="/supplier" element={<SupplierPage />} />
             <Route path="/blank" element={<Blank />} />
 
             {/* Forms */}
