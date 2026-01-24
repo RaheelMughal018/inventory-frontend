@@ -1,24 +1,45 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, Navigate } from "react-router";
 import {  EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
-import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
-
+import {toast} from 'sonner'
+import {useForm} from 'react-hook-form'
+import { useLoginAdminMutation } from "../../redux/services/auth";
+import {useNavigate} from 'react-router'
+type FormData = {
+   email: string
+   password: string
+}
 export default function SignInForm() {
+   const {
+      register,
+      handleSubmit,
+      reset,
+      formState: {errors}
+  } = useForm<FormData>()
+  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  const [loginAdmin, {isLoading}] = useLoginAdminMutation();
+  const onSubmit = async (data: FormData)=>{
+    try {
+      const res = await loginAdmin(data).unwrap();
+      if(res){
+        const token = res.access_token
+        localStorage.setItem("access_token", token)
+        reset()
+        toast.success("Login Form Submitted")
+        navigate("/")
+      }
+    } catch (error) {
+      console.log("🚀 ~ onSubmit ~ error:", error)
+      toast.error(`Invalid Form ${error.message}`)
+    }
+  }
   return (
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
-        {/* <Link
-          to="/"
-          className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        >
-          <ChevronLeftIcon className="size-5" />
-          Back to dashboard
-        </Link> */}
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
@@ -32,13 +53,20 @@ export default function SignInForm() {
           </div>
           <div>
             
-            <form>
+            <form onSubmit={handleSubmit(onSubmit)}>
               <div className="space-y-6">
                 <div>
                   <Label>
                     Email <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="info@gmail.com" />
+                  <Input
+                   placeholder="info@gmail.com"
+                   {...register('email',{
+                    required: 'Email is required'
+                   })}
+
+                    />
+                  {errors.email && <p>{errors.email.message} </p>}
                 </div>
                 <div>
                   <Label>
@@ -46,6 +74,10 @@ export default function SignInForm() {
                   </Label>
                   <div className="relative">
                     <Input
+                    {...register('password', {
+                      required: 'Password is required',
+                      
+                    })}
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
                     />
@@ -59,15 +91,11 @@ export default function SignInForm() {
                         <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                       )}
                     </span>
+
                   </div>
+                  {errors.password && <p>{errors.password.message}</p>}
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Checkbox checked={isChecked} onChange={setIsChecked} />
-                    <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
-                      Keep me logged in
-                    </span>
-                  </div>
                   <Link
                     to="/reset-password"
                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
@@ -76,24 +104,16 @@ export default function SignInForm() {
                   </Link>
                 </div>
                 <div>
-                  <Button className="w-full" size="sm">
-                    Sign in
+                  <Button 
+                  // disabled={isLoading || isSubmitting}
+                  className="w-full" size="sm">
+                    {isLoading ? "saving...":"Sign in"}
                   </Button>
                 </div>
               </div>
             </form>
 
-            <div className="mt-5">
-              <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-                Don&apos;t have an account? {""}
-                <Link
-                  to="/signup"
-                  className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-                >
-                  Sign Up
-                </Link>
-              </p>
-            </div>
+          
           </div>
         </div>
       </div>

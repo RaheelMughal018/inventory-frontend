@@ -1,14 +1,39 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
+import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
-import Checkbox from "../form/input/Checkbox";
+import {useForm} from 'react-hook-form';
+import {useRegisterAdminMutation} from '../../redux/services/auth'
+import {toast} from 'sonner'
+type FormData = {
+   name: string
+   email: string
+   password: string
+}
 
 export default function SignUpForm() {
+  const {
+      register,
+      handleSubmit,
+      reset,
+      formState: {errors,isSubmitting}
+  } = useForm<FormData>()
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  
+
+  const [createAdmin,{isLoading}] = useRegisterAdminMutation();
+  const onSubmit = async (data: FormData) =>{
+    try {
+      await createAdmin(data).unwrap()
+      reset()
+      toast.success('Form Submitted')
+    } catch (error) {
+      console.log(error)
+    }
+  }
   return (
+
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
      
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
@@ -23,33 +48,22 @@ export default function SignUpForm() {
           </div>
           <div>
             
-            <form>
+            <form onSubmit={handleSubmit(onSubmit)}>
               <div className="space-y-5">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  {/* <!-- First Name --> */}
+                  {/* <!-- Name --> */}
                   <div className="sm:col-span-1">
                     <Label>
-                      First Name<span className="text-error-500">*</span>
+                      Name<span className="text-error-500">*</span>
                     </Label>
                     <Input
-                      type="text"
-                      id="fname"
-                      name="fname"
-                      placeholder="Enter your first name"
+                      {...register('name',{required: 'Name is Required'})}
+                      placeholder="Enter your name"
                     />
+                    {errors.name && <p>{errors.name.message}</p> }
                   </div>
-                  {/* <!-- Last Name --> */}
-                  <div className="sm:col-span-1">
-                    <Label>
-                      Last Name<span className="text-error-500">*</span>
-                    </Label>
-                    <Input
-                      type="text"
-                      id="lname"
-                      name="lname"
-                      placeholder="Enter your last name"
-                    />
-                  </div>
+                 
+                 
                 </div>
                 {/* <!-- Email --> */}
                 <div>
@@ -57,11 +71,16 @@ export default function SignUpForm() {
                     Email<span className="text-error-500">*</span>
                   </Label>
                   <Input
-                    type="email"
-                    id="email"
-                    name="email"
+                    {...register('email',{
+                      required: 'Email is required',
+                      pattern:{
+                        value: /^\S+@\S+$/i,
+                        message: 'Invalid email',
+                      }
+                    })}
                     placeholder="Enter your email"
                   />
+                  {errors.email && <p>{errors.email.message}</p>}
                 </div>
                 {/* <!-- Password --> */}
                 <div>
@@ -70,8 +89,13 @@ export default function SignUpForm() {
                   </Label>
                   <div className="relative">
                     <Input
+                      {...register('password', {
+                        required: 'Password is required',
+                        
+                      })}
                       placeholder="Enter your password"
                       type={showPassword ? "text" : "password"}
+
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -84,11 +108,12 @@ export default function SignUpForm() {
                       )}
                     </span>
                   </div>
+                  {errors.password && <p>{errors.password.message}</p>}
                 </div>
                 {/* <!-- Button --> */}
                 <div>
-                  <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600">
-                    Sign Up
+                  <button disabled={isLoading || isSubmitting } className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600">
+                    {isLoading ? 'Saving... ':'Sign Up'}
                   </button>
                 </div>
               </div>
