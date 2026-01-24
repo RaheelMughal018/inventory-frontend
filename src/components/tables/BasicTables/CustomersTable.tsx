@@ -5,14 +5,14 @@ import {
   TableHeader,
   TableRow,
 } from "../../ui/table";
-import {Supplier} from "../../../redux/services/supplier"
+import {customer} from "../../../redux/services/customer"
 import {CloseIcon, PencilIcon} from "../../../icons"
 import {TailSpin} from 'react-loader-spinner'
-interface SupplierTableProps {
-  suppliers: Supplier[],
+interface customerTableProps {
+  customers: customer[],
   loading: boolean
 }
-export default function SupplierTable({suppliers, loading}: SupplierTableProps) {
+export default function CustomerTable({customers, loading}: customerTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <div className="max-w-full overflow-x-auto">
@@ -96,43 +96,43 @@ export default function SupplierTable({suppliers, loading}: SupplierTableProps) 
           }
 
           {
-            !loading && suppliers.length === 0 && (
+            !loading && customers.length === 0 && (
               <TableRow>
                 <TableCell className="text-center py-6 text-gray-500">
-                  No Supplier Found
+                  No customer Found
                 </TableCell>
               </TableRow>
             )
           }
 
 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-            {suppliers.map((supplier) => (
-              <TableRow key={supplier.id}>
+            {customers.map((customer) => (
+              <TableRow key={customer.id}>
                 <TableCell className="px-5 py-4 sm:px-6 text-start">
                 <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                        {supplier.user_id}
+                        {customer.user_id}
                       </span> 
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {supplier.name}
+                  {customer.name}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {supplier.company_name}
+                  {customer.company_name}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {supplier.city}
+                    {customer.city}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {supplier.phone}
+                  {customer.phone}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {supplier.current_balance}
+                  {customer.current_balance}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {supplier.total_paid}
+                  {customer.total_paid}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {supplier.total_transactions}
+                  {customer.total_transactions}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                 <div className="flex items-center">

@@ -21,6 +21,7 @@ import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./components/HOC/ProtectedRoute";
 import PublicRoute from "./components/HOC/PublicRoute";
 import SupplierPage from "./pages/Supplier/page";
+import CustomerPage from "./pages/Customer/page";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/supplier" element={<SupplierPage />} />
+            <Route path="/customer" element={<CustomerPage />} />
             <Route path="/blank" element={<Blank />} />
 
             {/* Forms */}
