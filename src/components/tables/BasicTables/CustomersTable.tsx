@@ -5,15 +5,39 @@ import {
   TableHeader,
   TableRow,
 } from "../../ui/table";
-import {customer} from "../../../redux/services/customer"
+import {Customer, useDeleteCustomerMutation} from "../../../redux/services/customer"
 import {CloseIcon, PencilIcon} from "../../../icons"
 import {TailSpin} from 'react-loader-spinner'
+import { useModal } from "../../../hooks/useModal";
+import { useState } from "react";
+import { Modal } from "../../ui/modal";
+import { toast } from "sonner";
 interface customerTableProps {
-  customers: customer[],
+  customers: Customer[],
   loading: boolean
 }
 export default function CustomerTable({customers, loading}: customerTableProps) {
+  const {isOpen, closeModal, openModal} = useModal();
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer|null>(null)
+  const [deleteCustomer,{isLoading}] = useDeleteCustomerMutation()
+
+  const handleDelete = async ()=>{
+    if(!selectedCustomer) return
+
+    try {
+      const res = await deleteCustomer(selectedCustomer.id).unwrap()
+      if(res.message){
+        toast.success(res.message)
+        closeModal()  
+      }
+      setSelectedCustomer(null)
+    } catch (error) {
+      console.log("🚀 ~ handleDelete ~ error:", error)
+      toast.info("Error while deleteing the customer")
+    }
+  }
   return (
+  <>
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <div className="max-w-full overflow-x-auto">
         <Table>
@@ -140,7 +164,12 @@ export default function CustomerTable({customers, loading}: customerTableProps) 
                   <span className="cursor-pointer">
                     <PencilIcon width={40}/>
                   </span>
-                  <span className="cursor-pointer text-red-800">
+                  <span className="cursor-pointer text-red-800"
+                  onClick={()=>{
+                    setSelectedCustomer(customer)
+                    openModal()
+                  }}
+                  >
                     <CloseIcon/>
                   </span>
                   </div>        
@@ -152,5 +181,40 @@ export default function CustomerTable({customers, loading}: customerTableProps) 
        </Table>
       </div>
     </div>
+
+<Modal isOpen={isOpen} onClose={closeModal}>
+  <div className="p-6">
+    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+      Delete Supplier
+    </h3>
+
+    <p className="mt-2 text-sm text-gray-500">
+      Are you sure you want to delete{" "}
+      <span className="font-medium text-gray-800 dark:text-white">
+        {selectedCustomer?.name}
+      </span>
+      ? This action cannot be undone.
+    </p>
+
+    <div className="mt-6 flex justify-end gap-3">
+      <button
+        onClick={closeModal}
+        className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100"
+      >
+        Cancel
+      </button>
+
+      <button
+        disabled={isLoading}
+        onClick={() => handleDelete()}
+        className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+      >
+        Delete
+      </button>
+    </div>
+  </div>
+</Modal> 
+  </> 
   );
+
 }

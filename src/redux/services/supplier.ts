@@ -39,6 +39,10 @@ export interface Supplier {
     suppliers: Supplier[]
   }
 
+  export interface DeleteSupplierResponse{
+    message: string
+  }
+
 /* =========================
    API
 ========================= */
@@ -51,13 +55,16 @@ export const supplierApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
+      invalidatesTags:['supplier']
     }),
 
     getAllSuppliers: builder.query<SuppliersResponse, void>({
       query: () => ({
         url: '/suppliers',
         method: 'GET',
+
       }),
+      providesTags:['supplier']
     }),
 
     getSupplierById: builder.query<Supplier, number>({
@@ -65,6 +72,7 @@ export const supplierApi = baseApi.injectEndpoints({
         url: `/suppliers/${id}`,
         method: 'GET',
       }),
+      providesTags:['supplier']
     }),
 
     updateSupplier: builder.mutation<Supplier, UpdateSupplier>({
@@ -73,6 +81,16 @@ export const supplierApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: data,
       }),
+      invalidatesTags:['supplier']
+
+    }),
+    deleteSupplier: builder.mutation<DeleteSupplierResponse, string|number>({
+      query: (id) => ({
+        url: `/suppliers/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags:['supplier']
+
     }),
   }),
 })
@@ -82,4 +100,5 @@ export const {
   useGetAllSuppliersQuery,
   useGetSupplierByIdQuery,
   useUpdateSupplierMutation,
+  useDeleteSupplierMutation,
 } = supplierApi

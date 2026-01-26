@@ -39,6 +39,10 @@ export interface Customer {
     customers: Customer[]
   }
 
+  export interface DeleteResponse {
+    message: string
+  }
+
 /* =========================
    API
 ========================= */
@@ -51,6 +55,7 @@ export const customerApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
+      invalidatesTags:['customer']
     }),
 
     getAllCustomers: builder.query<CustomersResponse, void>({
@@ -58,6 +63,7 @@ export const customerApi = baseApi.injectEndpoints({
         url: '/customers',
         method: 'GET',
       }),
+      providesTags:['customer']
     }),
 
     getCustomerById: builder.query<Customer, number>({
@@ -65,6 +71,7 @@ export const customerApi = baseApi.injectEndpoints({
         url: `/customers/${id}`,
         method: 'GET',
       }),
+      providesTags:['customer']
     }),
 
     updateCustomer: builder.mutation<Customer, UpdateCustomer>({
@@ -73,6 +80,15 @@ export const customerApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: data,
       }),
+      invalidatesTags:['customer']
+    }),
+
+    deleteCustomer: builder.mutation<DeleteResponse, string|number>({
+      query: (id) => ({
+        url: `/customers/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags:['customer']
     }),
   }),
 })
@@ -82,4 +98,5 @@ export const {
   useGetAllCustomersQuery,
   useGetCustomerByIdQuery,
   useUpdateCustomerMutation,
+  useDeleteCustomerMutation,
 } = customerApi
