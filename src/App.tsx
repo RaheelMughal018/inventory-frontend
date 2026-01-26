@@ -22,6 +22,7 @@ import ProtectedRoute from "./components/HOC/ProtectedRoute";
 import PublicRoute from "./components/HOC/PublicRoute";
 import SupplierPage from "./pages/Supplier/page";
 import CustomerPage from "./pages/Customer/page";
+import CategoryPage from "./pages/Categories/page";
 
 export default function App() {
   return (
@@ -30,43 +31,47 @@ export default function App() {
         <ScrollToTop />
         <Routes>
           {/* Dashboard Layout */}
-         <Route element={<ProtectedRoute/>}>
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route index path="/" element={<Home />} />
 
-            {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/supplier" element={<SupplierPage />} />
-            <Route path="/customer" element={<CustomerPage />} />
-            <Route path="/blank" element={<Blank />} />
+              {/* Others Page */}
+              <Route path="/profile" element={<UserProfiles />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/supplier" element={<SupplierPage />} />
+              <Route path="/category" element={<CategoryPage />} />
+              <Route path="/customer" element={<CustomerPage />} />
+              <Route path="/blank" element={<Blank />} />
 
-            {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
+              {/* Forms */}
+              <Route path="/form-elements" element={<FormElements />} />
 
-            {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
+              {/* Tables */}
+              <Route path="/basic-tables" element={<BasicTables />} />
 
-            {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
+              {/* Ui Elements */}
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/avatars" element={<Avatars />} />
+              <Route path="/badge" element={<Badges />} />
+              <Route path="/buttons" element={<Buttons />} />
+              <Route path="/images" element={<Images />} />
+              <Route path="/videos" element={<Videos />} />
 
-            {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
+              {/* Charts */}
+              <Route path="/line-chart" element={<LineChart />} />
+              <Route path="/bar-chart" element={<BarChart />} />
+            </Route>
           </Route>
-         </Route> 
 
           {/* Public  Routes */}
-          <Route path="/signin" element={
-            <PublicRoute>
-              <SignIn />
-            </PublicRoute>
-          } />
+          <Route
+            path="/signin"
+            element={
+              <PublicRoute>
+                <SignIn />
+              </PublicRoute>
+            }
+          />
           <Route path="/signup" element={<SignUp />} />
 
           {/* Fallback Route */}
