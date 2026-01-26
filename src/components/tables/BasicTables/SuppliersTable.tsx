@@ -19,10 +19,12 @@ import { toast } from "sonner";
 interface SupplierTableProps {
   suppliers: Supplier[];
   loading: boolean;
+  onEdit?: (supplier: Supplier) => void;
 }
 export default function SupplierTable({
   suppliers,
   loading,
+  onEdit,
 }: SupplierTableProps) {
   const { isOpen, openModal, closeModal } = useModal();
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
@@ -84,7 +86,7 @@ export default function SupplierTable({
                 >
                   Phone
                 </TableCell>
-                <TableCell
+                {/* <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
@@ -101,7 +103,7 @@ export default function SupplierTable({
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
                   Total
-                </TableCell>
+                </TableCell> */}
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
@@ -155,21 +157,29 @@ export default function SupplierTable({
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     {supplier.phone}
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                  {/* <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                     {supplier.current_balance}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                     {supplier.total_paid}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                    {supplier.total_transactions}
-                  </TableCell>
+                    {supplier.total_transactions} */}
+                  {/* </TableCell> */}
                   <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                     <div className="flex items-center">
-                      <span className="cursor-pointer">
+                      <span 
+                        className="cursor-pointer"
+                        onClick={() => onEdit?.(supplier)}
+                      >
                         <PencilIcon width={40} />
                       </span>
-                      <span className="cursor-pointer text-red-800">
+                      <span className="cursor-pointer text-red-800"
+                      onClick={()=>{
+                    setSelectedSupplier(supplier)
+                    openModal()
+                  }}
+                      >
                         <CloseIcon />
                       </span>
                     </div>

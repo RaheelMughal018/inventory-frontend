@@ -22,16 +22,16 @@ export interface UpdateSupplier extends CreateSupplier {
 export interface Supplier {
     id: number
     name: string
-    company_name: string | null
+    company_name?: string | null
     phone: string
     city: string
     user_id: string
     created_at: string
     updated_at: string
     created_by_id: number
-    total_transactions: string
-    total_paid: string
-    current_balance: string
+    // total_transactions: string
+    // total_paid: string
+    // current_balance: string
   }
   
   export interface SuppliersResponse {

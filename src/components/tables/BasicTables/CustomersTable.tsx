@@ -15,8 +15,9 @@ import { toast } from "sonner";
 interface customerTableProps {
   customers: Customer[],
   loading: boolean
+  onEdit?: (customer: Customer) => void;
 }
-export default function CustomerTable({customers, loading}: customerTableProps) {
+export default function CustomerTable({customers, loading, onEdit}: customerTableProps) {
   const {isOpen, closeModal, openModal} = useModal();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer|null>(null)
   const [deleteCustomer,{isLoading}] = useDeleteCustomerMutation()
@@ -33,7 +34,7 @@ export default function CustomerTable({customers, loading}: customerTableProps) 
       setSelectedCustomer(null)
     } catch (error) {
       console.log("🚀 ~ handleDelete ~ error:", error)
-      toast.info("Error while deleteing the customer")
+      toast.error("Error while deleteing the customer")
     }
   }
   return (
@@ -74,7 +75,7 @@ export default function CustomerTable({customers, loading}: customerTableProps) 
               >
                 Phone
               </TableCell>
-              <TableCell
+              {/* <TableCell
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
@@ -91,7 +92,7 @@ export default function CustomerTable({customers, loading}: customerTableProps) 
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
                 Total
-              </TableCell>
+              </TableCell> */}
               <TableCell
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
@@ -149,7 +150,7 @@ export default function CustomerTable({customers, loading}: customerTableProps) 
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                   {customer.phone}
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                {/* <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                   {customer.current_balance}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
@@ -157,11 +158,14 @@ export default function CustomerTable({customers, loading}: customerTableProps) 
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                   {customer.total_transactions}
-                </TableCell>
+                </TableCell> */}
                 <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                 <div className="flex items-center">
                     
-                  <span className="cursor-pointer">
+                  <span
+                    className="cursor-pointer"
+                    onClick={() => onEdit?.(customer)}
+                  >
                     <PencilIcon width={40}/>
                   </span>
                   <span className="cursor-pointer text-red-800"
@@ -185,7 +189,7 @@ export default function CustomerTable({customers, loading}: customerTableProps) 
 <Modal isOpen={isOpen} onClose={closeModal}>
   <div className="p-6">
     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-      Delete Supplier
+      Delete Customer
     </h3>
 
     <p className="mt-2 text-sm text-gray-500">

@@ -1,36 +1,67 @@
 // components/modals/AddSupplierModal.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "../../components/ui/modal"; // Your existing modal
 import Input from "../form/input/InputField"; // Your Input component
 import Label from "../form/Label"; // Your Label component
 import Radio from "../form/input/Radio"; // Your Radio component
+import { Supplier } from "../../redux/services/supplier";
 
 interface AddSupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: SupplierFormData) => void;
+  initialData?: Supplier | null;
+  mode?: "add" | "edit";
 }
 
-interface SupplierFormData {
+export interface SupplierFormData {
   type: "individual" | "organization";
   name: string;
   phone: string;
   city: string;
-  organization_name?: string;
+  company_name?: string;
 }
 
 const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  initialData,
+  mode = "add",
 }) => {
   const [formData, setFormData] = useState<SupplierFormData>({
     type: "individual",
     name: "",
     phone: "",
     city: "",
-    organization_name: "",
+    company_name: "",
   });
+
+  // Reset form when modal opens/closes or initialData changes
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === "edit" && initialData) {
+        // Determine type based on company_name
+        const supplierType = initialData.company_name ? "organization" : "individual";
+        setFormData({
+          type: supplierType,
+          name: initialData.name || "",
+          phone: initialData.phone || "",
+          city: initialData.city || "",
+          company_name: initialData.company_name || "",
+        });
+      } else {
+        // Reset to default for add mode
+        setFormData({
+          type: "individual",
+          name: "",
+          phone: "",
+          city: "",
+          company_name: "",
+        });
+      }
+    }
+  }, [isOpen, initialData, mode]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,10 +78,10 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
         {/* Modal Header */}
         <div className="mb-6">
           <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
-            Add New Supplier
+            {mode === "edit" ? "Edit Supplier" : "Add New Supplier"}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Enter supplier details
+            {mode === "edit" ? "Update supplier details" : "Enter supplier details"}
           </p>
         </div>
 
@@ -72,7 +103,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
               <Radio
                 id="type-organization"
                 name="type"
-                value="organization"
+                value="company_name"
                 checked={formData.type === "organization"}
                 label="Organization"
                 onChange={(value) => handleChange("type", value)}
@@ -100,9 +131,9 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
                   id="organization_name"
                   type="text"
                   placeholder="ABC Corporation"
-                  value={formData.organization_name || ""}
+                  value={formData.company_name || ""}
                   onChange={(e) =>
-                    handleChange("organization_name", e.target.value)
+                    handleChange("company_name", e.target.value)
                   }
                 />
               </div>
@@ -156,7 +187,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
               type="submit"
               className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              Add Supplier
+              {mode === "edit" ? "Update Supplier" : "Add Supplier"}
             </button>
           </div>
         </form>

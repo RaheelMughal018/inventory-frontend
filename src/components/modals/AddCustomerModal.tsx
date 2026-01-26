@@ -1,36 +1,69 @@
 // components/modals/AddCustomerModal.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal } from "../../components/ui/modal";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Radio from "../form/input/Radio";
+import { Customer } from "../../redux/services/customer";
 
 interface AddCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CustomerFormData) => void;
+  initialData?: Customer | null;
+  mode?: "add" | "edit";
 }
 
-interface CustomerFormData {
+export interface CustomerFormData {
   type: "individual" | "organization";
   name: string;
   phone: string;
   city: string;
-  organization_name?: string;
+  company_name?: string;
 }
 
 const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  initialData,
+  mode = "add",
 }) => {
   const [formData, setFormData] = useState<CustomerFormData>({
     type: "individual",
     name: "",
     phone: "",
     city: "",
-    organization_name: "",
+    company_name: "",
   });
+
+  // Reset form when modal opens/closes or initialData changes
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (mode === "edit" && initialData) {
+      const customerType = initialData.company_name
+        ? "organization"
+        : "individual";
+
+      setFormData({
+        type: customerType,
+        name: initialData.name || "",
+        phone: initialData.phone || "",
+        city: initialData.city || "",
+        company_name: initialData.company_name || "",
+      });
+      return;
+    }
+
+    setFormData({
+      type: "individual",
+      name: "",
+      phone: "",
+      city: "",
+      company_name: "",
+    });
+  }, [isOpen, initialData, mode]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +83,7 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
     }
     if (
       formData.type === "organization" &&
-      !formData.organization_name?.trim()
+      !formData.company_name?.trim()
     ) {
       alert("Organization name is required!");
       return;
@@ -69,10 +102,10 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
         {/* Modal Header */}
         <div className="mb-6">
           <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
-            Add New Customer
+            {mode === "edit" ? "Edit Customer" : "Add New Customer"}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Enter customer details
+            {mode === "edit" ? "Update customer details" : "Enter customer details"}
           </p>
         </div>
 
@@ -128,9 +161,9 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
                   id="customer-organization-name"
                   type="text"
                   placeholder="ABC Corporation"
-                  value={formData.organization_name || ""}
+                  value={formData.company_name || ""}
                   onChange={(e) =>
-                    handleChange("organization_name", e.target.value)
+                    handleChange("company_name", e.target.value)
                   }
                 />
               </div>
@@ -190,7 +223,7 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
               type="submit"
               className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              Add Customer
+              {mode === "edit" ? "Update Customer" : "Add Customer"}
             </button>
           </div>
         </form>

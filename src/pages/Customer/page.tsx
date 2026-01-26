@@ -4,13 +4,27 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import CustomerTable from "../../components/tables/BasicTables/CustomersTable";
 import AddCustomerModal from "../../components/modals/AddCustomerModal"; // Import modal
-import { useGetAllCustomersQuery } from "../../redux/services/customer";
+import {
+  CreateCustomer,
+  Customer,
+  useCreateCustomerMutation,
+  useGetAllCustomersQuery,
+  useUpdateCustomerMutation,
+} from "../../redux/services/customer";
+import { CustomerFormData } from "../../components/modals/AddCustomerModal";
+import { toast } from "sonner";
 
 const CustomerPage = () => {
   const { data, isLoading } = useGetAllCustomersQuery();
+  const [createCustomer] = useCreateCustomerMutation();
+  const [updateCustomer] = useUpdateCustomerMutation();
 
   // Add state for modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null,
+  );
 
   // Handle export CSV
   const handleExportCSV = () => {
@@ -19,16 +33,54 @@ const CustomerPage = () => {
   };
 
   // Handle form submission
-  const handleAddCustomer = (customerData: any) => {
-    console.log("Adding customer:", customerData);
-    // TODO: Call your API here to add customer
-    // Example: await addCustomerApi(customerData);
+  const handleAddCustomer = async (customerData: CustomerFormData) => {
+    try {
+      const payload: CreateCustomer = {
+        name: customerData.name,
+        phone: customerData.phone,
+        city: customerData.city,
+        company_name: customerData.company_name ?? "",
+      };
+
+      const res = await createCustomer(payload).unwrap();
+      if (res) toast.success(`${res.name} is created successfully`);
+    } catch (error) {
+      console.log("🚀 ~ handleAddCustomer ~ error:", error);
+      toast.error("Error while creating customer");
+    }
 
     // Close modal after submission
     setIsAddModalOpen(false);
+  };
 
-    // Optionally refresh the customer list
-    // refetch();
+  const handleEditCustomer = async (customerData: CustomerFormData) => {
+    if (!selectedCustomer) return;
+
+    try {
+      const payload: CreateCustomer = {
+        name: customerData.name,
+        phone: customerData.phone,
+        city: customerData.city,
+        company_name: customerData.company_name ?? "",
+      };
+
+      const res = await updateCustomer({
+        id: selectedCustomer.id,
+        ...payload,
+      }).unwrap();
+      if (res) toast.success(`${res.name} is updated successfully`);
+    } catch (error) {
+      console.log("🚀 ~ handleEditCustomer ~ error:", error);
+      toast.error("Error while updating customer");
+    }
+
+    setIsEditModalOpen(false);
+    setSelectedCustomer(null);
+  };
+
+  const handleEditClick = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -50,6 +102,7 @@ const CustomerPage = () => {
           <CustomerTable
             customers={data?.customers ?? []}
             loading={isLoading}
+            onEdit={handleEditClick}
           />
         </ComponentCard>
       </div>
@@ -59,6 +112,19 @@ const CustomerPage = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleAddCustomer}
+        mode="add"
+      />
+
+      {/* Modal - Opens when edit button is clicked */}
+      <AddCustomerModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedCustomer(null);
+        }}
+        onSubmit={handleEditCustomer}
+        initialData={selectedCustomer}
+        mode="edit"
       />
     </>
   );
