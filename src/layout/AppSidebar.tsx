@@ -46,6 +46,14 @@ const navItems: NavItem[] = [
   },
   {
     icon: <UserCircleIcon />,
+    name: "Products",
+    subItems: [
+      { name: "Items", path: "/items", pro: false },
+      { name: "Categories", path: "/categories", pro: false }
+    ],
+  },
+  {
+    icon: <UserCircleIcon />,
     name: "User Profile",
     path: "/profile",
   },

@@ -3,7 +3,7 @@ import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import CustomerTable from "../../components/tables/BasicTables/CustomersTable";
-import AddCustomerModal from "../../components/modals/AddCustomerModal"; // Import modal
+import AddCustomerModal from "../../components/modals/CustomerModal"; // Import modal
 import {
   CreateCustomer,
   Customer,
@@ -11,7 +11,7 @@ import {
   useGetAllCustomersQuery,
   useUpdateCustomerMutation,
 } from "../../redux/services/customer";
-import { CustomerFormData } from "../../components/modals/AddCustomerModal";
+import { CustomerFormData } from "../../components/modals/CustomerModal";
 import { toast } from "sonner";
 
 const CustomerPage = () => {

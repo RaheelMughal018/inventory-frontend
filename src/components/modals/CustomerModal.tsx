@@ -1,20 +1,20 @@
-// components/modals/AddSupplierModal.tsx
-import React, { useState, useEffect } from "react";
-import { Modal } from "../../components/ui/modal"; // Your existing modal
-import Input from "../form/input/InputField"; // Your Input component
-import Label from "../form/Label"; // Your Label component
-import Radio from "../form/input/Radio"; // Your Radio component
-import { Supplier } from "../../redux/services/supplier";
+// components/modals/AddCustomerModal.tsx
+import React, { useEffect, useState } from "react";
+import { Modal } from "../ui/modal";
+import Input from "../form/input/InputField";
+import Label from "../form/Label";
+import Radio from "../form/input/Radio";
+import { Customer } from "../../redux/services/customer";
 
-interface AddSupplierModalProps {
+interface AddCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: SupplierFormData) => void;
-  initialData?: Supplier | null;
+  onSubmit: (data: CustomerFormData) => void;
+  initialData?: Customer | null;
   mode?: "add" | "edit";
 }
 
-export interface SupplierFormData {
+export interface CustomerFormData {
   type: "individual" | "organization";
   name: string;
   phone: string;
@@ -22,14 +22,14 @@ export interface SupplierFormData {
   company_name?: string;
 }
 
-const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
+const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
   initialData,
   mode = "add",
 }) => {
-  const [formData, setFormData] = useState<SupplierFormData>({
+  const [formData, setFormData] = useState<CustomerFormData>({
     type: "individual",
     name: "",
     phone: "",
@@ -39,36 +39,60 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 
   // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
-    if (isOpen) {
-      if (mode === "edit" && initialData) {
-        // Determine type based on company_name
-        const supplierType = initialData.company_name ? "organization" : "individual";
-        setFormData({
-          type: supplierType,
-          name: initialData.name || "",
-          phone: initialData.phone || "",
-          city: initialData.city || "",
-          company_name: initialData.company_name || "",
-        });
-      } else {
-        // Reset to default for add mode
-        setFormData({
-          type: "individual",
-          name: "",
-          phone: "",
-          city: "",
-          company_name: "",
-        });
-      }
+    if (!isOpen) return;
+
+    if (mode === "edit" && initialData) {
+      const customerType = initialData.company_name
+        ? "organization"
+        : "individual";
+
+      setFormData({
+        type: customerType,
+        name: initialData.name || "",
+        phone: initialData.phone || "",
+        city: initialData.city || "",
+        company_name: initialData.company_name || "",
+      });
+      return;
     }
+
+    setFormData({
+      type: "individual",
+      name: "",
+      phone: "",
+      city: "",
+      company_name: "",
+    });
   }, [isOpen, initialData, mode]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    if (!formData.name.trim()) {
+      alert("Name is required!");
+      return;
+    }
+    if (!formData.phone.trim()) {
+      alert("Phone number is required!");
+      return;
+    }
+    if (!formData.city.trim()) {
+      alert("City is required!");
+      return;
+    }
+    if (
+      formData.type === "organization" &&
+      !formData.company_name?.trim()
+    ) {
+      alert("Organization name is required!");
+      return;
+    }
+
     onSubmit(formData);
   };
 
-  const handleChange = (field: keyof SupplierFormData, value: string) => {
+  const handleChange = (field: keyof CustomerFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -78,21 +102,23 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
         {/* Modal Header */}
         <div className="mb-6">
           <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
-            {mode === "edit" ? "Edit Supplier" : "Add New Supplier"}
+            {mode === "edit" ? "Edit Customer" : "Add New Customer"}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {mode === "edit" ? "Update supplier details" : "Enter supplier details"}
+            {mode === "edit" ? "Update customer details" : "Enter customer details"}
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Type Selection - Organization or Individual */}
+          {/* Type Selection */}
           <div>
-            <Label className="mb-3">Supplier Type *</Label>
+            <Label className="mb-3">
+              Customer Type <span className="text-red-500">*</span>
+            </Label>
             <div className="flex space-x-6">
               <Radio
-                id="type-individual"
+                id="customer-type-individual"
                 name="type"
                 value="individual"
                 checked={formData.type === "individual"}
@@ -101,9 +127,9 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
               />
 
               <Radio
-                id="type-organization"
+                id="customer-type-organization"
                 name="type"
-                value="company_name"
+                value="organization"
                 checked={formData.type === "organization"}
                 label="Organization"
                 onChange={(value) => handleChange("type", value)}
@@ -111,12 +137,14 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
             </div>
           </div>
 
-          {/* Name Fields - Dynamic based on type */}
+          {/* Name Fields */}
           {formData.type === "individual" ? (
             <div>
-              <Label htmlFor="name">Full Name *</Label>
+              <Label htmlFor="customer-name">
+                Full Name <span className="text-red-500">*</span>
+              </Label>
               <Input
-                id="name"
+                id="customer-name"
                 type="text"
                 placeholder="John Doe"
                 value={formData.name}
@@ -126,9 +154,11 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
           ) : (
             <>
               <div>
-                <Label htmlFor="organization_name">Organization Name *</Label>
+                <Label htmlFor="customer-organization-name">
+                  Organization Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  id="organization_name"
+                  id="customer-organization-name"
                   type="text"
                   placeholder="ABC Corporation"
                   value={formData.company_name || ""}
@@ -138,9 +168,11 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="contact_name">Contact Person Name *</Label>
+                <Label htmlFor="customer-contact-name">
+                  Contact Person Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  id="contact_name"
+                  id="customer-contact-name"
                   type="text"
                   placeholder="John Doe"
                   value={formData.name}
@@ -152,9 +184,11 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 
           {/* Phone Number */}
           <div>
-            <Label htmlFor="phone">Phone Number *</Label>
+            <Label htmlFor="customer-phone">
+              Phone Number <span className="text-red-500">*</span>
+            </Label>
             <Input
-              id="phone"
+              id="customer-phone"
               type="tel"
               placeholder="+1 234 567 8900"
               value={formData.phone}
@@ -164,9 +198,11 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 
           {/* City */}
           <div>
-            <Label htmlFor="city">City *</Label>
+            <Label htmlFor="customer-city">
+              City <span className="text-red-500">*</span>
+            </Label>
             <Input
-              id="city"
+              id="customer-city"
               type="text"
               placeholder="Enter city name"
               value={formData.city}
@@ -187,7 +223,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
               type="submit"
               className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              {mode === "edit" ? "Update Supplier" : "Add Supplier"}
+              {mode === "edit" ? "Update Customer" : "Add Customer"}
             </button>
           </div>
         </form>
@@ -196,4 +232,4 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
   );
 };
 
-export default AddSupplierModal;
+export default AddCustomerModal;

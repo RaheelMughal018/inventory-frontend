@@ -3,9 +3,9 @@ import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import SupplierTable from "../../components/tables/BasicTables/SuppliersTable";
-import AddSupplierModal from "../../components/modals/AddSupplierModal"; // Import modal
+import AddSupplierModal from "../../components/modals/SupplierModal"; // Import modal
 import { useGetAllSuppliersQuery , useCreateSupplierMutation, useUpdateSupplierMutation, CreateSupplier, Supplier} from "../../redux/services/supplier";
-import {SupplierFormData} from '../../components/modals/AddSupplierModal'
+import {SupplierFormData} from '../../components/modals/SupplierModal'
 import { toast } from "sonner";
 const SupplierPage = () => {
   const { data, isLoading } = useGetAllSuppliersQuery();
