@@ -41,15 +41,28 @@ const navItems: NavItem[] = [
     name: "People",
     subItems: [
       { name: "Supplier", path: "/supplier", pro: false },
-      { name: "Customer", path: "/customer", pro: false }
+      { name: "Customer", path: "/customer", pro: false },
     ],
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Accounts",
+    path: "/accounts",
   },
   {
     icon: <UserCircleIcon />,
     name: "Products",
     subItems: [
       { name: "Items", path: "/items", pro: false },
-      { name: "Categories", path: "/categories", pro: false }
+      { name: "Categories", path: "/categories", pro: false },
+    ],
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Invoices",
+    subItems: [
+      { name: "Sale invoice", path: "/customer", pro: false },
+      { name: "Purchase invoice", path: "/customer", pro: false },
     ],
   },
   {
@@ -117,14 +130,14 @@ const AppSidebar: React.FC = () => {
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
+    {},
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
     (path: string) => location.pathname === path,
-    [location.pathname]
+    [location.pathname],
   );
 
   useEffect(() => {
@@ -306,8 +319,8 @@ const AppSidebar: React.FC = () => {
           isExpanded || isMobileOpen
             ? "w-[290px]"
             : isHovered
-            ? "w-[290px]"
-            : "w-[90px]"
+              ? "w-[290px]"
+              : "w-[90px]"
         }
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0`}

@@ -13,6 +13,6 @@ export const baseApi = createApi({
       return headers
     },
   }),
-  tagTypes: ['auth', 'supplier', 'customer', 'category', 'item'],
+  tagTypes: ['auth', 'supplier', 'customer', 'category', 'item','account', 'purchase_invoice'],
   endpoints: () => ({}), 
 })
