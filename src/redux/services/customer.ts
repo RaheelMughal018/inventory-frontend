@@ -3,6 +3,11 @@ import { baseApi } from './baseApi'
 /* =========================
    Request Interfaces
 ========================= */
+export interface GetCustomersParams {
+  search?: string
+  skip?: number
+  limit?: number
+}
 
 export interface CreateCustomer {
   name: string
@@ -58,10 +63,11 @@ export const customerApi = baseApi.injectEndpoints({
       invalidatesTags:['customer']
     }),
 
-    getAllCustomers: builder.query<CustomersResponse, void>({
-      query: () => ({
+    getAllCustomers: builder.query<CustomersResponse, GetCustomersParams>({
+      query: (params) => ({
         url: '/customers',
         method: 'GET',
+        params,
       }),
       providesTags:['customer']
     }),

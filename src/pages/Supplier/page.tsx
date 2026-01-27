@@ -7,8 +7,18 @@ import AddSupplierModal from "../../components/modals/SupplierModal"; // Import 
 import { useGetAllSuppliersQuery , useCreateSupplierMutation, useUpdateSupplierMutation, CreateSupplier, Supplier} from "../../redux/services/supplier";
 import {SupplierFormData} from '../../components/modals/SupplierModal'
 import { toast } from "sonner";
+import SearchBar from "../../components/common/SearchBar";
+import Pagination from "../../components/common/Pagination";
 const SupplierPage = () => {
-  const { data, isLoading } = useGetAllSuppliersQuery();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const skip = (page - 1) * limit;
+  const { data, isLoading } = useGetAllSuppliersQuery({
+    search: search || undefined,
+    limit,
+    skip,
+  });
   const [createSupplier] = useCreateSupplierMutation()
   const [updateSupplier] = useUpdateSupplierMutation()
   // Add state to control modal
@@ -20,6 +30,10 @@ const SupplierPage = () => {
   const handleExportCSV = () => {
     console.log("Exporting suppliers to CSV");
     // Add your export logic here
+  };
+
+  const handleSearch = () => {
+    setPage(1);
   };
 
   // Handle form submission for adding
@@ -92,12 +106,28 @@ const SupplierPage = () => {
           addButtonText="Add New Supplier"
           onExportClick={handleExportCSV} // Connect export handler
           onAddClick={() => setIsAddModalOpen(true)} // Open modal on click!
+          extra={
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              onSubmit={handleSearch}
+              placeholder="Search suppliers..."
+            />
+          }
         >
           <SupplierTable
             suppliers={data?.suppliers ?? []}
             loading={isLoading}
             onEdit={handleEditClick}
           />
+          <div className="pt-4">
+            <Pagination
+              currentPage={page}
+              pageSize={limit}
+              total={data?.total ?? 0}
+              onPageChange={setPage}
+            />
+          </div>
         </ComponentCard>
       </div>
 

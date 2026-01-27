@@ -4,12 +4,25 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { toast } from "sonner";
 import CategoryTable from "../../components/tables/BasicTables/CategoryTable";
-import { Category, CreateCategory, useCreateCategoryMutation, useGetAllCategorysQuery, useUpdateCategoryMutation } from "../../redux/services/category";
+import { Category, CreateCategory, useCreateCategoryMutation, useGetAllCategoriesQuery, useUpdateCategoryMutation } from "../../redux/services/category";
 import { CategoryFormData } from "../../components/modals/CategoryModal";
 import CategoryModal from "../../components/modals/CategoryModal";
+import SearchBar from "../../components/common/SearchBar";
+import Pagination from "../../components/common/Pagination";
 
 const CategoryPage = () => {
-  const { data, isLoading } = useGetAllCategorysQuery();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+
+  const skip = (page - 1) * limit;
+
+  const { data, isLoading } = useGetAllCategoriesQuery({
+    search: search || undefined,
+    limit,
+    skip,
+
+  });
   const [createCategory] = useCreateCategoryMutation();
   const [updateCategory] = useUpdateCategoryMutation();
 
@@ -24,6 +37,10 @@ const CategoryPage = () => {
   const handleExportCSV = () => {
     console.log("Exporting customers to CSV");
     // Your export logic here
+  };
+
+  const handleSearch = () => {
+    setPage(1);
   };
 
   // Handle form submission
@@ -86,12 +103,31 @@ const CategoryPage = () => {
           addButtonText="Add New Category"
           onExportClick={handleExportCSV} // Connect export handler
           onAddClick={() => setIsAddModalOpen(true)} // Open modal on click!
+          extra={
+            <div className="flex flex-col sm:flex-row gap-3">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                onSubmit={handleSearch}
+                placeholder="Search categories..."
+              />
+            
+            </div>
+          }
         >
           <CategoryTable
             categories={data?.categories ?? []}
             loading={isLoading}
             onEdit={handleEditClick}
           />
+          <div className="pt-4">
+            <Pagination
+              currentPage={page}
+              pageSize={limit}
+              total={data?.total ?? 0}
+              onPageChange={setPage}
+            />
+          </div>
         </ComponentCard>
       </div>
 

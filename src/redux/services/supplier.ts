@@ -3,6 +3,11 @@ import { baseApi } from './baseApi'
 /* =========================
    Request Interfaces
 ========================= */
+export interface GetSuppliersParams {
+  search?: string
+  skip?: number
+  limit?: number
+}
 
 export interface CreateSupplier {
   name: string
@@ -58,10 +63,11 @@ export const supplierApi = baseApi.injectEndpoints({
       invalidatesTags:['supplier']
     }),
 
-    getAllSuppliers: builder.query<SuppliersResponse, void>({
-      query: () => ({
+    getAllSuppliers: builder.query<SuppliersResponse, GetSuppliersParams>({
+      query: (params) => ({
         url: '/suppliers',
         method: 'GET',
+        params,
 
       }),
       providesTags:['supplier']

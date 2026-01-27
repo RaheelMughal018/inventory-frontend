@@ -13,9 +13,20 @@ import {
 } from "../../redux/services/customer";
 import { CustomerFormData } from "../../components/modals/CustomerModal";
 import { toast } from "sonner";
+import SearchBar from "../../components/common/SearchBar";
+import Pagination from "../../components/common/Pagination";
 
 const CustomerPage = () => {
-  const { data, isLoading } = useGetAllCustomersQuery();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const skip = (page - 1) * limit;
+
+  const { data, isLoading } = useGetAllCustomersQuery({
+    search: search || undefined,
+    limit,
+    skip,
+  });
   const [createCustomer] = useCreateCustomerMutation();
   const [updateCustomer] = useUpdateCustomerMutation();
 
@@ -30,6 +41,10 @@ const CustomerPage = () => {
   const handleExportCSV = () => {
     console.log("Exporting customers to CSV");
     // Your export logic here
+  };
+
+  const handleSearch = () => {
+    setPage(1);
   };
 
   // Handle form submission
@@ -98,12 +113,28 @@ const CustomerPage = () => {
           addButtonText="Add New Customer"
           onExportClick={handleExportCSV} // Connect export handler
           onAddClick={() => setIsAddModalOpen(true)} // Open modal on click!
+          extra={
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              onSubmit={handleSearch}
+              placeholder="Search customers..."
+            />
+          }
         >
           <CustomerTable
             customers={data?.customers ?? []}
             loading={isLoading}
             onEdit={handleEditClick}
           />
+          <div className="pt-4">
+            <Pagination
+              currentPage={page}
+              pageSize={limit}
+              total={data?.total ?? 0}
+              onPageChange={setPage}
+            />
+          </div>
         </ComponentCard>
       </div>
 

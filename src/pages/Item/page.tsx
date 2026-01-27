@@ -7,30 +7,50 @@ import ItemsTable from "../../components/tables/BasicTables/ItemsTable";
 import {
   CreateItem,
   Item,
+  ItemType,
   useCreateItemMutation,
   useGetAllItemsQuery,
   useUpdateItemMutation,
 } from "../../redux/services/item";
 import { ItemFormData } from "../../components/modals/ItemModal";
 import ItemModal from "../../components/modals/ItemModal";
-import { useGetAllCategorysQuery } from "../../redux/services/category";
+import { useGetAllCategoriesQuery } from "../../redux/services/category";
+import SearchBar from "../../components/common/SearchBar";
+import Pagination from "../../components/common/Pagination";
 
 const ItemPage = () => {
-  const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery();
-  const { data: categoriesData } = useGetAllCategorysQuery();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const skip = (page - 1) * limit;
+
+  const { data: categoriesData } = useGetAllCategoriesQuery({});
   const [createItem] = useCreateItemMutation();
   const [updateItem] = useUpdateItemMutation();
-
+  
   // Add state for modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  
+  const [itemTypeFilter, setItemTypeFilter] = useState<ItemType | "">("");
+  
+  const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery({
+    search: search || undefined,
+    limit,
+    skip,
+    item_type: itemTypeFilter || undefined,
+  });
 
   // Handle export CSV
   const handleExportCSV = () => {
     console.log("Exporting items to CSV");
     // Your export logic here
+  };
+
+  const handleSearch = () => {
+    setPage(1);
   };
 
   // Handle form submission for adding
@@ -109,12 +129,42 @@ const ItemPage = () => {
           addButtonText="Add New Item"
           onExportClick={handleExportCSV}
           onAddClick={() => setIsAddModalOpen(true)}
+          extra={
+            <div className="flex flex-col sm:flex-row gap-3">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                onSubmit={handleSearch}
+                placeholder="Search items..."
+              />
+                <select
+                value={itemTypeFilter}
+                onChange={(e) => {
+                  setItemTypeFilter(e.target.value as ItemType | "");
+                  setPage(1);
+                }}
+                className="h-11 rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+              >
+                <option value="">All Types</option>
+                <option value={ItemType.FINAL_PRODUCT}>Final Product</option>
+                <option value={ItemType.RAW_MATERIAL}>Raw Material</option>
+              </select>
+            </div>
+          }
         >
           <ItemsTable
             items={itemsData?.items ?? []}
             loading={itemsLoading}
             onEdit={handleEditClick}
           />
+          <div className="pt-4">
+            <Pagination
+              currentPage={page}
+              pageSize={limit}
+              total={itemsData?.total ?? 0}
+              onPageChange={setPage}
+            />
+          </div>
         </ComponentCard>
       </div>
 

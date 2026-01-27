@@ -10,6 +10,7 @@ interface ComponentCardProps {
   addButtonText?: string; // For add button
   onExportClick?: () => void; // Export handler
   onAddClick?: () => void; // Add handler
+  extra?: React.ReactNode; // Custom header content (filters, search)
 }
 
 const ComponentCard: React.FC<ComponentCardProps> = ({
@@ -22,6 +23,7 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
   addButtonText = "Add Item", // Default fallback
   onExportClick,
   onAddClick,
+  extra,
 }) => {
   return (
     <div
@@ -29,16 +31,20 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
     >
       {/* Card Header */}
 
-      <div className="px-6 py-5 flex justify-between">
-        <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
-          {title}
-        </h3>
-        {desc && (
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {desc}
-          </p>
-        )}
-        <div className="flex space-x-3">
+      <div className="px-6 py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+            {title}
+          </h3>
+          {desc && (
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {desc}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-3 items-center justify-end">
+          {extra}
           {/* Export Button */}
           <Button
             size="sm"

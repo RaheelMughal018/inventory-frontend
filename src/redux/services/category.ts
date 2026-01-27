@@ -1,15 +1,22 @@
 import { baseApi } from './baseApi'
+import { ItemType } from './item'
 
 /* =========================
    Request Interfaces
 ========================= */
+export interface GetCategoriesParams {
+  search?: string
+  skip?: number
+  limit?: number
+  item_type?: ItemType
+}
 
 export interface CreateCategory {
   name: string
 }
 
 export interface UpdateCategory extends CreateCategory {
-  id: number
+  id: string 
 }
 
 /* =========================
@@ -23,10 +30,10 @@ export interface Category {
     updated_at: string
   }
   
-  export interface CategorysResponse {
-    total: number
-    categories: Category[]
-  }
+export interface CategoriesResponse {
+  total: number
+  categories: Category[]
+}
 
   export interface DeleteResponse {
     message: string
@@ -47,10 +54,11 @@ export const categoryApi = baseApi.injectEndpoints({
       invalidatesTags:['category']
     }),
 
-    getAllCategorys: builder.query<CategorysResponse, void>({
-      query: () => ({
+    getAllCategories: builder.query<CategoriesResponse, GetCategoriesParams>({
+      query: (params) => ({
         url: '/categories',
         method: 'GET',
+        params,
       }),
       providesTags:['category']
     }),
@@ -84,7 +92,7 @@ export const categoryApi = baseApi.injectEndpoints({
 
 export const {
   useCreateCategoryMutation,
-  useGetAllCategorysQuery,
+  useGetAllCategoriesQuery,
   useGetCategoryByIdQuery,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,

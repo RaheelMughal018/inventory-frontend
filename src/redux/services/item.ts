@@ -11,6 +11,13 @@ export enum ItemUnit{
   PCS = "PCS",
   SET = "SET" 
 }
+export interface GetItemsParams {
+  search?: string
+  skip?: number
+  limit?: number
+  category_id?: string
+  item_type?: ItemType
+}
 export interface CreateItem {
   name: string
   type: ItemType
@@ -47,10 +54,10 @@ export interface Item {
     updated_at: string
   }
   
-  export interface ItemsResponse {
-    total: number
-    items: Item[]
-  }
+export interface ItemsResponse {
+  total: number
+  items: Item[]
+}
 
   export interface DeleteResponse {
     message: string
@@ -71,10 +78,11 @@ export const itemApi = baseApi.injectEndpoints({
       invalidatesTags:['item']
     }),
 
-    getAllItems: builder.query<ItemsResponse, void>({
-      query: () => ({
+    getAllItems: builder.query<ItemsResponse, GetItemsParams>({
+      query: (params) => ({
         url: '/items',
         method: 'GET',
+        params,
       }),
       providesTags:['item']
     }),
