@@ -27,6 +27,7 @@ import ItemPage from "./pages/Item/page";
 import AccountPage from "./pages/Accounts/page";
 import PurchaseInvoicePage from "./pages/PurchaseInvoice/page";
 import CreatePurchaseInvoicePage from "./pages/CreatePurchaseInvoice/page";
+import ViewPurchaseInvoicePage from "./pages/ViewPurchaseInvoice";
 
 export default function App() {
   return (
@@ -51,6 +52,10 @@ export default function App() {
               <Route
                 path="/purchase/create"
                 element={<CreatePurchaseInvoicePage />}
+              />
+              <Route
+                path="/purchase-invoices/view/:id"
+                element={<ViewPurchaseInvoicePage />}
               />
               <Route path="/blank" element={<Blank />} />
 

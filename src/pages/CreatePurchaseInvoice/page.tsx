@@ -1,30 +1,26 @@
 // pages/CreatePurchaseInvoicePage.tsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ComponentCard from "../../components/common/ComponentCard";
-import { useCreatePurchaseInvoiceMutation } from "../../redux/services/purchaseInvoice";
+import {useGetAllItemsQuery} from "../../redux/services/item"
+import {useGetAllSuppliersQuery} from "../../redux/services/supplier"
+import {
+  type PurchaseInvoiceCreate,
+  useCreatePurchaseInvoiceMutation,
+} from "../../redux/services/purchaseInvoice";
 import { toast } from "sonner";
 import Button from "../../components/ui/button/Button";
+import SelectDropdown from "../../components/form/SelectDropdown";
+import DatePicker from "../../components/form/date-picker";
+import { useGetAllAccountsQuery } from "../../redux/services/account";
+import PaymentModal, { PaymentFormData } from "../../components/modals/PaymentModal";
 
 // Mock data - replace with API calls later
-const mockSuppliers = [
-  { id: 1, name: "ABC Suppliers Ltd", email: "supplier@example.com" },
-  { id: 2, name: "XYZ Wholesale", email: "xyz@example.com" },
-  { id: 3, name: "Global Traders", email: "global@example.com" },
-];
 
-const mockItems = [
-  { id: "ITM-ABC123", name: "Widget A", unit_price: 2.0, stock: 100 },
-  { id: "ITM-DEF456", name: "Widget B", unit_price: 3.5, stock: 50 },
-  { id: "ITM-GHI789", name: "Widget C", unit_price: 5.0, stock: 75 },
-  { id: "ITM-JKL012", name: "Widget D", unit_price: 7.5, stock: 25 },
-];
 
 interface InvoiceItem {
   id: string;
-  item_id: string;
   item_name: string;
   quantity: number;
   unit_price: number;
@@ -35,41 +31,58 @@ const CreatePurchaseInvoicePage = () => {
   const navigate = useNavigate();
   const [createPurchaseInvoice, { isLoading }] =
     useCreatePurchaseInvoiceMutation();
-
+  const {data: accountsData} = useGetAllAccountsQuery({})
+ 
+  const {data:itemsData, isLoading:itemLoading} = useGetAllItemsQuery({
+    
+  })
+  const {data:supplierData, isLoading:supplierLoading} = useGetAllSuppliersQuery({
+    
+  })
   // Form state
-  const [supplierId, setSupplierId] = useState<number>(1);
+  const [supplierId, setSupplierId] = useState<number|string>();
   const [invoiceDate, setInvoiceDate] = useState<string>(
     new Date().toISOString().split("T")[0],
   );
-  const [notes, setNotes] = useState<string>("");
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+const [paymentData, setPaymentData] = useState<{
+  payment_account_id: string | null;
+  payment_amount: number;
+}>({
+  payment_account_id: null,
+  payment_amount: 0,
+});
+
+const accountOptions =
+  accountsData?.accounts?.map((acc) => ({
+    id: acc.id,
+    name: acc.name,
+    type: acc.type
+  })) || [];
 
   // Items state
   const [items, setItems] = useState<InvoiceItem[]>([
     {
-      id: "temp-1",
-      item_id: "ITM-ABC123",
-      item_name: "Widget A",
-      quantity: 1,
-      unit_price: 2.0,
-      line_total: 2.0,
+      id: "",
+      item_name: "",
+      quantity: 0,
+      unit_price: 0.0,
+      line_total: 0.0,
     },
   ]);
 
   // Calculations
   const subtotal = items.reduce((sum, item) => sum + item.line_total, 0);
-  const taxRate = 0.15; // 15% tax
-  const taxAmount = subtotal * taxRate;
-  const shippingCharges = 5.0;
   const discountAmount = 0;
-  const totalAmount = subtotal + taxAmount + shippingCharges - discountAmount;
+  const totalAmount = subtotal - discountAmount;
 
   // Add new item row
   const handleAddItem = () => {
     const newItem: InvoiceItem = {
-      id: `temp-${Date.now()}`,
-      item_id: "",
+      id: "",
       item_name: "",
-      quantity: 1,
+      quantity: 0,
       unit_price: 0,
       line_total: 0,
     };
@@ -80,12 +93,19 @@ const CreatePurchaseInvoicePage = () => {
   const handleUpdateItem = (
     index: number,
     field: keyof InvoiceItem,
-    value: any,
+    value: string | number,
   ) => {
     const updatedItems = [...items];
-    const item = updatedItems[index];
+    const existing = updatedItems[index];
+    if (!existing) return;
 
-    item[field] = value;
+    const item: InvoiceItem = { ...existing };
+
+    if (field === "item_name") item.item_name = String(value);
+    if (field === "quantity") item.quantity = Number(value);
+    if (field === "unit_price") item.unit_price = Number(value);
+    if (field === "line_total") item.line_total = Number(value);
+    if (field === "id") item.id = String(value);
 
     // Recalculate line total if quantity or unit_price changes
     if (field === "quantity" || field === "unit_price") {
@@ -93,15 +113,16 @@ const CreatePurchaseInvoicePage = () => {
     }
 
     // Update item name if item_id changes
-    if (field === "item_id") {
-      const selectedItem = mockItems.find((i) => i.id === value);
+    if (field === "id") {
+      const selectedItem = itemsData?.items?.find((i) => i.id === String(value));
       if (selectedItem) {
         item.item_name = selectedItem.name;
-        item.unit_price = selectedItem.unit_price;
-        item.line_total = item.quantity * selectedItem.unit_price;
+        item.unit_price = selectedItem.avg_price;
+        item.line_total = item.quantity * selectedItem.avg_price;
       }
     }
 
+    updatedItems[index] = item;
     setItems(updatedItems);
   };
 
@@ -128,27 +149,29 @@ const CreatePurchaseInvoicePage = () => {
       return;
     }
 
-    if (items.some((item) => !item.item_id || item.quantity <= 0)) {
+    if (items.some((item) => !item.id || item.quantity <= 0)) {
       toast.error("Please fill all item details correctly");
       return;
     }
 
     try {
       // Transform data to match API payload
-      const payload = {
+      const payload: PurchaseInvoiceCreate = {
         supplier_id: supplierId,
-        invoice_date: invoiceDate,
         items: items.map((item) => ({
-          item_id: item.item_id,
+          item_id: item.id,
           quantity: item.quantity,
           unit_price: item.unit_price,
         })),
-        notes: notes || undefined,
+        // Backend supports payment fields; notes not part of schema (kept in UI only for now)
+        payment_amount: paymentData.payment_amount,
+        payment_account_id: paymentData.payment_account_id,
       };
+      // console.log("🚀 ~ handleSubmit ~ payload:", payload)
 
       const response = await createPurchaseInvoice(payload).unwrap();
       toast.success(`Invoice created successfully: ${response.id}`);
-      navigate("/purchase-invoices"); // Redirect back to list
+      navigate("/purchase");
     } catch (error) {
       console.error("Error creating invoice:", error);
       toast.error("Failed to create invoice");
@@ -157,7 +180,7 @@ const CreatePurchaseInvoicePage = () => {
 
   // Handle cancel
   const handleCancel = () => {
-    if (items.length > 0 || notes || supplierId !== 1) {
+    if (items.length > 0 || invoiceDate || supplierId !== 1) {
       if (
         window.confirm(
           "Are you sure you want to cancel? All changes will be lost.",
@@ -170,6 +193,30 @@ const CreatePurchaseInvoicePage = () => {
     }
   };
 
+   // Transform suppliers for SelectDropdown
+  const supplierOptions =
+    supplierData?.suppliers?.map((supplier) => ({
+      id: supplier.id,
+      name: `${supplier.name}`,
+    })) || [];
+
+  // Transform items for SelectDropdown
+  const itemOptions =
+    itemsData?.items?.map((item) => ({
+      id: item.id,
+      name: `${item.name}`,
+    })) || [];
+
+    const handlePaymentSave = (data: PaymentFormData) => {
+  setPaymentData({
+    payment_account_id: data.payment_account_id,
+    payment_amount: data.payment_amount,
+  });
+
+  setIsPaymentModalOpen(false);
+};
+
+
   return (
     <>
       <PageMeta
@@ -178,10 +225,6 @@ const CreatePurchaseInvoicePage = () => {
       />
       <PageBreadcrumb
         pageTitle="Create Purchase Invoice"
-        breadcrumbs={[
-          { title: "Purchase Invoices", path: "/purchase-invoices" },
-          { title: "Create Invoice", path: "#" },
-        ]}
       />
 
       <div className="space-y-6">
@@ -214,46 +257,51 @@ const CreatePurchaseInvoicePage = () => {
           {/* Left Column - Basic Information */}
           <div className="lg:col-span-2 space-y-6">
             {/* Supplier & Date Card */}
-            <ComponentCard title="Basic Information">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Supplier Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Supplier <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={supplierId}
-                    onChange={(e) => setSupplierId(Number(e.target.value))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                  >
-                    <option value="">Select a supplier</option>
-                    {mockSuppliers.map((supplier) => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Invoice Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Invoice Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={invoiceDate}
-                    onChange={(e) => setInvoiceDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                  />
-                </div>
+            {/* <ComponentCard title="Basic Information"> */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Supplier Selection */}
+               {/* Supplier Selection */}
+              <div>
+                <SelectDropdown
+                  label="Supplier"
+                  required
+                  options={supplierOptions}
+                  value={supplierId}
+                  onChange={(value) => setSupplierId(value)}
+                  placeholder={
+                    supplierLoading
+                      ? "Loading suppliers..."
+                      : "Search and select supplier..."
+                  }
+                  searchable
+                  disabled={supplierLoading}
+                />
               </div>
-            </ComponentCard>
+
+              {/* Date (UI-only for now) */}
+              <div>
+
+                <DatePicker
+                  id="invoice-date"
+                  label="Invoice Date"
+                  placeholder="Select a date"
+                  defaultDate={invoiceDate}
+                  onChange={(dates, currentDateString) => {
+                    // Handle your logic
+                    console.log({ dates, currentDateString });
+                    setInvoiceDate(currentDateString)
+                  }}
+                />
+              </div>
+            </div>
+            {/* </ComponentCard> */}
 
             {/* Items Card */}
-            <ComponentCard
-              title="Invoice Items"
-              extra={
+            <div className="flex items-center justify-between">
+
+            <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+                Invoice Items
+              </h3>
                 <Button
                   variant="outline"
                   onClick={handleAddItem}
@@ -261,8 +309,7 @@ const CreatePurchaseInvoicePage = () => {
                 >
                   + Add Item
                 </Button>
-              }
-            >
+            </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
@@ -285,25 +332,26 @@ const CreatePurchaseInvoicePage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {items.map((item, index) => (
+                    {items?.map((item, index) => (
                       <tr key={item.id}>
                         <td className="px-4 py-3">
-                          <select
-                            value={item.item_id}
-                            onChange={(e) =>
-                              handleUpdateItem(index, "item_id", e.target.value)
-                            }
-                            className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                          >
-                            <option value="">Select item</option>
-                            {mockItems.map((product) => (
-                              <option key={product.id} value={product.id}>
-                                {product.name} - ${product.unit_price} (Stock:{" "}
-                                {product.stock})
-                              </option>
-                            ))}
-                          </select>
-                        </td>
+                        <SelectDropdown
+                          options={itemOptions}
+                          value={item.id}
+                          onChange={(value) =>
+                            handleUpdateItem(index, "id", String(value))
+                          }
+                          placeholder={
+                            itemLoading
+                              ? "Loading items..."
+                              : "Search and select item..."
+                          }
+                          searchable
+                          disabled={itemLoading}
+                          className="w-72"
+                          triggerClassName="h-9 px-3 py-1 text-xs"
+                        />
+                      </td>
                         <td className="px-4 py-3">
                           <input
                             type="number"
@@ -355,76 +403,73 @@ const CreatePurchaseInvoicePage = () => {
                   </tbody>
                 </table>
               </div>
-            </ComponentCard>
 
-            {/* Notes Card */}
-            <ComponentCard title="Additional Information">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                  placeholder="Add any additional notes or instructions..."
-                />
-              </div>
-            </ComponentCard>
+            {/* Notes Card removed (moved to top right) */}
           </div>
 
           {/* Right Column - Summary */}
           <div className="space-y-6">
             {/* Summary Card */}
-            <ComponentCard title="Invoice Summary">
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Subtotal
-                  </span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
-                </div>
+            <div className="space-y-4">
+              <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+                Invoice Summary
+              </h3>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Subtotal
+                </span>
+                <span className="font-medium">${subtotal.toFixed(2)}</span>
+              </div>
 
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Tax (15%)
-                  </span>
-                  <span className="font-medium">${taxAmount.toFixed(2)}</span>
-                </div>
+              {/* <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Tax (15%)
+                </span>
+                <span className="font-medium">${taxAmount.toFixed(2)}</span>
+              </div> */}
 
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Shipping
-                  </span>
-                  <span className="font-medium">
-                    ${shippingCharges.toFixed(2)}
-                  </span>
-                </div>
+              {/* <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Shipping
+                </span>
+                <span className="font-medium">
+                  ${shippingCharges.toFixed(2)}
+                </span>
+              </div> */}
 
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Discount
-                  </span>
-                  <span className="font-medium">
-                    -${discountAmount.toFixed(2)}
-                  </span>
-                </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                 Pay 
+                </span>
+                <span className="font-medium">
+                  ${paymentData.payment_amount.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Discount
+                </span>
+                <span className="font-medium">
+                  -${discountAmount.toFixed(2)}
+                </span>
+              </div>
 
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total Amount</span>
-                    <span className="text-blue-600 dark:text-blue-400">
-                      ${totalAmount.toFixed(2)}
-                    </span>
-                  </div>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total Amount</span>
+                  <span className="text-blue-600 dark:text-blue-400">
+                    ${totalAmount.toFixed(2)}
+                  </span>
                 </div>
               </div>
-            </ComponentCard>
-
+            </div>
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              </div>
             {/* Quick Stats */}
-            <ComponentCard title="Quick Stats">
               <div className="space-y-3">
+                <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+                Quick Stats 
+              </h3>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">
                     Items Count
@@ -439,57 +484,34 @@ const CreatePurchaseInvoicePage = () => {
                     {items.reduce((sum, item) => sum + item.quantity, 0)}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Avg. Item Price
-                  </span>
-                  <span className="font-medium">
-                    $
-                    {items.length > 0
-                      ? (subtotal / items.length).toFixed(2)
-                      : "0.00"}
-                  </span>
-                </div>
+                
               </div>
-            </ComponentCard>
+              <div className="space-y-3">
+                <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+              Payment 
+              </h3>
+              <Button
+                  variant="primary"
+                  onClick={() => setIsPaymentModalOpen(true)}
+                  className="w-full justify-center py-3"
+                >
+                  Pay
+                </Button> 
+                
+              </div>
 
-            {/* Save Actions */}
-            <div className="sticky top-6">
-              <ComponentCard>
-                <div className="space-y-4">
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isLoading}
-                    className="w-full justify-center py-3"
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="animate-spin mr-2">⟳</span>
-                        Creating Invoice...
-                      </>
-                    ) : (
-                      "Save & Create Invoice"
-                    )}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={handleCancel}
-                    className="w-full justify-center py-3"
-                  >
-                    Cancel
-                  </Button>
-
-                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                    The invoice will be created as a draft and can be edited
-                    later.
-                  </p>
-                </div>
-              </ComponentCard>
-            </div>
+           
           </div>
         </div>
       </div>
+
+      <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onSubmit={handlePaymentSave}
+          totalAmount={totalAmount}
+          accounts={accountOptions}
+/>
     </>
   );
 };

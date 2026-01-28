@@ -27,7 +27,9 @@ export default function SignInForm() {
       const res = await loginAdmin(data).unwrap();
       if(res){
         const token = res.access_token
+        const id = res.user.id
         localStorage.setItem("access_token", token)
+        localStorage.setItem("id", id)
         reset()
         toast.success("Login Form Submitted")
         navigate("/")

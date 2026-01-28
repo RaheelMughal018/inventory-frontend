@@ -1,0 +1,134 @@
+import React, { useEffect, useState } from "react";
+import { Modal } from "../ui/modal";
+import Button from "../ui/button/Button";
+import Label from "../form/Label";
+import Input from "../form/input/InputField";
+import SelectDropdown from "../form/SelectDropdown";
+import { toast } from "sonner";
+
+interface PaymentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: PaymentFormData) => void;
+  totalAmount: number;
+  accounts: { id: string; name: string }[];
+}
+
+export interface PaymentFormData {
+  payment_account_id: string;
+  payment_amount: number;
+}
+
+const PaymentModal: React.FC<PaymentModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  totalAmount,
+  accounts,
+}) => {
+  const [formData, setFormData] = useState<PaymentFormData>({
+    payment_account_id: "",
+    payment_amount: totalAmount,
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setFormData({
+      payment_account_id: "",
+      payment_amount: totalAmount,
+    });
+  }, [isOpen, totalAmount]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.payment_account_id) {
+      toast.warning("Please select an account");
+      return;
+    }
+
+    if (formData.payment_amount <= 0) {
+      toast.warning("Payment amount must be greater than 0");
+      return;
+    }
+
+    if (formData.payment_amount > totalAmount) {
+      toast.warning("Payment amount cannot exceed total amount");
+      return;
+    }
+
+    onSubmit(formData);
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+      <div className="p-6 sm:p-8">
+        {/* Header */}
+        <div className="mb-6">
+          <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
+            Payment
+          </h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Record payment for this invoice
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Account */}
+          <div>
+            <Label>
+              Payment Account <span className="text-red-500">*</span>
+            </Label>
+            <SelectDropdown
+              options={accounts}
+              value={formData.payment_account_id}
+              onChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  payment_account_id: String(value),
+                }))
+              }
+              placeholder="Select payment account..."
+              searchable
+            />
+          </div>
+
+          {/* Total Amount */}
+          <div>
+            <Label>Total Amount</Label>
+            <Input value={totalAmount.toFixed(2)} disabled />
+          </div>
+
+          {/* Pay Amount */}
+          <div>
+            <Label>
+              Pay Amount <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="number"
+              max={totalAmount}
+              value={formData.payment_amount}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  payment_amount: Number(e.target.value),
+                }))
+              }
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">Save Payment</Button>
+          </div>
+        </form>
+      </div>
+    </Modal>
+  );
+};
+
+export default PaymentModal;

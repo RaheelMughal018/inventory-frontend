@@ -21,6 +21,8 @@ interface SelectDropdownProps {
   name?: string;
   displayKey?: string; // Custom display key (default: "name")
   valueKey?: string; // Custom value key (default: "id")
+  className?: string; // Outer container class
+  triggerClassName?: string; // Closed state trigger/button styling
 }
 
 const SelectDropdown: React.FC<SelectDropdownProps> = ({
@@ -36,6 +38,8 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
   name,
   displayKey = "name",
   valueKey = "id",
+  className = "",
+  triggerClassName = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -124,7 +128,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       {label && (
         <Label htmlFor={name}>
           {label} {required && <span className="text-red-500">*</span>}
@@ -152,7 +156,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
               disabled
                 ? "cursor-not-allowed bg-gray-50 dark:bg-gray-800"
                 : "cursor-pointer"
-            }`}
+            } ${triggerClassName}`}
           >
             {selectedOption ? (
               <span className="text-gray-800 dark:text-white/90">

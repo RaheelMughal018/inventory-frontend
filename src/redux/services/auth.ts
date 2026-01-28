@@ -1,5 +1,7 @@
 import { baseApi } from './baseApi'
 
+
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     registerAdmin: builder.mutation({
@@ -27,6 +29,7 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['auth'],
     }),
+    
   }),
 })
 

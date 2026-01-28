@@ -6,10 +6,10 @@ import {
   TableRow,
 } from "../../ui/table";
 import {
-  PurchaseInvoice,
-  useDeletePurchaseInvoiceMutation,
+  PurchaseInvoiceSummary,
+  InvoiceStatusEnum,
 } from "../../../redux/services/purchaseInvoice";
-import { CloseIcon, PencilIcon, EyeIcon } from "../../../icons"; // Add DollarIcon
+import { CloseIcon, PencilIcon, EyeIcon, PaperPlaneIcon } from "../../../icons"; // Add DollarIcon
 import { TailSpin } from "react-loader-spinner";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
@@ -17,12 +17,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 interface PurchaseTableProps {
-  purchases: PurchaseInvoice[];
+  purchases: PurchaseInvoiceSummary[];
   loading: boolean;
-  onEdit?: (purchase: PurchaseInvoice) => void;
-  onView?: (purchase: PurchaseInvoice) => void;
-  onDelete?: (purchase: PurchaseInvoice) => void; // ✅ Added
-  onAddPayment?: (purchase: PurchaseInvoice) => void; // ✅ Added
+  onEdit?: (purchase: PurchaseInvoiceSummary) => void;
+  onView?: (purchase: PurchaseInvoiceSummary) => void;
+  onDelete?: (purchase: PurchaseInvoiceSummary) => void; 
+  onAddPayment?: (purchase: PurchaseInvoiceSummary) => void; 
+  onDeleteSuccess?: (purchase: PurchaseInvoiceSummary) => void;
 }
 
 export default function PurchaseTable({
@@ -32,29 +33,29 @@ export default function PurchaseTable({
   onView,
   onDelete,
   onAddPayment,
+  onDeleteSuccess
 }: PurchaseTableProps) {
   const { isOpen, openModal, closeModal } = useModal();
   const [selectedPurchase, setSelectedPurchase] =
-    useState<PurchaseInvoice | null>(null);
-  const [deletePurchase, { isLoading }] = useDeletePurchaseInvoiceMutation();
+    useState<PurchaseInvoiceSummary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
     if (!selectedPurchase) return;
 
     try {
-      const res = await deletePurchase(selectedPurchase.id).unwrap();
-      if (res.message) {
-        toast.success(res.message);
-        closeModal();
-      }
-
-      // Call onDelete callback if provided
+      setIsDeleting(true);
+      // Backend routes shared don't include delete invoice yet
+      toast.info(`Delete not implemented for invoice ${selectedPurchase.id} yet`);
       onDelete?.(selectedPurchase);
-
+      onDeleteSuccess?.(selectedPurchase);
       setSelectedPurchase(null);
+      closeModal();
     } catch (error) {
       console.error("Delete error:", error);
       toast.error("Error while deleting this purchase invoice");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -73,59 +74,29 @@ export default function PurchaseTable({
     });
   };
 
-  const StatusBadge = ({ status }: { status: string }) => {
-    const statusConfig = {
-      draft: {
-        label: "Draft",
-        className:
-          "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-      },
-      pending: {
-        label: "Pending",
+  const PaymentStatusBadge = ({ status }: { status: InvoiceStatusEnum }) => {
+    const statusConfig: Record<
+      InvoiceStatusEnum,
+      { label: string; className: string }
+    > = {
+      [InvoiceStatusEnum.UNPAID]: {
+        label: "Unpaid",
         className:
           "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
       },
-      completed: {
-        label: "Completed",
-        className:
-          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-      },
-      cancelled: {
-        label: "Cancelled",
-        className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-      },
-    };
-
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs ${config.className}`}>
-        {config.label}
-      </span>
-    );
-  };
-
-  const PaymentStatusBadge = ({ status }: { status: string }) => {
-    const statusConfig = {
-      pending: {
-        label: "Pending",
-        className:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-      },
-      partial: {
+      [InvoiceStatusEnum.PARTIAL]: {
         label: "Partial",
         className:
           "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
       },
-      paid: {
+      [InvoiceStatusEnum.PAID]: {
         label: "Paid",
         className:
           "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
       },
     };
 
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    const config = statusConfig[status];
     return (
       <span className={`px-2 py-1 rounded-full text-xs ${config.className}`}>
         {config.label}
@@ -144,7 +115,7 @@ export default function PurchaseTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Invoice #
+                  Invoice ID
                 </TableCell>
                 <TableCell
                   isHeader
@@ -175,12 +146,6 @@ export default function PurchaseTable({
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
                   Balance Due
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Status
                 </TableCell>
                 <TableCell
                   isHeader
@@ -225,7 +190,7 @@ export default function PurchaseTable({
                 <TableRow key={purchase.id}>
                   <TableCell className="px-5 py-4 sm:px-6 text-start">
                     <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                      {purchase.invoice_number}
+                      {purchase.id}
                     </span>
                   </TableCell>
 
@@ -234,16 +199,16 @@ export default function PurchaseTable({
                   </TableCell>
 
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {formatDate(purchase.invoice_date)}
+                    {formatDate(purchase.created_at)}
                   </TableCell>
 
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {purchase.items.length} items
+                    {purchase.item_count} items
                   </TableCell>
 
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     <span className="font-medium text-gray-800 dark:text-white/90">
-                      {formatCurrency(purchase.grand_total)}
+                      {formatCurrency(purchase.total_amount)}
                     </span>
                   </TableCell>
 
@@ -255,14 +220,10 @@ export default function PurchaseTable({
                     </span>
                   </TableCell>
 
-                  <TableCell className="px-4 py-3 text-start">
-                    <StatusBadge status={purchase.status} />
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-start">
+                  <TableCell className="px-2 py-2 text-center">
                     <div className="flex flex-col gap-1">
                       <PaymentStatusBadge status={purchase.payment_status} />
-                      {purchase.payment_status === "partial" && (
+                      {purchase.payment_status === InvoiceStatusEnum.PARTIAL && (
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           Paid: {formatCurrency(purchase.paid_amount)}
                         </span>
@@ -292,15 +253,6 @@ export default function PurchaseTable({
                         </button>
                       )}
 
-                      {onAddPayment && purchase.balance_due > 0 && (
-                        <button
-                          onClick={() => onAddPayment(purchase)}
-                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                          title="Add Payment"
-                        >
-                          dollar icon
-                        </button>
-                      )}
 
                       <button
                         onClick={() => {
@@ -309,9 +261,18 @@ export default function PurchaseTable({
                         }}
                         className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-red-600 dark:text-red-400"
                         title="Delete Invoice"
-                      >
+                        >
                         <CloseIcon className="w-4 h-4" />
                       </button>
+                        {onAddPayment && purchase.balance_due > 0 && (
+                          <button
+                            onClick={() => onAddPayment(purchase)}
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                            title="Add Payment"
+                          >
+                           <PaperPlaneIcon/> 
+                          </button>
+                        )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -329,7 +290,7 @@ export default function PurchaseTable({
           <p className="mt-2 text-sm text-gray-500">
             Are you sure you want to delete invoice{" "}
             <span className="font-medium text-gray-800 dark:text-white">
-              {selectedPurchase?.invoice_number}
+              {selectedPurchase?.id}
             </span>
             ? This action cannot be undone.
           </p>
@@ -341,11 +302,11 @@ export default function PurchaseTable({
               Cancel
             </button>
             <button
-              disabled={isLoading}
+              disabled={isDeleting}
               onClick={handleDelete}
               className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Deleting..." : "Delete"}
+              {isDeleting ? "Deleting..." : "Delete"}
             </button>
           </div>
         </div>

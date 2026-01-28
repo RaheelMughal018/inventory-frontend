@@ -1,20 +1,23 @@
 // pages/PurchaseInvoicePage.tsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ ADD THIS
+import { useNavigate } from "react-router"; 
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import {
   useGetAllPurchaseInvoicesQuery,
-  PurchaseInvoice,
-} from "../../redux/services/purchaseInvoice"; // ✅ REMOVE unused mutations
+  PurchaseInvoiceSummary,
+} from "../../redux/services/purchaseInvoice"; 
 import { toast } from "sonner";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import PurchaseTable from "../../components/tables/BasicTables/PurchaseTable";
+import {useAddPurchaseInvoicePaymentMutation} from "../../redux/services/purchaseInvoice";
+import PaymentModal, { PaymentFormData } from "../../components/modals/PaymentModal";
+import { useGetAllAccountsQuery } from "../../redux/services/account";
 
 const PurchaseInvoicePage = () => {
-  const navigate = useNavigate(); // ✅ ADD NAVIGATION
+  const navigate = useNavigate(); 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -26,6 +29,10 @@ const PurchaseInvoicePage = () => {
     limit,
     skip,
   });
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoiceSummary | null>(null);
+  const [addPayment, { isLoading: isPaying }] = useAddPurchaseInvoicePaymentMutation();
+  const {data:accountsData} = useGetAllAccountsQuery({})
 
   // Handle search
   const handleSearch = () => {
@@ -44,38 +51,65 @@ const PurchaseInvoicePage = () => {
   };
 
   // ✅ ADD: Handle Edit Invoice - Navigate to edit page
-  const handleEditClick = (invoice: PurchaseInvoice) => {
+  const handleEditClick = (invoice: PurchaseInvoiceSummary) => {
     navigate(`/purchase-invoices/edit/${invoice.id}`);
   };
 
   // ✅ ADD: Handle View Invoice - Navigate to view page
-  const handleViewClick = (invoice: PurchaseInvoice) => {
+  const handleViewClick = (invoice: PurchaseInvoiceSummary) => {
     navigate(`/purchase-invoices/view/${invoice.id}`);
   };
 
   // ✅ ADD: Handle Add Payment - Navigate to payment page
-  const handleAddPaymentClick = (invoice: PurchaseInvoice) => {
-    navigate(`/purchase-invoices/${invoice.id}/add-payment`);
+  const handleAddPaymentClick = (invoice: PurchaseInvoiceSummary) => {
+    setSelectedInvoice(invoice)
+    setIsPaymentModalOpen(true)
   };
 
   // ✅ ADD: Handle Delete Invoice
-  const handleDeleteClick = (invoice: PurchaseInvoice) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete invoice ${invoice.invoice_number}?`,
-      )
-    ) {
-      // TODO: Implement delete mutation here
-      toast.info(`Invoice ${invoice.invoice_number} would be deleted`);
-      console.log("Delete invoice:", invoice.id);
-    }
+  const handleDeleteClick = (invoice: PurchaseInvoiceSummary) => {
+    toast.info(`Delete not implemented for invoice ${invoice.id} yet`);
+    console.log("Delete invoice:", invoice.id);
   };
 
   // ✅ ADD: Callback for when delete is successful in child table
-  const handleDeleteSuccess = (invoice: PurchaseInvoice) => {
-    toast.success(`Invoice ${invoice.invoice_number} deleted successfully`);
+  const handleDeleteSuccess = (invoice: PurchaseInvoiceSummary) => {
+    toast.success(`Invoice ${invoice.id} deleted successfully`);
     // The table will automatically refetch due to invalidated tags
   };
+
+  const handlePaymentSubmit = async (data: PaymentFormData) => {
+  console.log("🚀 ~ handlePaymentSubmit ~ data:", data)
+  if (!selectedInvoice) return;
+
+  try {
+    await addPayment({
+      invoice_id: selectedInvoice.id,
+      data: {
+        account_id: data.payment_account_id,
+        amount: data.payment_amount,
+      },
+    }).unwrap();
+
+    toast.success("Payment recorded successfully");
+
+    // close modal & reset state
+    setIsPaymentModalOpen(false);
+    setSelectedInvoice(null);
+
+    // optionally refetch the invoices
+  } catch (err: any) {
+    toast.error(err?.data?.detail || "Failed to add payment");
+  }
+};
+
+const accountOptions =
+  accountsData?.accounts?.map((acc) => ({
+    id: acc.id,
+    name: acc.name,
+    type: acc.type
+  })) || [];
+
 
   return (
     <>
@@ -90,7 +124,7 @@ const PurchaseInvoicePage = () => {
           exportButtonText="Export Invoices CSV"
           addButtonText="Add New Invoice"
           onExportClick={handleExportCSV}
-          onAddClick={handleAddNewInvoice} // ✅ Use navigation handler
+          onAddClick={handleAddNewInvoice} 
           extra={
             <SearchBar
               value={search}
@@ -101,7 +135,7 @@ const PurchaseInvoicePage = () => {
           }
         >
           <PurchaseTable
-            purchases={data?.purchase_invoices ?? []}
+            purchases={data?.invoices ?? []}
             loading={isLoading}
             onEdit={handleEditClick} // ✅ Pass navigation handler
             onView={handleViewClick} // ✅ Pass navigation handler
@@ -119,6 +153,16 @@ const PurchaseInvoicePage = () => {
           </div>
         </ComponentCard>
       </div>
+
+      {selectedInvoice && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => { setIsPaymentModalOpen(false); setSelectedInvoice(null); }}
+          onSubmit={handlePaymentSubmit}
+          totalAmount={Number(selectedInvoice.balance_due)}
+          accounts={accountOptions}
+        />
+      )}
     </>
   );
 };

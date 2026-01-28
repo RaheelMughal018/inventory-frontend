@@ -43,8 +43,7 @@ export default function ItemsTable({
       }
       setSelectedItem(null);
     } catch (error) {
-      console.log("🚀 ~ handleDelete ~ error:", error);
-      toast.error("Error while deleting the item");
+      toast.error(error?.data?.message);
     }
   };
 
