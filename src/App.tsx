@@ -22,11 +22,11 @@ import ProtectedRoute from "./components/HOC/ProtectedRoute";
 import PublicRoute from "./components/HOC/PublicRoute";
 import SupplierPage from "./pages/Supplier/page";
 import CustomerPage from "./pages/Customer/page";
-// import PurchasePage from "./pages/Purchase/page";
 import CategoryPage from "./pages/Category/page";
 import ItemPage from "./pages/Item/page";
-import Accountpage from "./pages/Accounts/page";
 import AccountPage from "./pages/Accounts/page";
+import PurchaseInvoicePage from "./pages/PurchaseInvoice/page";
+import CreatePurchaseInvoicePage from "./pages/CreatePurchaseInvoice/page";
 
 export default function App() {
   return (
@@ -47,7 +47,11 @@ export default function App() {
               <Route path="/categories" element={<CategoryPage />} />
               <Route path="/items" element={<ItemPage />} />
               <Route path="/accounts" element={<AccountPage />} />
-              {/* <Route path="/purchase" element={<PurchasePage />} /> */}
+              <Route path="/purchase" element={<PurchaseInvoicePage />} />
+              <Route
+                path="/purchase/create"
+                element={<CreatePurchaseInvoicePage />}
+              />
               <Route path="/blank" element={<Blank />} />
 
               {/* Forms */}
