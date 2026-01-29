@@ -57,8 +57,7 @@ const [paymentData, setPaymentData] = useState<{
 const accountOptions =
   accountsData?.accounts?.map((acc) => ({
     id: acc.id,
-    name: acc.name,
-    type: acc.type
+    name: `${acc.name} - ${acc.type}`,
   })) || [];
 
   // Items state

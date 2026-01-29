@@ -2,15 +2,20 @@
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import ComponentCard from "../components/common/ComponentCard";
-import { useGetPurchaseInvoiceByIdQuery } from "../redux/services/purchaseInvoice";
+import { useAddPurchaseInvoicePaymentMutation, useDeletePaymentMutation, useGetPurchaseInvoiceByIdQuery } from "../redux/services/purchaseInvoice";
 import Button from "../components/ui/button/Button";
 import { toast } from "sonner";
+import { DownloadIcon, TrashBinIcon } from "../icons";
+import SimpleComponentCard from "../components/common/SimpleCardComponent";
+import PaymentModal, { PaymentFormData } from "../components/modals/PaymentModal";
+import { useGetAllAccountsQuery } from "../redux/services/account";
+import { useState } from "react";
+import {generateInvoicePDF} from "../helper/pdf_generator.ts"
 
 // Payment status badge component
 const PaymentStatusBadge = ({ status }: { status: string }) => {
   const statusStyles = {
-    PAID: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    PAID: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400", 
     PARTIAL: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
     UNPAID: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   };
@@ -27,13 +32,46 @@ const PaymentStatusBadge = ({ status }: { status: string }) => {
 };
 
 const ViewPurchaseInvoicePage = () => {
+  const [deletePayment ] = useDeletePaymentMutation()
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  
+  const [addPayment] = useAddPurchaseInvoicePaymentMutation()
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const { data: invoice, isLoading, error } = useGetPurchaseInvoiceByIdQuery(id || "", {
     skip: !id,
   });
+  const {data:accountsData} = useGetAllAccountsQuery({})
+  const accountOptions =
+  accountsData?.accounts?.map((acc) => ({
+    id: acc.id,
+    name: `${acc.name} - ${acc.type}`,
+    type: acc.type,
+    
+  })) || [];
 
+  const handlePaymentSubmit = async (data: PaymentFormData) => {
+    console.log("🚀 ~ handlePaymentSubmit ~ data:", data)
+  
+    try {
+      await addPayment({
+        invoice_id: invoice!.id,
+        data: {
+          account_id: data.payment_account_id,
+          amount: data.payment_amount,
+        },
+      }).unwrap();
+  
+      toast.success("Payment recorded successfully");
+  
+      // close modal & reset state
+      setIsPaymentModalOpen(false);
+  
+      // optionally refetch the invoices
+    } catch (error) {
+      console.log("🚀 ~ handlePaymentSubmit ~ error:", error)
+      toast.error(error?.data?.message||"Failed to add payment");
+    }
+  };
   // Handle loading state
   if (isLoading) {
     return (
@@ -78,9 +116,14 @@ const ViewPurchaseInvoicePage = () => {
     });
   };
 
-  const handlePrint = () => {
-    window.print();
-    toast.success("Print dialog opened");
+  const handleGeneratePDF = () => {
+    try {
+      generateInvoicePDF(invoice);
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF");
+    } 
   };
 
   const handleEdit = () => {
@@ -95,10 +138,19 @@ const ViewPurchaseInvoicePage = () => {
     }
   };
 
-  const handleAddPayment = () => {
-    // TODO: Open payment modal or navigate to payment page
-    toast.info("Add payment functionality coming soon");
-  };
+ 
+  const handleDeletePayment = async (payment_id:string)=>{
+    try {
+      const res = await deletePayment(payment_id);
+      if(res){
+        toast.success(res?.data?.message)
+      }
+    } catch (error) {
+      // toast.error(error.data.message)
+      console.log("🚀 ~ handleDeletePayment ~ error:", error)
+      
+    }
+  }
 
   return (
     <>
@@ -120,11 +172,8 @@ const ViewPurchaseInvoicePage = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => navigate("/purchase-invoices")} className="px-6">
-              Back
-            </Button>
-            <Button variant="outline" onClick={handlePrint} className="px-6">
-              Print
+            <Button variant="green" onClick={handleGeneratePDF} className="px-6">
+             PDF <DownloadIcon height={25} width={20}/>  
             </Button>
             <Button variant="outline" onClick={handleEdit} className="px-6">
               Edit
@@ -140,8 +189,8 @@ const ViewPurchaseInvoicePage = () => {
           {/* Left Column - Invoice Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Supplier Information */}
-            <ComponentCard title="Supplier Information">
-              <div className="space-y-4">
+            <SimpleComponentCard title="Supplier Information">
+              <div className="flex justify-between">
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Supplier Name
@@ -159,22 +208,13 @@ const ViewPurchaseInvoicePage = () => {
                       {invoice.supplier.user_id}
                     </p>
                   </div>
-                  {invoice.supplier.email && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Email
-                      </label>
-                      <p className="text-gray-900 dark:text-white mt-1">
-                        {invoice.supplier.email}
-                      </p>
-                    </div>
-                  )}
+                  
                 </div>
               </div>
-            </ComponentCard>
+            </SimpleComponentCard>
 
             {/* Invoice Items */}
-            <ComponentCard title="Invoice Items">
+            <SimpleComponentCard title="Invoice Items">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
@@ -209,21 +249,21 @@ const ViewPurchaseInvoicePage = () => {
                           {item.quantity}
                         </td>
                         <td className="px-4 py-4 text-gray-900 dark:text-white">
-                          ${parseFloat(item.unit_price).toFixed(2)}
+                          ${item.unit_price}
                         </td>
                         <td className="px-4 py-4 font-semibold text-gray-900 dark:text-white">
-                          ${parseFloat(item.line_total).toFixed(2)}
+                          ${item.line_total}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </ComponentCard>
+            </SimpleComponentCard>
 
             {/* Payment History */}
             {invoice.payments && invoice.payments.length > 0 && (
-              <ComponentCard title="Payment History">
+              <SimpleComponentCard title="Payment History">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead>
@@ -242,6 +282,9 @@ const ViewPurchaseInvoicePage = () => {
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Date
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Action
                         </th>
                       </tr>
                     </thead>
@@ -267,24 +310,27 @@ const ViewPurchaseInvoicePage = () => {
                             </span>
                           </td>
                           <td className="px-4 py-4 font-semibold text-gray-900 dark:text-white">
-                            ${parseFloat(payment.amount).toFixed(2)}
+                            ${payment.amount}
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
                             {formatDate(payment.created_at)}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-red-600 dark:text-red-400 text-center">
+                            <TrashBinIcon height={20} width={20} className="cursor-pointer" onClick={()=>handleDeletePayment(payment.id)}/>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </ComponentCard>
+              </SimpleComponentCard>
             )}
           </div>
 
           {/* Right Column - Summary & Status */}
           <div className="space-y-6">
             {/* Payment Status */}
-            <ComponentCard title="Payment Status">
+            <SimpleComponentCard title="Payment Status">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Status</span>
@@ -294,27 +340,27 @@ const ViewPurchaseInvoicePage = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Total Amount</span>
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      ${parseFloat(invoice.total_amount).toFixed(2)}
+                      ${invoice.total_amount}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Paid Amount</span>
                     <span className="font-semibold text-green-600 dark:text-green-400">
-                      ${parseFloat(invoice.paid_amount).toFixed(2)}
+                      ${invoice.paid_amount}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Balance Due</span>
                     <span className="font-semibold text-red-600 dark:text-red-400">
-                      ${parseFloat(invoice.balance_due).toFixed(2)}
+                      ${invoice.balance_due}
                     </span>
                   </div>
                 </div>
 
-                {parseFloat(invoice.balance_due) > 0 && (
+                {invoice.balance_due > 0 && (
                   <div className="pt-4">
                     <Button
-                      onClick={handleAddPayment}
+                      onClick={()=>setIsPaymentModalOpen(true)}
                       className="w-full justify-center"
                     >
                       Add Payment
@@ -322,10 +368,10 @@ const ViewPurchaseInvoicePage = () => {
                   </div>
                 )}
               </div>
-            </ComponentCard>
+            </SimpleComponentCard>
 
             {/* Invoice Summary */}
-            <ComponentCard title="Invoice Summary">
+            <SimpleComponentCard title="Invoice Summary">
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Invoice ID</span>
@@ -352,41 +398,19 @@ const ViewPurchaseInvoicePage = () => {
                   </span>
                 </div>
               </div>
-            </ComponentCard>
+            </SimpleComponentCard>
 
-            {/* Quick Actions */}
-            <div className="sticky top-6">
-              <div className="space-y-3">
-                {parseFloat(invoice.balance_due) > 0 && (
-                  <Button
-                    onClick={handleAddPayment}
-                    className="w-full justify-center py-3"
-                  >
-                    Make Payment
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={handlePrint}
-                  className="w-full justify-center py-3"
-                >
-                  Print Invoice
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleEdit}
-                  className="w-full justify-center py-3"
-                >
-                  Edit Invoice
-                </Button>
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  Created on {formatDate(invoice.created_at)}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
+
+       <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => { setIsPaymentModalOpen(false)}}
+          onSubmit={handlePaymentSubmit}
+          totalAmount={invoice.balance_due}
+          accounts={accountOptions}
+        />
     </>
   );
 };

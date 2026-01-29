@@ -11,7 +11,7 @@ interface PaymentModalProps {
   onClose: () => void;
   onSubmit: (data: PaymentFormData) => void;
   totalAmount: number;
-  accounts: { id: string; name: string }[];
+  accounts: { id: string; name: string}[];
 }
 
 export interface PaymentFormData {
@@ -97,7 +97,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           {/* Total Amount */}
           <div>
             <Label>Total Amount</Label>
-            <Input value={totalAmount.toFixed(2)} disabled />
+            <Input value={totalAmount} disabled />
           </div>
 
           {/* Pay Amount */}

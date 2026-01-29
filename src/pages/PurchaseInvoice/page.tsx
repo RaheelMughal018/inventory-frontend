@@ -31,7 +31,7 @@ const PurchaseInvoicePage = () => {
   });
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoiceSummary | null>(null);
-  const [addPayment, { isLoading: isPaying }] = useAddPurchaseInvoicePaymentMutation();
+  const [addPayment] = useAddPurchaseInvoicePaymentMutation();
   const {data:accountsData} = useGetAllAccountsQuery({})
 
   // Handle search
@@ -98,16 +98,16 @@ const PurchaseInvoicePage = () => {
     setSelectedInvoice(null);
 
     // optionally refetch the invoices
-  } catch (err: any) {
-    toast.error(err?.data?.detail || "Failed to add payment");
+  } catch (error) {
+    console.log("🚀 ~ handlePaymentSubmit ~ error:", error)
+    toast.error("Failed to add payment");
   }
 };
 
 const accountOptions =
   accountsData?.accounts?.map((acc) => ({
     id: acc.id,
-    name: acc.name,
-    type: acc.type
+    name: `${acc.name} - ${acc.type}`,
   })) || [];
 
 
