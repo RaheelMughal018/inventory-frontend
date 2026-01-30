@@ -9,6 +9,8 @@ import {SupplierFormData} from '../../components/modals/SupplierModal'
 import { toast } from "sonner";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
+import { SupplierPurchaseSummary, useGetSuppliersSummaryQuery } from "../../redux/services/purchaseInvoice";
+
 const SupplierPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -19,8 +21,10 @@ const SupplierPage = () => {
     limit,
     skip,
   });
+  
   const [createSupplier] = useCreateSupplierMutation()
   const [updateSupplier] = useUpdateSupplierMutation()
+  const {data:summary} = useGetSuppliersSummaryQuery()
   // Add state to control modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -90,6 +94,14 @@ const SupplierPage = () => {
     setIsEditModalOpen(true);
   };
 
+
+  const summaryMap: Record<number, SupplierPurchaseSummary> = {};
+  summary?.forEach((s) => {
+    summaryMap[s.supplier_id] = s;
+  });
+   
+  
+
   return (
     <>
       <PageMeta
@@ -119,6 +131,7 @@ const SupplierPage = () => {
             suppliers={data?.suppliers ?? []}
             loading={isLoading}
             onEdit={handleEditClick}
+            summaries = {summaryMap}
           />
           <div className="pt-4">
             <Pagination

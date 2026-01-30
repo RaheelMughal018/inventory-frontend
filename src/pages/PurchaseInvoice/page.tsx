@@ -9,42 +9,46 @@ import {
   PurchaseInvoiceSummary,
 } from "../../redux/services/purchaseInvoice"; 
 import { toast } from "sonner";
-import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import PurchaseTable from "../../components/tables/BasicTables/PurchaseTable";
 import {useAddPurchaseInvoicePaymentMutation} from "../../redux/services/purchaseInvoice";
 import PaymentModal, { PaymentFormData } from "../../components/modals/PaymentModal";
 import { useGetAllAccountsQuery } from "../../redux/services/account";
+import { useGetAllSuppliersQuery } from "../../redux/services/supplier";
+import SelectDropdown from "../../components/form/SelectDropdown";
 
 const PurchaseInvoicePage = () => {
   const navigate = useNavigate(); 
-  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const skip = (page - 1) * limit;
 
-  // Fetch purchase invoices
-  const { data, isLoading } = useGetAllPurchaseInvoicesQuery({
-    search: search || undefined,
-    limit,
-    skip,
-  });
+  
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoiceSummary | null>(null);
   const [addPayment] = useAddPurchaseInvoicePaymentMutation();
   const {data:accountsData} = useGetAllAccountsQuery({})
+  const {data:suppliersData} = useGetAllSuppliersQuery({})
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
+  // Fetch purchase invoices
+  const { data, isLoading } = useGetAllPurchaseInvoicesQuery({
+    limit,
+    skip,
+   supplier_id: selectedSupplierId ?? undefined 
+  },
 
-  // Handle search
-  const handleSearch = () => {
-    setPage(1);
-  };
+);
+ 
+
+
+
 
   // Handle export CSV
   const handleExportCSV = () => {
     console.log("Exporting purchase invoices to CSV");
     toast.info("Export feature coming soon");
   };
-
+  
   // ✅ ADD: Handle Add New Invoice - Navigate to create page
   const handleAddNewInvoice = () => {
     navigate("/purchase/create");
@@ -54,7 +58,7 @@ const PurchaseInvoicePage = () => {
   const handleEditClick = (invoice: PurchaseInvoiceSummary) => {
     navigate(`/purchase-invoices/edit/${invoice.id}`);
   };
-
+  
   // ✅ ADD: Handle View Invoice - Navigate to view page
   const handleViewClick = (invoice: PurchaseInvoiceSummary) => {
     navigate(`/purchase-invoices/view/${invoice.id}`);
@@ -65,7 +69,7 @@ const PurchaseInvoicePage = () => {
     setSelectedInvoice(invoice)
     setIsPaymentModalOpen(true)
   };
-
+  
   // ✅ ADD: Handle Delete Invoice
   const handleDeleteClick = (invoice: PurchaseInvoiceSummary) => {
     toast.info(`Delete not implemented for invoice ${invoice.id} yet`);
@@ -77,26 +81,26 @@ const PurchaseInvoicePage = () => {
     toast.success(`Invoice ${invoice.id} deleted successfully`);
     // The table will automatically refetch due to invalidated tags
   };
-
+  
   const handlePaymentSubmit = async (data: PaymentFormData) => {
-  console.log("🚀 ~ handlePaymentSubmit ~ data:", data)
-  if (!selectedInvoice) return;
-
-  try {
-    await addPayment({
-      invoice_id: selectedInvoice.id,
+    console.log("🚀 ~ handlePaymentSubmit ~ data:", data)
+    if (!selectedInvoice) return;
+    
+    try {
+      await addPayment({
+        invoice_id: selectedInvoice.id,
       data: {
         account_id: data.payment_account_id,
         amount: data.payment_amount,
       },
     }).unwrap();
-
+    
     toast.success("Payment recorded successfully");
-
+    
     // close modal & reset state
     setIsPaymentModalOpen(false);
     setSelectedInvoice(null);
-
+    
     // optionally refetch the invoices
   } catch (error) {
     console.log("🚀 ~ handlePaymentSubmit ~ error:", error)
@@ -105,10 +109,18 @@ const PurchaseInvoicePage = () => {
 };
 
 const accountOptions =
-  accountsData?.accounts?.map((acc) => ({
-    id: acc.id,
-    name: `${acc.name} - ${acc.type}`,
-  })) || [];
+accountsData?.accounts?.map((acc) => ({
+  id: acc.id,
+  name: `${acc.name} - ${acc.type}`,
+})) || [];
+
+const supplierOptions = [
+  { id: "all", name: "All Suppliers" },
+  ...(suppliersData?.suppliers?.map((s) => ({
+    id: s.id,
+    name: s.name,
+  })) || []),
+];
 
 
   return (
@@ -126,13 +138,25 @@ const accountOptions =
           onExportClick={handleExportCSV}
           onAddClick={handleAddNewInvoice} 
           extra={
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={handleSearch}
-              placeholder="Search invoices by number or supplier..."
-            />
-          }
+           
+
+              <SelectDropdown 
+               options={supplierOptions}
+               value={selectedSupplierId ?? "all"}
+               onChange={(value) => {
+                 if (value === "all") {
+                   setSelectedSupplierId(null);
+                 } else {
+                   setSelectedSupplierId(Number(value));
+                 }
+                 setPage(1); // reset pagination
+               }}
+               placeholder="Filter by supplier..."
+               searchable 
+               className="w-3xs"
+              />
+              }
+           
         >
           <PurchaseTable
             purchases={data?.invoices ?? []}

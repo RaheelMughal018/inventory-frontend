@@ -61,7 +61,7 @@ const navItems: NavItem[] = [
     icon: <UserCircleIcon />,
     name: "Invoices",
     subItems: [
-      { name: "Sale invoice", path: "/purchase", pro: false },
+      { name: "Sale invoice", path: "/supplier", pro: false },
       { name: "Purchase invoice", path: "/purchase", pro: false },
     ],
   },

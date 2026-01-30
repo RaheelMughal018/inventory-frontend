@@ -177,6 +177,10 @@ export interface SupplierPurchaseSummary {
   paid_invoices: number;
 }
 
+export interface SupplierSummaryResponse {
+  suppliers_summaries: SupplierPurchaseSummary[]
+}
+
 export interface SuccessResponse {
   message: string;
   data?: Record<string, unknown> | null;
@@ -284,9 +288,9 @@ export const purchaseInvoiceApi = baseApi.injectEndpoints({
     }),
 
     // SUPPLIER: summary
-    getSupplierSummary: builder.query<SupplierPurchaseSummary, number>({
-      query: (supplier_id) => ({
-        url: `/purchase/suppliers/${supplier_id}/summary`,
+    getSuppliersSummary: builder.query<SupplierSummaryResponse, void>({
+      query: () => ({
+        url: `/purchase/suppliers/summary`,
         method: "GET",
       }),
       providesTags: ["supplier"],
@@ -335,7 +339,7 @@ export const {
   useDeletePaymentMutation,
   useGetSupplierPurchaseInvoicesQuery,
   useGetSupplierBalanceQuery,
-  useGetSupplierSummaryQuery,
+  useGetSuppliersSummaryQuery,
   useGetItemStockSummaryQuery,
   useGetItemStockHistoryQuery,
   useGetStockLedgerQuery,
