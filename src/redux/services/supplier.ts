@@ -34,9 +34,6 @@ export interface Supplier {
     created_at: string
     updated_at: string
     created_by_id: number
-    // total_transactions: string
-    // total_paid: string
-    // current_balance: string
   }
   
   export interface SuppliersResponse {

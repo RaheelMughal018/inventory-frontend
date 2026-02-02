@@ -10,6 +10,10 @@ import { toast } from "sonner";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import { SupplierPurchaseSummary, useGetSuppliersSummaryQuery } from "../../redux/services/purchaseInvoice";
+import { useModal } from "../../hooks/useModal";
+import DirectPaymentModal, { DirectPaymentFormData } from "../../components/modals/DirectPaymentModal";
+import { CreateDirectPayment, useCreateDirectPaymentMutation, useGetSupplierOutstandingQuery } from "../../redux/services/supplierPayment";
+import { useGetAllAccountsQuery } from "../../redux/services/account";
 
 const SupplierPage = () => {
   const [search, setSearch] = useState("");
@@ -25,16 +29,15 @@ const SupplierPage = () => {
   const [createSupplier] = useCreateSupplierMutation()
   const [updateSupplier] = useUpdateSupplierMutation()
   const {data:summary} = useGetSuppliersSummaryQuery()
+  const {data:accountsData} = useGetAllAccountsQuery({})
+  const [createDirectPayment] = useCreateDirectPaymentMutation()
   // Add state to control modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  // Handle export CSV
-  const handleExportCSV = () => {
-    console.log("Exporting suppliers to CSV");
-    // Add your export logic here
-  };
+  
 
   const handleSearch = () => {
     setPage(1);
@@ -94,13 +97,44 @@ const SupplierPage = () => {
     setIsEditModalOpen(true);
   };
 
-
+  const handleAddPayment = (supplier: Supplier) => {
+    setSelectedSupplier(supplier)
+    setIsPaymentModalOpen(true)
+  }
   const summaryMap: Record<number, SupplierPurchaseSummary> = {};
   summary?.forEach((s) => {
     summaryMap[s.supplier_id] = s;
   });
-   
+
+  const accountOptions =
+  accountsData?.accounts?.map((acc) => ({
+    id: acc.id,
+    name: `${acc.name} - ${acc.type}`,
+  })) || [];
   
+ 
+
+const handlePaymentSubmit = async (data: DirectPaymentFormData) => {
+  if (!selectedSupplier) return;
+  try {
+    const payload: CreateDirectPayment = {
+      supplier_id: selectedSupplier?.id ?? 0,
+      amount: data.amount,
+      account_id: data.account_id,
+      allocation_method: "FIFO",
+
+    }
+    const res = await createDirectPayment(payload).unwrap();
+    console.log("🚀 ~ handlePaymentSubmit ~ res:", res)
+    if(res){
+      toast.success("Payment created successfully")
+      setIsPaymentModalOpen(false)
+    }
+  } catch (error) {
+    console.log(error)
+    toast.error(error?.data?.message||"Error while creating direct payment");
+  }
+};
 
   return (
     <>
@@ -114,9 +148,7 @@ const SupplierPage = () => {
       <div className="space-y-6">
         <ComponentCard
           title="Supplier Table"
-          exportButtonText="Export Suppliers CSV"
           addButtonText="Add New Supplier"
-          onExportClick={handleExportCSV} // Connect export handler
           onAddClick={() => setIsAddModalOpen(true)} // Open modal on click!
           extra={
             <SearchBar
@@ -132,6 +164,7 @@ const SupplierPage = () => {
             loading={isLoading}
             onEdit={handleEditClick}
             summaries = {summaryMap}
+            onAddPayment={handleAddPayment}
           />
           <div className="pt-4">
             <Pagination
@@ -163,6 +196,17 @@ const SupplierPage = () => {
         initialData={selectedSupplier}
         mode="edit"
       />
+
+    {/* Modal - Opens when add payment button is clicked */}
+    {isPaymentModalOpen && (
+    <DirectPaymentModal
+      isOpen={isPaymentModalOpen}
+      onClose={() => { setIsPaymentModalOpen(false); setSelectedSupplier(null); }}
+      onSubmit={handlePaymentSubmit}
+      accounts={accountOptions}
+      supplierId={selectedSupplier?.id ?? 0}
+      />
+    )}
     </>
   );
 };

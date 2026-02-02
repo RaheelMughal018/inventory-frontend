@@ -9,7 +9,7 @@ import {
   Supplier,
   useDeleteSupplierMutation,
 } from "../../../redux/services/supplier";
-import { CloseIcon, PencilIcon } from "../../../icons";
+import { CloseIcon, PaperPlaneIcon, PencilIcon } from "../../../icons";
 import { TailSpin } from "react-loader-spinner";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
@@ -23,13 +23,14 @@ interface SupplierTableProps {
   loading: boolean;
   onEdit?: (supplier: Supplier) => void;
   summaries?: Record<number, SupplierPurchaseSummary>; 
-
+  onAddPayment?: (supplier: Supplier) => void;
 }
 export default function SupplierTable({
   suppliers,
   loading,
   onEdit,
-  summaries
+  summaries,
+  onAddPayment
 }: SupplierTableProps) {
   const { isOpen, openModal, closeModal } = useModal();
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
@@ -188,20 +189,28 @@ export default function SupplierTable({
                     </TableCell> 
                   <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                     <div className="flex items-center">
-                      <span 
-                        className="cursor-pointer"
+                      <button 
+                        className="cursor-pointer" title="Edit Supplier"
                         onClick={() => onEdit?.(supplier)}
                       >
                         <PencilIcon width={40} />
-                      </span>
-                      <span className="cursor-pointer text-red-800"
+                      </button>
+                      <button className="cursor-pointer text-red-800" title="Delete Supplier"
                       onClick={()=>{
                     setSelectedSupplier(supplier)
                     openModal()
                   }}
                       >
                         <CloseIcon />
-                      </span>
+                      </button>
+                     {summaries?.[supplier.id]?.outstanding_balance > 0 && (
+                      <button className="cursor-pointer"
+                      title="Add Payment"
+                        onClick={() => onAddPayment(supplier)}
+                      >
+                        <PaperPlaneIcon />
+                      </button>
+                     )} 
                     </div>
                   </TableCell>
                 </TableRow>
@@ -240,6 +249,7 @@ export default function SupplierTable({
             >
               Delete
             </button>
+            
           </div>
         </div>
       </Modal>
