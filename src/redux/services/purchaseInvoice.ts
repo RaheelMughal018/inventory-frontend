@@ -40,6 +40,13 @@ export interface PurchaseInvoiceCreate {
   payment_amount?: number; // default 0.00 on backend
   payment_account_id?: string | null;
 }
+export interface PurchaseInvoiceUpdate {
+  id: string
+  supplier_id: number| string;
+  items: PurchaseItemCreate[];
+  payment_amount?: number; 
+  payment_account_id?: string | null;
+}
 
 export interface PaymentCreate {
   amount: number;
@@ -52,6 +59,8 @@ export interface PurchaseInvoiceFilters {
   supplier_id?: number;
   payment_status?: InvoiceStatusEnum;
   search?: string;
+  start_date?:string;
+  end_date?:string;
 }
 
 export interface StockLedgerFilters {
@@ -225,6 +234,37 @@ export const purchaseInvoiceApi = baseApi.injectEndpoints({
       providesTags: ["purchase_invoice"],
     }),
 
+    // update invoice
+    updatePurchaseInvoices: builder.mutation<
+      PurchaseInvoiceResponse,
+      PurchaseInvoiceUpdate
+    >({
+      query: ({id, ...data}) => ({
+        url: `/purchase/${id}`,
+        method: "PUT",
+        body: data
+      }),
+      invalidatesTags: ["purchase_invoice", "supplier", "item"],
+    }),
+    // update invoice
+    deletePurchaseInvoices: builder.mutation<
+      SuccessResponse,
+      string
+    >({
+      query: (id) => {
+        const author_id= localStorage.getItem("id")
+        return{
+
+          url: `/purchase/${id}`,
+          method: "DELETE",
+          params:{
+            performed_by_id: author_id
+          } 
+        }
+      },
+      invalidatesTags: ["purchase_invoice", "supplier", "item"],
+    }),
+
     // GET purchase invoice details
     getPurchaseInvoiceById: builder.query<PurchaseInvoiceResponse, string>({
       query: (invoice_id) => ({
@@ -343,5 +383,7 @@ export const {
   useGetItemStockSummaryQuery,
   useGetItemStockHistoryQuery,
   useGetStockLedgerQuery,
+  useDeletePurchaseInvoicesMutation,
+  useUpdatePurchaseInvoicesMutation
 } = purchaseInvoiceApi;
 

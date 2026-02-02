@@ -7,6 +7,7 @@ import PageMeta from "../../components/common/PageMeta";
 import {
   useGetAllPurchaseInvoicesQuery,
   PurchaseInvoiceSummary,
+  useDeletePurchaseInvoicesMutation,
 } from "../../redux/services/purchaseInvoice"; 
 import { toast } from "sonner";
 import Pagination from "../../components/common/Pagination";
@@ -16,13 +17,16 @@ import PaymentModal, { PaymentFormData } from "../../components/modals/PaymentMo
 import { useGetAllAccountsQuery } from "../../redux/services/account";
 import { useGetAllSuppliersQuery } from "../../redux/services/supplier";
 import SelectDropdown from "../../components/form/SelectDropdown";
+import DatePicker from "../../components/form/date-picker";
 
 const PurchaseInvoicePage = () => {
   const navigate = useNavigate(); 
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const skip = (page - 1) * limit;
-
+  const [startDate, setStartDate] = useState<string | undefined>(undefined);
+  const [endDate, setEndDate] = useState<string | undefined>(undefined);
+  console.log("start_date:" , startDate)
   
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoiceSummary | null>(null);
@@ -30,18 +34,44 @@ const PurchaseInvoicePage = () => {
   const {data:accountsData} = useGetAllAccountsQuery({})
   const {data:suppliersData} = useGetAllSuppliersQuery({})
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
+  const [deletePurchase] = useDeletePurchaseInvoicesMutation();
   // Fetch purchase invoices
   const { data, isLoading } = useGetAllPurchaseInvoicesQuery({
     limit,
     skip,
-   supplier_id: selectedSupplierId ?? undefined 
+    supplier_id: selectedSupplierId ?? undefined,
+    start_date: startDate,
+    end_date: endDate,
   },
 
 );
  
+const handleStartDateChange = (selectedDates: Date[]) => {
+  console.log("Sele=====", selectedDates[0])
+  const d = selectedDates[0]
+  if (selectedDates.length > 0) {
+    const formatted =
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0");
 
+    setStartDate(formatted);
+    setPage(1); // reset pagination
+  } else {
+    setStartDate(undefined);
+  }
+};
 
-
+const handleEndDateChange = (selectedDates: Date[]) => {
+  if (selectedDates.length > 0) {
+    setEndDate(selectedDates[0].toISOString().split("T")[0]);
+    setPage(1);
+  } else {
+    setEndDate(undefined);
+  }
+};
 
   // Handle export CSV
   const handleExportCSV = () => {
@@ -68,12 +98,19 @@ const PurchaseInvoicePage = () => {
   const handleAddPaymentClick = (invoice: PurchaseInvoiceSummary) => {
     setSelectedInvoice(invoice)
     setIsPaymentModalOpen(true)
-  };
+  }
   
   // ✅ ADD: Handle Delete Invoice
-  const handleDeleteClick = (invoice: PurchaseInvoiceSummary) => {
-    toast.info(`Delete not implemented for invoice ${invoice.id} yet`);
-    console.log("Delete invoice:", invoice.id);
+  const handleDeleteClick = async (invoice: PurchaseInvoiceSummary) => {
+       console.log("Delete invoice:", invoice.id);
+      try {
+        const res = await deletePurchase(invoice.id).unwrap()
+        if(res){
+          toast.success(res.message);
+        }
+      } catch (error) {
+        toast.error(error?.data?.message)
+      }
   };
 
   // ✅ ADD: Callback for when delete is successful in child table
@@ -83,7 +120,6 @@ const PurchaseInvoicePage = () => {
   };
   
   const handlePaymentSubmit = async (data: PaymentFormData) => {
-    console.log("🚀 ~ handlePaymentSubmit ~ data:", data)
     if (!selectedInvoice) return;
     
     try {
@@ -138,7 +174,26 @@ const supplierOptions = [
           onExportClick={handleExportCSV}
           onAddClick={handleAddNewInvoice} 
           extra={
-           
+              <div className="flex gap-3 items-end">
+                    {/* Start Date */}
+                    <div className="w-44">
+                      <DatePicker
+                        id="start-date"
+                        label="Start Date"
+                        placeholder="Start date"
+                        onChange={handleStartDateChange}
+                      />
+                    </div>
+
+                    {/* End Date */}
+                    <div className="w-44">
+                      <DatePicker
+                        id="end-date"
+                        label="End Date"
+                        placeholder="End date"
+                        onChange={handleEndDateChange}
+                      />
+                    </div>
 
               <SelectDropdown 
                options={supplierOptions}
@@ -155,6 +210,7 @@ const supplierOptions = [
                searchable 
                className="w-3xs"
               />
+                </div>
               }
            
         >
@@ -166,6 +222,7 @@ const supplierOptions = [
             onDelete={handleDeleteClick} // ✅ Pass delete handler
             onAddPayment={handleAddPaymentClick} // ✅ Pass add payment handler
             onDeleteSuccess={handleDeleteSuccess} // ✅ Optional: for success notification
+           
           />
           <div className="pt-4">
             <Pagination
