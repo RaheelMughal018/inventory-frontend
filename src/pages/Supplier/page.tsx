@@ -125,7 +125,6 @@ const handlePaymentSubmit = async (data: DirectPaymentFormData) => {
 
     }
     const res = await createDirectPayment(payload).unwrap();
-    console.log("🚀 ~ handlePaymentSubmit ~ res:", res)
     if(res){
       toast.success("Payment created successfully")
       setIsPaymentModalOpen(false)

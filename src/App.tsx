@@ -28,6 +28,7 @@ import AccountPage from "./pages/Accounts/page";
 import PurchaseInvoicePage from "./pages/PurchaseInvoice/page";
 import CreatePurchaseInvoicePage from "./pages/CreatePurchaseInvoice/page";
 import ViewPurchaseInvoicePage from "./pages/ViewPurchaseInvoice";
+import FinancialLedgerPage from "./pages/FinancialLedger/page";
 
 export default function App() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="/items" element={<ItemPage />} />
               <Route path="/accounts" element={<AccountPage />} />
               <Route path="/purchase" element={<PurchaseInvoicePage />} />
+              <Route path="/financial-ledger" element={<FinancialLedgerPage />} />
               <Route
                 path="/purchase/create"
                 element={<CreatePurchaseInvoicePage />}
