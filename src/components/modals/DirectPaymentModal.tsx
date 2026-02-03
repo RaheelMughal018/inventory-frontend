@@ -120,12 +120,15 @@ const DirectPaymentModal: React.FC<DirectPaymentModalProps> = ({
             </Label>
             <Input
               type="number"
+              min={0.01}
+              step={0.01}
               max={outstandingData?.total_debit ?? 0}
-              value={formData.amount}
+              placeholder="0.00"
+              value={formData.amount === 0 ? "" : formData.amount}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  amount: Number(e.target.value),
+                  amount: e.target.value === "" ? 0 : Number(e.target.value),
                 }))
               }
             />

@@ -107,12 +107,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </Label>
             <Input
               type="number"
+              min={0.01}
+              step={0.01}
               max={totalAmount}
-              value={formData.payment_amount}
+              placeholder="0.00"
+              value={formData.payment_amount === 0 ? "" : formData.payment_amount}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  payment_amount: Number(e.target.value),
+                  payment_amount: e.target.value === "" ? 0 : Number(e.target.value),
                 }))
               }
             />

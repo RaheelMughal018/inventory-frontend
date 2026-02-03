@@ -274,6 +274,7 @@ const accountOptions =
                   }
                   searchable
                   disabled={supplierLoading}
+                  dropdownClassName="z-[9999]"
                 />
               </div>
 
@@ -355,43 +356,40 @@ const accountOptions =
                           <input
                             type="number"
                             min="1"
-                            value={item.quantity}
+                            value={item.quantity === 0 ? "" : item.quantity}
                             onChange={(e) =>
                               handleUpdateItem(
                                 index,
                                 "quantity",
-                                Number(e.target.value),
+                                e.target.value === "" ? 0 : Number(e.target.value),
                               )
                             }
-                            className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center">
-                            <span className="mr-2">$</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={item.unit_price}
-                              onChange={(e) =>
-                                handleUpdateItem(
-                                  index,
-                                  "unit_price",
-                                  Number(e.target.value),
-                                )
-                              }
-                              className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                            />
-                          </div>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.unit_price === 0 ? "" : item.unit_price}
+                            onChange={(e) =>
+                              handleUpdateItem(
+                                index,
+                                "unit_price",
+                                e.target.value === "" ? 0 : Number(e.target.value),
+                              )
+                            }
+                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                          />
                         </td>
-                        <td className="px-4 py-3 font-medium">
-                          ${item.line_total.toFixed(2)}
+                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                          {item.line_total.toFixed(2)}
                         </td>
                         <td className="px-4 py-3">
                           <button
                             onClick={() => handleRemoveItem(index)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                             disabled={items.length === 1}
                           >
                             Remove
@@ -417,7 +415,7 @@ const accountOptions =
                 <span className="text-gray-600 dark:text-gray-400">
                   Subtotal
                 </span>
-                <span className="font-medium">${subtotal.toFixed(2)}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{subtotal.toFixed(2)}</span>
               </div>
 
               {/* <div className="flex justify-between">
@@ -440,24 +438,24 @@ const accountOptions =
                 <span className="text-gray-600 dark:text-gray-400">
                  Pay 
                 </span>
-                <span className="font-medium">
-                  ${paymentData.payment_amount.toFixed(2)}
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {paymentData.payment_amount.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">
                   Discount
                 </span>
-                <span className="font-medium">
-                  -${discountAmount.toFixed(2)}
+                <span className="font-medium text-gray-900 dark:text-white">
+                  -{discountAmount.toFixed(2)}
                 </span>
               </div>
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Total Amount</span>
-                  <span className="text-blue-600 dark:text-blue-400">
-                    ${totalAmount.toFixed(2)}
+                  <span className="text-gray-900 dark:text-white">Total Amount</span>
+                  <span className="text-brand-600 dark:text-brand-400">
+                    {totalAmount.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -473,13 +471,13 @@ const accountOptions =
                   <span className="text-gray-600 dark:text-gray-400">
                     Items Count
                   </span>
-                  <span className="font-medium">{items.length}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{items.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">
                     Total Items
                   </span>
-                  <span className="font-medium">
+                  <span className="font-medium text-gray-900 dark:text-white">
                     {items.reduce((sum, item) => sum + item.quantity, 0)}
                   </span>
                 </div>
