@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router";
 // Assume these icons are imported from an icon library
 import {
   BoxCubeIcon,
-  CalenderIcon,
+  // CalenderIcon,
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
@@ -14,7 +14,10 @@ import {
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
+  
 } from "../icons";
+
+import { BadgeDollarSign, Banknote, BookCopy, Layers, NotebookText, ShoppingCart } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
 
@@ -31,11 +34,11 @@ const navItems: NavItem[] = [
     name: "Dashboard",
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: "Calendar",
+  //   path: "/calendar",
+  // },
   {
     icon: <UserCircleIcon />,
     name: "People",
@@ -45,12 +48,12 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <BookCopy />,
     name: "Accounts",
     path: "/accounts",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <ShoppingCart />,
     name: "Products",
     subItems: [
       { name: "Items", path: "/items", pro: false },
@@ -58,17 +61,30 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <NotebookText />,
     name: "Invoices",
     subItems: [
-      { name: "Sale invoice", path: "/supplier", pro: false },
+      { name: "Sale invoice", path: "/sale-invoice", pro: false },
       { name: "Purchase invoice", path: "/purchase", pro: false },
     ],
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <BadgeDollarSign />,
     name: "Financial Ledger",
     path: "/financial-ledger",
+  },
+  {
+    icon: <Layers />,
+    name: "Stock Ledger",
+    path: "/stock-ledger",
+  },
+  {
+    icon: <Banknote />,
+    name: "Expenses",
+    subItems: [
+      { name: "Expense Categories", path: "/expense-categories", pro: false },
+      { name: "Expenses", path: "/expenses", pro: false },
+    ],
   },
   {
     icon: <UserCircleIcon />,

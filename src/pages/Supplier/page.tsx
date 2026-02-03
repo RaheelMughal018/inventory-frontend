@@ -102,7 +102,7 @@ const SupplierPage = () => {
     setIsPaymentModalOpen(true)
   }
   const summaryMap: Record<number, SupplierPurchaseSummary> = {};
-  summary?.forEach((s) => {
+  summary?.summaries?.forEach((s) => {
     summaryMap[s.supplier_id] = s;
   });
 
@@ -158,6 +158,26 @@ const handlePaymentSubmit = async (data: DirectPaymentFormData) => {
             />
           }
         >
+          {summary?.total && (
+            <div className="mb-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700/80 bg-gray-50/50 dark:bg-gray-800/30 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total purchases</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white mt-0.5">{summary.total.total_purchases.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total paid</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white mt-0.5">{summary.total.total_paid.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Outstanding</p>
+                <p className="text-lg font-semibold text-amber-600 dark:text-amber-400 mt-0.5">{summary.total.outstanding_balance.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total invoices</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white mt-0.5">{summary.total.total_invoices}</p>
+              </div>
+            </div>
+          )}
           <SupplierTable
             suppliers={data?.suppliers ?? []}
             loading={isLoading}

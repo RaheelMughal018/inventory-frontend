@@ -186,8 +186,19 @@ export interface SupplierPurchaseSummary {
   paid_invoices: number;
 }
 
+export interface SupplierSummaryTotal {
+  total_purchases: number;
+  total_paid: number;
+  outstanding_balance: number;
+  total_invoices: number;
+  unpaid_invoices: number;
+  partial_invoices: number;
+  paid_invoices: number;
+}
+
 export interface SupplierSummaryResponse {
-  suppliers_summaries: SupplierPurchaseSummary[]
+  summaries: SupplierPurchaseSummary[];
+  total: SupplierSummaryTotal;
 }
 
 export interface SuccessResponse {

@@ -8,15 +8,17 @@ import {
 import { TailSpin } from "react-loader-spinner";
 
 import formatDate from "../../../helper/date_converter";
-import { FinancialLedger } from "../../../redux/services/financialLedger";
+import { FinancialLedger, FinancialLedgerTotals } from "../../../redux/services/financialLedger";
 
 interface FinancialLedgerProps {
   ledgers: FinancialLedger[];
   loading: boolean;
+  totals?: FinancialLedgerTotals;
 }
 export default function FinancialLedgerTable({
   ledgers,
   loading,
+  totals,
 }: FinancialLedgerProps) {
   
 
@@ -38,7 +40,13 @@ export default function FinancialLedgerTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  User Id
+                  User Name
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
+                  User Role
                 </TableCell>
                 <TableCell
                   isHeader
@@ -108,7 +116,12 @@ export default function FinancialLedgerTable({
                     </span>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {ledger.user_id}
+                    {ledger.user.name}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                      {ledger.user.role.replace("_", " ")}
+                    </span>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
@@ -129,10 +142,22 @@ export default function FinancialLedgerTable({
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     {formatDate(ledger.created_at)}
                   </TableCell>
-
-                 
                 </TableRow>
               ))}
+              {!loading && ledgers.length > 0 && totals && (
+                <TableRow className="border-t-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02] font-semibold">
+                  <TableCell className="px-5 py-3 text-start" colSpan={5}>
+                    <span className="text-gray-700 text-theme-sm dark:text-gray-300">Total</span>
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-800 text-theme-sm dark:text-white/90">
+                    {totals.total_credit ?? 0}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-800 text-theme-sm dark:text-white/90">
+                    {totals.total_debit ?? 0}
+                  </TableCell>
+                  <TableCell className="px-4 py-3">{" "}</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

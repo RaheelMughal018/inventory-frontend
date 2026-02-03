@@ -1,15 +1,14 @@
-// pages/AccountPage.tsx
 import { useState } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import SimpleComponentCard from "../../components/common/SimpleCardComponent";
-import FinancialLedgerTable from "../../components/tables/BasicTables/FinancialLedger";
-import { useGetAllFinancialLedgerQuery } from "../../redux/services/financialLedger";
+import StockLedgerTable from "../../components/tables/BasicTables/StockLedger";
+import { useGetAllStockLedgerQuery } from "../../redux/services/stockLedger";
 import DatePicker from "../../components/form/date-picker";
 
-const FinancialLedgerPage = () => {
+const StockLedgerPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -17,14 +16,13 @@ const FinancialLedgerPage = () => {
   const [startDate, setStartDate] = useState<string | undefined>(undefined);
   const [endDate, setEndDate] = useState<string | undefined>(undefined);
 
-  const { data, isLoading } = useGetAllFinancialLedgerQuery({
+  const { data, isLoading } = useGetAllStockLedgerQuery({
     search: search || undefined,
     limit,
     skip,
     start_date: startDate,
     end_date: endDate,
   });
-  console.log("🚀 ~ FinancialLedgerPage ~ data:", data)
 
   const handleStartDateChange = (selectedDates: Date[]) => {
     if (selectedDates.length > 0) {
@@ -48,30 +46,22 @@ const FinancialLedgerPage = () => {
     }
   };
 
-  // Handle search
   const handleSearch = () => {
     setPage(1);
   };
 
-
- 
-
- 
-
-  
-
   return (
     <>
-      <PageMeta title="Financial-Ledger" description="Financial-ledger page" />
-      <PageBreadcrumb pageTitle="Financial" />
+      <PageMeta title="Stock Ledger" description="Stock ledger page" />
+      <PageBreadcrumb pageTitle="Stock Ledger" />
       <div className="space-y-6">
         <SimpleComponentCard
-          title="Financial-Ledger"
+          title="Stock Ledger"
           extra={
             <div className="flex gap-3 items-end flex-wrap">
               <div className="w-44">
                 <DatePicker
-                  id="financial-start-date"
+                  id="stock-start-date"
                   label="Start Date"
                   placeholder="Start date"
                   onChange={handleStartDateChange}
@@ -79,7 +69,7 @@ const FinancialLedgerPage = () => {
               </div>
               <div className="w-44">
                 <DatePicker
-                  id="financial-end-date"
+                  id="stock-end-date"
                   label="End Date"
                   placeholder="End date"
                   onChange={handleEndDateChange}
@@ -94,8 +84,8 @@ const FinancialLedgerPage = () => {
             </div>
           }
         >
-          <FinancialLedgerTable
-            ledgers={data?.data ?? []}
+          <StockLedgerTable
+            entries={data?.data ?? []}
             loading={isLoading}
             totals={data?.total_dic}
           />
@@ -109,9 +99,8 @@ const FinancialLedgerPage = () => {
           </div>
         </SimpleComponentCard>
       </div>
-      
     </>
   );
 };
 
-export default FinancialLedgerPage;
+export default StockLedgerPage;

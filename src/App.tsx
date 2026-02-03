@@ -29,6 +29,9 @@ import PurchaseInvoicePage from "./pages/PurchaseInvoice/page";
 import CreatePurchaseInvoicePage from "./pages/CreatePurchaseInvoice/page";
 import ViewPurchaseInvoicePage from "./pages/ViewPurchaseInvoice";
 import FinancialLedgerPage from "./pages/FinancialLedger/page";
+import StockLedgerPage from "./pages/StockLedger/page";
+import ExpenseCategoryPage from "./pages/ExpenseCategory/page";
+import ExpensePage from "./pages/Expense/page";
 
 export default function App() {
   return (
@@ -51,6 +54,9 @@ export default function App() {
               <Route path="/accounts" element={<AccountPage />} />
               <Route path="/purchase" element={<PurchaseInvoicePage />} />
               <Route path="/financial-ledger" element={<FinancialLedgerPage />} />
+              <Route path="/stock-ledger" element={<StockLedgerPage />} />
+              <Route path="/expense-categories" element={<ExpenseCategoryPage />} />
+              <Route path="/expenses" element={<ExpensePage />} />
               <Route
                 path="/purchase/create"
                 element={<CreatePurchaseInvoicePage />}

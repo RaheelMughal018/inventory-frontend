@@ -1,5 +1,15 @@
 import { baseApi } from './baseApi'
-
+export enum UserRole {
+  SUPPLIER = "SUPPLIER",
+  CUSTOMER = "CUSTOMER",
+  OWNER = "OWNER"
+}
+export interface User {
+  id: number
+  name: string
+  email?: string | null
+  role: UserRole
+}
 
 
 export const authApi = baseApi.injectEndpoints({

@@ -23,6 +23,7 @@ interface SelectDropdownProps {
   valueKey?: string; // Custom value key (default: "id")
   className?: string; // Outer container class
   triggerClassName?: string; // Closed state trigger/button styling
+  listClassName?: string; // Options list container (e.g. max-h-80 for taller dropdown in modals)
 }
 
 const SelectDropdown: React.FC<SelectDropdownProps> = ({
@@ -40,6 +41,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
   valueKey = "id",
   className = "",
   triggerClassName = "",
+  listClassName,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -193,12 +195,12 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
 
         {isOpen && (
           <div
-            className="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 dark:bg-gray-900 dark:border-gray-700 max-h-60 overflow-hidden"
+            className={`absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 dark:bg-gray-900 dark:border-gray-700 overflow-hidden ${listClassName ? "max-h-[min(24rem,70vh)]" : "max-h-60"}`}
             role="listbox"
           >
             {/* Search Input (if searchable) */}
             {searchable && (
-              <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="p-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
                 <input
                   ref={inputRef}
                   type="text"
@@ -215,7 +217,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
             )}
 
             {/* Options List */}
-            <div className="max-h-48 overflow-y-auto">
+            <div className={`overflow-y-auto ${listClassName ?? "max-h-48"}`}>
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                   No options found

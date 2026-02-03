@@ -8,6 +8,7 @@ import {
   useGetAllPurchaseInvoicesQuery,
   PurchaseInvoiceSummary,
   useDeletePurchaseInvoicesMutation,
+  InvoiceStatusEnum,
 } from "../../redux/services/purchaseInvoice"; 
 import { toast } from "sonner";
 import Pagination from "../../components/common/Pagination";
@@ -26,7 +27,7 @@ const PurchaseInvoicePage = () => {
   const skip = (page - 1) * limit;
   const [startDate, setStartDate] = useState<string | undefined>(undefined);
   const [endDate, setEndDate] = useState<string | undefined>(undefined);
-  console.log("start_date:" , startDate)
+   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<InvoiceStatusEnum | null>(null);
   
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoiceSummary | null>(null);
@@ -40,6 +41,7 @@ const PurchaseInvoicePage = () => {
     limit,
     skip,
     supplier_id: selectedSupplierId ?? undefined,
+    payment_status: selectedPaymentStatus ?? undefined,
     start_date: startDate,
     end_date: endDate,
   },
@@ -47,15 +49,9 @@ const PurchaseInvoicePage = () => {
 );
  
 const handleStartDateChange = (selectedDates: Date[]) => {
-  console.log("Sele=====", selectedDates[0])
   const d = selectedDates[0]
   if (selectedDates.length > 0) {
-    const formatted =
-      d.getFullYear() +
-      "-" +
-      String(d.getMonth() + 1).padStart(2, "0") +
-      "-" +
-      String(d.getDate()).padStart(2, "0");
+    const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T00:00:00`; 
 
     setStartDate(formatted);
     setPage(1); // reset pagination
@@ -66,7 +62,9 @@ const handleStartDateChange = (selectedDates: Date[]) => {
 
 const handleEndDateChange = (selectedDates: Date[]) => {
   if (selectedDates.length > 0) {
-    setEndDate(selectedDates[0].toISOString().split("T")[0]);
+    const d = selectedDates[0]
+    const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T00:00:00`;
+    setEndDate(formatted);
     setPage(1);
   } else {
     setEndDate(undefined);
@@ -157,6 +155,12 @@ const supplierOptions = [
     name: s.name,
   })) || []),
 ];
+ const paymentStatusOptions = [
+    { id: "all", name: "All Statuses" },
+    { id: "PAID", name: "Paid" },
+    { id: "UNPAID", name: "Unpaid" },
+    { id: "PARTIAL", name: "Partial" },
+  ];
 
 
   return (
@@ -210,6 +214,21 @@ const supplierOptions = [
                searchable 
                className="w-3xs"
               />
+             <SelectDropdown
+                  options={paymentStatusOptions}
+                  value={selectedPaymentStatus ?? "all"}
+                  onChange={(value) => {
+                    if (value === "all") {
+                      setSelectedPaymentStatus(null);
+                    } else {
+                      setSelectedPaymentStatus(value as InvoiceStatusEnum);
+                    }
+                    setPage(1); // reset pagination
+                  }}
+                  placeholder="Filter by status..."
+                  searchable
+                  className="w-3xs"
+                /> 
                 </div>
               }
            
