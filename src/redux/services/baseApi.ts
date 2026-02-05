@@ -27,6 +27,6 @@ const baseQueryWithAuthRedirect = async (args: Parameters<typeof baseQuery>[0], 
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithAuthRedirect,
-  tagTypes: ['auth', 'supplier', 'customer', 'category', 'item','account', 'purchase_invoice', 'financial-ledger', 'stock-ledger', 'expense_category', 'expense'],
+  tagTypes: ['auth', 'supplier', 'customer', 'category', 'item','account', 'purchase_invoice', 'financial-ledger', 'stock-ledger', 'expense_category', 'expense', 'recipe', 'production'],
   endpoints: () => ({}), 
 })

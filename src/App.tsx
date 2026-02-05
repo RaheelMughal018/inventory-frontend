@@ -32,6 +32,9 @@ import FinancialLedgerPage from "./pages/FinancialLedger/page";
 import StockLedgerPage from "./pages/StockLedger/page";
 import ExpenseCategoryPage from "./pages/ExpenseCategory/page";
 import ExpensePage from "./pages/Expense/page";
+import RecipePage from "./pages/Recipe/page";
+import ProductionPage from "./pages/Production/page";
+import ViewProductionBatch from "./pages/ViewProductionBatch";
 
 export default function App() {
   return (
@@ -57,6 +60,12 @@ export default function App() {
               <Route path="/stock-ledger" element={<StockLedgerPage />} />
               <Route path="/expense-categories" element={<ExpenseCategoryPage />} />
               <Route path="/expenses" element={<ExpensePage />} />
+              <Route path="/recipes" element={<RecipePage />} />
+              <Route path="/production" element={<ProductionPage />} />
+              <Route
+                path="/production/batches/view/:id"
+                element={<ViewProductionBatch />}
+              />
               <Route
                 path="/purchase/create"
                 element={<CreatePurchaseInvoicePage />}

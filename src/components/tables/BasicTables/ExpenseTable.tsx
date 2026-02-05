@@ -6,7 +6,7 @@ import {
   TableRow,
 } from "../../ui/table";
 import { TailSpin } from "react-loader-spinner";
-import { Expense } from "../../redux/services/expense";
+import { Expense } from "../../../redux/services/expense";
 import formatDateTime from "../../../helper/date_converter";
 
 interface ExpenseTableProps {
@@ -37,6 +37,12 @@ export default function ExpenseTable({
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
                 Date
+              </TableCell>
+              <TableCell
+                isHeader
+                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+              >
+                Name
               </TableCell>
               <TableCell
                 isHeader
@@ -74,7 +80,7 @@ export default function ExpenseTable({
           <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
             {loading && (
               <TableRow>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={8}>
                   <div className="flex justify-center items-center py-10">
                     <TailSpin
                       height={40}
@@ -90,7 +96,7 @@ export default function ExpenseTable({
             {!loading && expenses.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-6 text-gray-500"
                 >
                   No expenses found
@@ -109,6 +115,9 @@ export default function ExpenseTable({
                   {typeof exp.date === "string"
                     ? exp.date.slice(0, 10)
                     : exp.date}
+                </TableCell>
+                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  {exp.name ?? "—"}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 font-medium">
                   {exp.amount}
@@ -134,7 +143,7 @@ export default function ExpenseTable({
               <TableRow className="border-t-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02] font-semibold">
                 <TableCell
                   className="px-5 py-3 text-start"
-                  colSpan={2}
+                  colSpan={3}
                 >
                   <span className="text-gray-700 text-theme-sm dark:text-gray-300">
                     Total

@@ -14,12 +14,14 @@ import { useGetAllAccountsQuery } from "../../redux/services/account";
 import { useGetAllExpenseCategoriesQuery } from "../../redux/services/expenseCategory";
 import DatePicker from "../../components/form/date-picker";
 import SelectDropdown from "../../components/form/SelectDropdown";
+import SearchBar from "../../components/common/SearchBar";
 import { toast } from "sonner";
 
 const ExpensePage = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const skip = (page - 1) * limit;
+  const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState<string | undefined>(undefined);
   const [endDate, setEndDate] = useState<string | undefined>(undefined);
   const [expenseCategoryId, setExpenseCategoryId] = useState<string | null>(
@@ -30,6 +32,7 @@ const ExpensePage = () => {
   const { data, isLoading } = useGetAllExpensesQuery({
     limit,
     skip,
+    search: search || undefined,
     start_date: startDate,
     end_date: endDate,
     expense_category_id: expenseCategoryId ?? undefined,
@@ -58,6 +61,10 @@ const ExpensePage = () => {
     } else {
       setEndDate(undefined);
     }
+  };
+
+  const handleSearch = () => {
+    setPage(1);
   };
 
   const handleBulkExpenses = async (payload: ExpenseCreateBulk) => {
@@ -98,6 +105,12 @@ const ExpensePage = () => {
           onAddClick={() => setIsBulkModalOpen(true)}
           extra={
             <div className="flex gap-3 items-end flex-wrap">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                onSubmit={handleSearch}
+                placeholder="Search by name or description..."
+              />
               <div className="w-44">
                 <DatePicker
                   id="expense-start-date"

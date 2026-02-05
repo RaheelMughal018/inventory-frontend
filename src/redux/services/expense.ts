@@ -22,6 +22,7 @@ export interface ExpenseCreateBulk {
 export interface GetExpensesParams {
   skip?: number
   limit?: number
+  search?: string // search by description and name
   user_id?: number
   expense_category_id?: string
   expense_date?: string // YYYY-MM-DD
@@ -51,6 +52,7 @@ export interface ExpenseUserRef {
 export interface Expense {
   id: string
   date: string
+  name?: string | null
   amount: string | number
   account_id: string
   expense_category_id: string
