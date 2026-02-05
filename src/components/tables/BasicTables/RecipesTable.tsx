@@ -10,12 +10,12 @@ import { TailSpin } from "react-loader-spinner";
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
 import { Modal } from "../../ui/modal";
-import { toast } from "sonner";
 import {
   RecipeResponse,
   useDeleteRecipeMutation,
 } from "../../../redux/services/recipe";
 import formatDateTime from "../../../helper/date_converter";
+import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 
 interface RecipesTableProps {
   recipes: RecipeResponse[];
@@ -41,12 +41,11 @@ export default function RecipesTable({
     if (!selectedRecipe) return;
     try {
       await deleteRecipe(selectedRecipe.id).unwrap();
-      toast.success("Recipe deleted successfully");
+      handleApiSuccess("Recipe deleted successfully");
       closeModal();
       setSelectedRecipe(null);
     } catch (err: unknown) {
-      const msg = (err as { data?: { detail?: string } })?.data?.detail;
-      toast.error(msg || "Failed to delete recipe");
+      handleApiError(err, "Failed to delete recipe");
     }
   };
 

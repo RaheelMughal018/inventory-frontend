@@ -11,7 +11,7 @@ import {TailSpin} from 'react-loader-spinner'
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
 import { Modal } from "../../ui/modal";
-import { toast } from "sonner";
+import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 interface customerTableProps {
   customers: Customer[],
   loading: boolean
@@ -27,14 +27,11 @@ export default function CustomerTable({customers, loading, onEdit}: customerTabl
 
     try {
       const res = await deleteCustomer(selectedCustomer.id).unwrap()
-      if(res.message){
-        toast.success(res.message)
-        closeModal()  
-      }
-      setSelectedCustomer(null)
+      if(res.message) handleApiSuccess(res.message);
+      closeModal();
+      setSelectedCustomer(null);
     } catch (error) {
-      console.log("🚀 ~ handleDelete ~ error:", error)
-      toast.error("Error while deleteing the customer")
+      handleApiError(error, "Failed to delete customer");
     }
   }
   return (

@@ -10,9 +10,9 @@ import {TailSpin} from 'react-loader-spinner'
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
 import { Modal } from "../../ui/modal";
-import { toast } from "sonner";
 import { Category, useDeleteCategoryMutation } from "../../../redux/services/category";
 import formatDateTime from "../../../helper/date_converter";
+import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 interface CategoryTableProps {
   categories: Category[],
   loading: boolean
@@ -29,14 +29,11 @@ export default function CategoryTable({categories, loading, onEdit}: CategoryTab
 
     try {
       const res = await deleteCategory(selectedCategory.id).unwrap()
-      if(res.message){
-        toast.success(res.message)
-        closeModal()  
-      }
-      setSelectedCategory(null)
+      if(res.message) handleApiSuccess(res.message);
+      closeModal();
+      setSelectedCategory(null);
     } catch (error) {
-      console.log("🚀 ~ handleDelete ~ error:", error)
-      toast.error("Error while deleteing the customer")
+      handleApiError(error, "Failed to delete category");
     }
   }
   return (

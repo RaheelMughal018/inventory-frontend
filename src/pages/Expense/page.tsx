@@ -15,7 +15,7 @@ import { useGetAllExpenseCategoriesQuery } from "../../redux/services/expenseCat
 import DatePicker from "../../components/form/date-picker";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import SearchBar from "../../components/common/SearchBar";
-import { toast } from "sonner";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const ExpensePage = () => {
   const [page, setPage] = useState(1);
@@ -70,11 +70,10 @@ const ExpensePage = () => {
   const handleBulkExpenses = async (payload: ExpenseCreateBulk) => {
     try {
       await createExpensesBulk(payload).unwrap();
-      toast.success(`${payload.expenses.length} expense(s) added successfully`);
+      handleApiSuccess(`${payload.expenses.length} expense(s) added successfully`);
       setIsBulkModalOpen(false);
     } catch (error: unknown) {
-      const err = error as { data?: { message?: string } };
-      toast.error(err?.data?.message || "Failed to add bulk expenses");
+      handleApiError(error, "Failed to add bulk expenses");
     }
   };
 

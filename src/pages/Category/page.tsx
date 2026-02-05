@@ -2,13 +2,13 @@ import { useState } from "react"; // Add this import
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { toast } from "sonner";
 import CategoryTable from "../../components/tables/BasicTables/CategoryTable";
 import { Category, CreateCategory, useCreateCategoryMutation, useGetAllCategoriesQuery, useUpdateCategoryMutation } from "../../redux/services/category";
 import { CategoryFormData } from "../../components/modals/CategoryModal";
 import CategoryModal from "../../components/modals/CategoryModal";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const CategoryPage = () => {
   const [search, setSearch] = useState("");
@@ -51,14 +51,11 @@ const CategoryPage = () => {
       };
 
       const res = await createCategory(payload).unwrap();
-      if (res) toast.success(`${res.name} is created successfully`);
+      if (res) handleApiSuccess(`${res.name} is created successfully`);
+      setIsAddModalOpen(false);
     } catch (error) {
-      console.log("🚀 ~ handleAddCustomer ~ error:", error);
-      toast.error("Error while creating customer");
+      handleApiError(error, "Failed to create category");
     }
-
-    // Close modal after submission
-    setIsAddModalOpen(false);
   };
 
   const handleEditCategory = async (categoryData: CategoryFormData) => {
@@ -73,14 +70,12 @@ const CategoryPage = () => {
         id: selectedCategory.id,
         ...payload,
       }).unwrap();
-      if (res) toast.success(`${res.name} is updated successfully`);
+      if (res) handleApiSuccess(`${res.name} is updated successfully`);
+      setIsEditModalOpen(false);
+      setSelectedCategory(null);
     } catch (error) {
-      console.log("🚀 ~ handleEditCustomer ~ error:", error);
-      toast.error("Error while updating category");
+      handleApiError(error, "Failed to update category");
     }
-
-    setIsEditModalOpen(false);
-    setSelectedCategory(null);
   };
 
   const handleEditClick = (category: Category) => {

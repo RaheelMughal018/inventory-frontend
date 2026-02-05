@@ -14,8 +14,8 @@ import { TailSpin } from "react-loader-spinner";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
-import { toast } from "sonner";
 import formatDate from "../../../helper/date_converter";
+import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 
 interface AccountsTableProps {
   accounts: Account[];
@@ -38,15 +38,11 @@ export default function AccountsTable({
 
     try {
       const res = await deleteAccounts(selectedaccounts.id).unwrap();
-      if (res.message) {
-        toast.success(res.message);
-        closeModal();
-      }
-
+      if (res.message) handleApiSuccess(res.message);
+      closeModal();
       setSelectedaccounts(null);
     } catch (error) {
-      console.log("🚀 ~ handleDelete ~ error:", error);
-      toast.error("Error while deleteing this accounts");
+      handleApiError(error, "Failed to delete account");
     }
   };
   return (

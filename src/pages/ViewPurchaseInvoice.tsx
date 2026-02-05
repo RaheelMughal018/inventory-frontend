@@ -4,13 +4,13 @@ import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { useAddPurchaseInvoicePaymentMutation, useDeletePaymentMutation, useGetPurchaseInvoiceByIdQuery } from "../redux/services/purchaseInvoice";
 import Button from "../components/ui/button/Button";
-import { toast } from "sonner";
 import { DownloadIcon, TrashBinIcon } from "../icons";
 import SimpleComponentCard from "../components/common/SimpleCardComponent";
 import PaymentModal, { PaymentFormData } from "../components/modals/PaymentModal";
 import { useGetAllAccountsQuery } from "../redux/services/account";
 import { useState } from "react";
-import {generateInvoicePDF} from "../helper/pdf_generator.ts"
+import {generateInvoicePDF} from "../helper/pdf_generator.ts";
+import { handleApiError, handleApiSuccess, handleQueryError } from "../helper/error_handler";
 
 // Payment status badge component
 const PaymentStatusBadge = ({ status }: { status: string }) => {
@@ -50,8 +50,6 @@ const ViewPurchaseInvoicePage = () => {
   })) || [];
 
   const handlePaymentSubmit = async (data: PaymentFormData) => {
-    console.log("🚀 ~ handlePaymentSubmit ~ data:", data)
-  
     try {
       await addPayment({
         invoice_id: invoice!.id,
@@ -61,15 +59,10 @@ const ViewPurchaseInvoicePage = () => {
         },
       }).unwrap();
   
-      toast.success("Payment recorded successfully");
-  
-      // close modal & reset state
+      handleApiSuccess("Payment recorded successfully");
       setIsPaymentModalOpen(false);
-  
-      // optionally refetch the invoices
     } catch (error) {
-      console.log("🚀 ~ handlePaymentSubmit ~ error:", error)
-      toast.error(error?.data?.message||"Failed to add payment");
+      handleApiError(error, "Failed to add payment");
     }
   };
   // Handle loading state
@@ -86,6 +79,7 @@ const ViewPurchaseInvoicePage = () => {
 
   // Handle error state
   if (error || !invoice) {
+    const errorMessage = handleQueryError(error, "Invoice not found or failed to load");
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -93,7 +87,7 @@ const ViewPurchaseInvoicePage = () => {
             Error Loading Invoice
           </h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Invoice not found or failed to load
+            {errorMessage}
           </p>
           <Button
             onClick={() => navigate("/purchase-invoices")}
@@ -119,10 +113,9 @@ const ViewPurchaseInvoicePage = () => {
   const handleGeneratePDF = () => {
     try {
       generateInvoicePDF(invoice);
-      toast.success("PDF downloaded successfully");
+      handleApiSuccess("PDF downloaded successfully");
     } catch (error) {
-      console.error("Error generating PDF:", error);
-      toast.error("Failed to generate PDF");
+      handleApiError(error, "Failed to generate PDF");
     } 
   };
 
@@ -133,7 +126,7 @@ const ViewPurchaseInvoicePage = () => {
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this invoice?")) {
       // TODO: Implement delete functionality
-      toast.success("Invoice deleted successfully");
+      handleApiSuccess("Invoice deleted successfully");
       navigate("/purchase-invoices");
     }
   };
@@ -143,12 +136,10 @@ const ViewPurchaseInvoicePage = () => {
     try {
       const res = await deletePayment(payment_id);
       if(res){
-        toast.success(res?.data?.message)
+        handleApiSuccess(res?.data?.message || "Payment deleted successfully");
       }
     } catch (error) {
-      // toast.error(error.data.message)
-      console.log("🚀 ~ handleDeletePayment ~ error:", error)
-      
+      handleApiError(error, "Failed to delete payment");
     }
   }
 

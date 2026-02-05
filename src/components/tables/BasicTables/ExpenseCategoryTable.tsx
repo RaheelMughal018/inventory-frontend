@@ -10,12 +10,12 @@ import { TailSpin } from "react-loader-spinner";
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
 import { Modal } from "../../ui/modal";
-import { toast } from "sonner";
 import {
   ExpenseCategory,
   useDeleteExpenseCategoryMutation,
 } from "../../../redux/services/expenseCategory";
 import formatDateTime from "../../../helper/date_converter";
+import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 
 interface ExpenseCategoryTableProps {
   categories: ExpenseCategory[];
@@ -37,14 +37,11 @@ export default function ExpenseCategoryTable({
     if (!selectedCategory) return;
     try {
       const res = await deleteCategory(selectedCategory.id).unwrap();
-      if (res.message) {
-        toast.success(res.message);
-        closeModal();
-      }
+      if (res.message) handleApiSuccess(res.message);
+      closeModal();
       setSelectedCategory(null);
     } catch (error: unknown) {
-      const err = error as { data?: { message?: string } };
-      toast.error(err?.data?.message || "Error deleting expense category");
+      handleApiError(error, "Failed to delete expense category");
     }
   };
 

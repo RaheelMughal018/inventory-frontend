@@ -15,6 +15,7 @@ import { ExpenseCategoryFormData } from "../../components/modals/ExpenseCategory
 import ExpenseCategoryModal from "../../components/modals/ExpenseCategoryModal";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const ExpenseCategoryPage = () => {
   const [search, setSearch] = useState("");
@@ -36,7 +37,7 @@ const ExpenseCategoryPage = () => {
     useState<ExpenseCategory | null>(null);
 
   const handleExportCSV = () => {
-    toast.info("Export feature coming soon");
+    handleApiSuccess("Export feature coming soon");
   };
 
   const handleSearch = () => {
@@ -47,11 +48,10 @@ const ExpenseCategoryPage = () => {
     try {
       const payload: CreateExpenseCategory = { name: formData.name };
       const res = await createCategory(payload).unwrap();
-      if (res) toast.success(`${res.name} created successfully`);
+      if (res) handleApiSuccess(`${res.name} is created successfully`);
       setIsAddModalOpen(false);
     } catch (error: unknown) {
-      const err = error as { data?: { message?: string } };
-      toast.error(err?.data?.message || "Error creating expense category");
+      handleApiError(error, "Failed to create expense category");
     }
   };
 
@@ -63,12 +63,11 @@ const ExpenseCategoryPage = () => {
         id: selectedCategory.id,
         ...payload,
       }).unwrap();
-      if (res) toast.success(`${res.name} updated successfully`);
+      if (res) handleApiSuccess(`${res.name} is updated successfully`);
       setIsEditModalOpen(false);
       setSelectedCategory(null);
     } catch (error: unknown) {
-      const err = error as { data?: { message?: string } };
-      toast.error(err?.data?.message || "Error updating expense category");
+      handleApiError(error, "Failed to update expense category");
     }
   };
 

@@ -27,6 +27,7 @@ import { Modal } from "../../components/ui/modal";
 import Button from "../../components/ui/button/Button";
 import SimpleComponentCard from "../../components/common/SimpleCardComponent";
 import { TrashBinIcon, EyeIcon, CheckCircleIcon } from "../../icons";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const SERIAL_PREFIX = "LEH-";
 
@@ -86,15 +87,14 @@ function ProductionPage() {
       }).unwrap();
       setFeasibilityResult(result);
     } catch (err: unknown) {
-      const msg = (err as { data?: { detail?: string } })?.data?.detail;
-      toast.error(msg || "Feasibility check failed");
+      handleApiError(err, "Feasibility check failed");
     }
   };
 
   const useMaxProducible = () => {
     if (feasibilityResult && feasibilityResult.max_producible_quantity > 0) {
       setQuantity(feasibilityResult.max_producible_quantity);
-      toast.success(
+      handleApiSuccess(
         `Quantity set to ${feasibilityResult.max_producible_quantity}`,
       );
     }
@@ -118,37 +118,34 @@ function ProductionPage() {
       }).unwrap();
       setDraftBatch(batch);
       setFeasibilityResult(null);
-      toast.success(
+      handleApiSuccess(
         `Draft created. Confirm to deduct raw items and complete production.`,
       );
     } catch (err: unknown) {
-      const msg = (err as { data?: { detail?: string } })?.data?.detail;
-      toast.error(msg || "Failed to create production draft");
+      handleApiError(err, "Failed to create production draft");
     }
   };
 
   const handleExecuteDraft = async (batch: ProductionBatchResponse) => {
     try {
       await executeDraft(batch.id).unwrap();
-      toast.success(
+      handleApiSuccess(
         "Raw items deducted. Complete the batch to add final product to stock.",
       );
       setDraftBatch(null);
     } catch (err: unknown) {
-      const msg = (err as { data?: { detail?: string } })?.data?.detail;
-      toast.error(msg || "Failed to execute production");
+      handleApiError(err, "Failed to execute production");
     }
   };
 
   const handleCompleteBatch = async (batch: ProductionBatchResponse) => {
     try {
       await completeBatch(batch.id).unwrap();
-      toast.success("Production complete. Final product added to stock.");
+      handleApiSuccess("Production complete. Final product added to stock.");
       setConfirmCompleteOpen(false);
       setBatchToComplete(null);
     } catch (err: unknown) {
-      const msg = (err as { data?: { detail?: string } })?.data?.detail;
-      toast.error(msg || "Failed to complete batch");
+      handleApiError(err, "Failed to complete batch");
     }
   };
 
@@ -163,10 +160,9 @@ function ProductionPage() {
     }
     try {
       await deleteBatch(batch.id).unwrap();
-      toast.success("Batch deleted successfully");
+      handleApiSuccess("Batch deleted successfully");
     } catch (err: unknown) {
-      const msg = (err as { data?: { detail?: string } })?.data?.detail;
-      toast.error(msg || "Failed to delete batch");
+      handleApiError(err, "Failed to delete batch");
     }
   };
 

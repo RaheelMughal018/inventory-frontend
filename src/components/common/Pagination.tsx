@@ -31,13 +31,16 @@ const Pagination = ({ currentPage, pageSize, total, onPageChange }: PaginationPr
       <button
         onClick={handlePrev}
         disabled={currentPage === 1}
-        className="px-3 py-1 rounded-md border text-sm disabled:opacity-50 dark:text-white"
+        className="px-3 py-1 rounded-md border text-sm disabled:opacity-50 text-gray-700 dark:text-white dark:bg-transparent dark:border-white/[0.12] dark:hover:bg-white/[0.08] hover:bg-gray-100"
       >
         Prev
       </button>
       {pages.map((p, idx) =>
         p === -1 ? (
-          <span key={`ellipsis-${idx}`} className="px-2 text-sm text-gray-500">
+          <span
+            key={`ellipsis-${idx}`}
+            className="px-2 text-sm text-gray-500 dark:text-gray-400"
+          >
             ...
           </span>
         ) : (
@@ -46,8 +49,8 @@ const Pagination = ({ currentPage, pageSize, total, onPageChange }: PaginationPr
             onClick={() => onPageChange(p)}
             className={`px-3 py-1 rounded-md border text-sm ${
               p === currentPage
-                ? "bg-blue-600 text-white border-blue-600"
-                : "hover:bg-gray-100"
+                ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-600 dark:text-white dark:border-blue-600"
+                : "hover:bg-gray-100 dark:hover:bg-white/[0.10] text-gray-700 dark:text-white dark:bg-transparent dark:border-white/[0.12]"
             }`}
           >
             {p}
@@ -57,7 +60,7 @@ const Pagination = ({ currentPage, pageSize, total, onPageChange }: PaginationPr
       <button
         onClick={handleNext}
         disabled={currentPage === totalPages}
-        className="px-3 py-1 rounded-md border text-sm disabled:opacity-50 dark:text-white"
+        className="px-3 py-1 rounded-md border text-sm disabled:opacity-50 text-gray-700 dark:text-white dark:bg-transparent dark:border-white/[0.12] dark:hover:bg-white/[0.08] hover:bg-gray-100"
       >
         Next
       </button>

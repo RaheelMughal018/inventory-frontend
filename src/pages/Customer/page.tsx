@@ -12,9 +12,9 @@ import {
   useUpdateCustomerMutation,
 } from "../../redux/services/customer";
 import { CustomerFormData } from "../../components/modals/CustomerModal";
-import { toast } from "sonner";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const CustomerPage = () => {
   const [search, setSearch] = useState("");
@@ -58,14 +58,11 @@ const CustomerPage = () => {
       };
 
       const res = await createCustomer(payload).unwrap();
-      if (res) toast.success(`${res.name} is created successfully`);
+      if (res) handleApiSuccess(`${res.name} is created successfully`);
+      setIsAddModalOpen(false);
     } catch (error) {
-      console.log("🚀 ~ handleAddCustomer ~ error:", error);
-      toast.error("Error while creating customer");
+      handleApiError(error, "Failed to create customer");
     }
-
-    // Close modal after submission
-    setIsAddModalOpen(false);
   };
 
   const handleEditCustomer = async (customerData: CustomerFormData) => {
@@ -83,14 +80,12 @@ const CustomerPage = () => {
         id: selectedCustomer.id,
         ...payload,
       }).unwrap();
-      if (res) toast.success(`${res.name} is updated successfully`);
+      if (res) handleApiSuccess(`${res.name} is updated successfully`);
+      setIsEditModalOpen(false);
+      setSelectedCustomer(null);
     } catch (error) {
-      console.log("🚀 ~ handleEditCustomer ~ error:", error);
-      toast.error("Error while updating customer");
+      handleApiError(error, "Failed to update customer");
     }
-
-    setIsEditModalOpen(false);
-    setSelectedCustomer(null);
   };
 
   const handleEditClick = (customer: Customer) => {

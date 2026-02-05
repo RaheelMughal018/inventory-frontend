@@ -12,9 +12,16 @@ const baseQuery = fetchBaseQuery({
   },
 })
 
+/**
+ * Base query wrapper that handles authentication errors globally
+ * - Automatically redirects to signin on 401 Unauthorized
+ * - Clears auth tokens from localStorage
+ * - All other errors are passed through to be handled at the component level
+ */
 const baseQueryWithAuthRedirect = async (args: Parameters<typeof baseQuery>[0], api: Parameters<typeof baseQuery>[1], extraOptions: Parameters<typeof baseQuery>[2]) => {
   const result = await baseQuery(args, api, extraOptions)
 
+  // Global 401 handler - redirect to signin
   if (result.error?.status === 401) {
     localStorage.removeItem('access_token')
     localStorage.removeItem('id')

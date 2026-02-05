@@ -2,7 +2,6 @@ import { useState } from "react";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { toast } from "sonner";
 import ItemsTable from "../../components/tables/BasicTables/ItemsTable";
 import {
   CreateItem,
@@ -17,6 +16,7 @@ import ItemModal from "../../components/modals/ItemModal";
 import { useGetAllCategoriesQuery } from "../../redux/services/category";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const ItemPage = () => {
   const [search, setSearch] = useState("");
@@ -64,16 +64,11 @@ const ItemPage = () => {
       };
 
       const res = await createItem(payload).unwrap();
-      if (res) {
-        toast.success(`${res.name} is created successfully`);
-      }
+      if (res) handleApiSuccess(`${res.name} is created successfully`);
+      setIsAddModalOpen(false);
     } catch (error) {
-      console.log("🚀 ~ handleAddItem ~ error:", error);
-      toast.error("Error while creating item");
+      handleApiError(error, "Failed to create item");
     }
-
-    // Close modal after submission
-    setIsAddModalOpen(false);
   };
 
   // Handle form submission for editing
@@ -92,18 +87,13 @@ const ItemPage = () => {
         id: selectedItem.id,
         ...payload,
       }).unwrap();
-      if (res) {
-        toast.success(`${res.name} is updated successfully`);
-      }
+      if (res) handleApiSuccess(`${res.name} is updated successfully`);
+      setIsEditModalOpen(false);
+      setSelectedItem(null);
+      setSelectedCategoryId("");
     } catch (error) {
-      console.log("🚀 ~ handleEditItem ~ error:", error);
-      toast.error("Error while updating item");
+      handleApiError(error, "Failed to update item");
     }
-
-    // Close modal after submission
-    setIsEditModalOpen(false);
-    setSelectedItem(null);
-    setSelectedCategoryId("");
   };
 
   // Handle edit button click

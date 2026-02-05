@@ -10,12 +10,12 @@ import { TailSpin } from "react-loader-spinner";
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
 import { Modal } from "../../ui/modal";
-import { toast } from "sonner";
 import {
   Item,
   useDeleteItemMutation,
 } from "../../../redux/services/item";
 import formatDateTime from "../../../helper/date_converter";
+import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 
 interface ItemsTableProps {
   items: Item[];
@@ -37,13 +37,11 @@ export default function ItemsTable({
 
     try {
       const res = await deleteItem(selectedItem.id).unwrap();
-      if (res.message) {
-        toast.success(res.message);
-        closeModal();
-      }
+      if (res.message) handleApiSuccess(res.message);
+      closeModal();
       setSelectedItem(null);
     } catch (error) {
-      toast.error(error?.data?.message);
+      handleApiError(error, "Failed to delete item");
     }
   };
 

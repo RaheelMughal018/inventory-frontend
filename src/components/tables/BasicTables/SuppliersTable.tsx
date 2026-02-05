@@ -14,8 +14,8 @@ import { TailSpin } from "react-loader-spinner";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
 import {  useState } from "react";
-import { toast } from "sonner";
 import { SupplierPurchaseSummary } from "../../../redux/services/purchaseInvoice";
+import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 
 
 interface SupplierTableProps {
@@ -44,16 +44,12 @@ export default function SupplierTable({
 
     try {
       const res = await deleteSupplier(selectedSupplier.id).unwrap();
-      if (res.message) {
-        toast.success(res.message);
-        closeModal();
-      }
-
+      if (res.message) handleApiSuccess(res.message);
+      closeModal();
       setSelectedSupplier(null);
     } catch (error) {
       closeModal();
-      console.log("🚀 ~ handleDelete ~ error:", error);
-      toast.error("Error while deleteing this supplier");
+      handleApiError(error, "Failed to delete supplier");
     }
   };
  

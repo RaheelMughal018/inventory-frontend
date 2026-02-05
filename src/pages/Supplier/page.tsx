@@ -6,7 +6,6 @@ import SupplierTable from "../../components/tables/BasicTables/SuppliersTable";
 import AddSupplierModal from "../../components/modals/SupplierModal"; // Import modal
 import { useGetAllSuppliersQuery , useCreateSupplierMutation, useUpdateSupplierMutation, CreateSupplier, Supplier} from "../../redux/services/supplier";
 import {SupplierFormData} from '../../components/modals/SupplierModal'
-import { toast } from "sonner";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import { SupplierPurchaseSummary, useGetSuppliersSummaryQuery } from "../../redux/services/purchaseInvoice";
@@ -14,6 +13,7 @@ import { useModal } from "../../hooks/useModal";
 import DirectPaymentModal, { DirectPaymentFormData } from "../../components/modals/DirectPaymentModal";
 import { CreateDirectPayment, useCreateDirectPaymentMutation, useGetSupplierOutstandingQuery } from "../../redux/services/supplierPayment";
 import { useGetAllAccountsQuery } from "../../redux/services/account";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const SupplierPage = () => {
   const [search, setSearch] = useState("");
@@ -45,25 +45,19 @@ const SupplierPage = () => {
 
   // Handle form submission for adding
   const handleAddSupplier = async (supplierData: SupplierFormData) => {
-   try {
-    
-    const payload: CreateSupplier = {
-      name: supplierData.name,
-      phone: supplierData.phone,
-      city: supplierData.city,
-      company_name: supplierData.company_name ?? ""
+    try {
+      const payload: CreateSupplier = {
+        name: supplierData.name,
+        phone: supplierData.phone,
+        city: supplierData.city,
+        company_name: supplierData.company_name ?? ""
+      }
+      const res = await createSupplier(payload).unwrap();
+      if(res) handleApiSuccess(`${res.name} is created successfully`);
+      setIsAddModalOpen(false);
+    } catch (error) {
+      handleApiError(error, "Failed to create supplier");
     }
-    const res = await createSupplier(payload).unwrap();
-    if(res){
-      toast.success(`${res.name} is created successfully`)
-    }
-   } catch (error) {
-   console.log(error) 
-   toast.error("Error while creating supplier")
-   } 
-
-    // Close modal after submission
-    setIsAddModalOpen(false);
   };
 
   // Handle form submission for editing
@@ -78,17 +72,12 @@ const SupplierPage = () => {
         company_name: supplierData.company_name ?? ""
       }
       const res = await updateSupplier({ id: selectedSupplier.id, ...payload }).unwrap();
-      if(res){
-        toast.success(`${res.name} is updated successfully`)
-      }
+      if(res) handleApiSuccess(`${res.name} is updated successfully`);
+      setIsEditModalOpen(false);
+      setSelectedSupplier(null);
     } catch (error) {
-      console.log(error) 
-      toast.error("Error while updating supplier")
-    } 
-
-    // Close modal after submission
-    setIsEditModalOpen(false);
-    setSelectedSupplier(null);
+      handleApiError(error, "Failed to update supplier");
+    }
   };
 
   // Handle edit button click
@@ -126,12 +115,11 @@ const handlePaymentSubmit = async (data: DirectPaymentFormData) => {
     }
     const res = await createDirectPayment(payload).unwrap();
     if(res){
-      toast.success("Payment created successfully")
-      setIsPaymentModalOpen(false)
+      handleApiSuccess("Payment created successfully");
+      setIsPaymentModalOpen(false);
     }
   } catch (error) {
-    console.log(error)
-    toast.error(error?.data?.message||"Error while creating direct payment");
+    handleApiError(error, "Failed to create direct payment");
   }
 };
 
