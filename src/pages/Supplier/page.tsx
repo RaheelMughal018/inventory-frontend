@@ -9,9 +9,8 @@ import {SupplierFormData} from '../../components/modals/SupplierModal'
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import { SupplierPurchaseSummary, useGetSuppliersSummaryQuery } from "../../redux/services/purchaseInvoice";
-import { useModal } from "../../hooks/useModal";
 import DirectPaymentModal, { DirectPaymentFormData } from "../../components/modals/DirectPaymentModal";
-import { CreateDirectPayment, useCreateDirectPaymentMutation, useGetSupplierOutstandingQuery } from "../../redux/services/supplierPayment";
+import { CreateDirectPayment, useCreateDirectPaymentMutation } from "../../redux/services/supplierPayment";
 import { useGetAllAccountsQuery } from "../../redux/services/account";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 

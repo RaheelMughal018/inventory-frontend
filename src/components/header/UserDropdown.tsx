@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link, useNavigate } from "react-router";
+import {  useNavigate } from "react-router";
 import { useLogoutAdminMutation } from "../../redux/services/auth";
-import { toast } from "sonner";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,13 +20,12 @@ export default function UserDropdown() {
     try {
       const res = await logout().unwrap();
       if(res.message){
-        toast.success(res.message)
+        handleApiSuccess(res.message)
         localStorage.removeItem('access_token')
         navigate('/signin')
       }
-    } catch (error) {
-      console.log("🚀 ~ handleLogout ~ error:", error)
-      toast.error("Error while logout")
+    } catch (error: unknown) {
+      handleApiError(error, "Error while logout")
     }
   }
   return (

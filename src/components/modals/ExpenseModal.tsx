@@ -91,7 +91,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             <DatePicker
               id="expense-date"
               placeholder="Select date"
-              defaultDate={formData.date}
+              defaultDate={new Date(formData.date ?? today)}
               onChange={handleDateChange}
             />
           </div>

@@ -38,9 +38,6 @@ function ProductionPage() {
   const [serialNumbers, setSerialNumbers] = useState<number[]>([1]);
   const [feasibilityResult, setFeasibilityResult] =
     useState<ProductionFeasibilityResponse | null>(null);
-  const [draftBatch, setDraftBatch] = useState<ProductionBatchResponse | null>(
-    null,
-  );
   const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
   const [batchToComplete, setBatchToComplete] =
     useState<ProductionBatchResponse | null>(null);
@@ -95,7 +92,7 @@ function ProductionPage() {
     if (feasibilityResult && feasibilityResult.max_producible_quantity > 0) {
       setQuantity(feasibilityResult.max_producible_quantity);
       handleApiSuccess(
-        `Quantity set to ${feasibilityResult.max_producible_quantity}`,
+        `Quantity set to ${feasibilityResult.max_producible_quantity}`, 
       );
     }
   };
@@ -111,12 +108,11 @@ function ProductionPage() {
     }
     
     try {
-      const batch = await createDraft({
+        await createDraft({
         final_product_id: selectedProductId,
         quantity,
         serial_numbers: validSerials,
       }).unwrap();
-      setDraftBatch(batch);
       setFeasibilityResult(null);
       handleApiSuccess(
         `Draft created. Confirm to deduct raw items and complete production.`,
@@ -132,7 +128,6 @@ function ProductionPage() {
       handleApiSuccess(
         "Raw items deducted. Complete the batch to add final product to stock.",
       );
-      setDraftBatch(null);
     } catch (err: unknown) {
       handleApiError(err, "Failed to execute production");
     }

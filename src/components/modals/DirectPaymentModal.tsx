@@ -4,8 +4,8 @@ import Button from "../ui/button/Button";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import SelectDropdown from "../form/SelectDropdown";
-import { toast } from "sonner";
 import { useGetSupplierOutstandingQuery } from "../../redux/services/supplierPayment";
+import { handleApiError } from "../../helper/error_handler";
 
 interface DirectPaymentModalProps {
   isOpen: boolean;
@@ -43,25 +43,25 @@ const DirectPaymentModal: React.FC<DirectPaymentModalProps> = ({
     });
   }, [isOpen, supplierId, outstandingData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
 
     if (!formData.account_id || formData.account_id === "") {
-      toast.warning("Please select an account");
-      return;
+      handleApiError("Please select an account");
     }
 
     if (formData.amount <= 0) {
-      toast.warning("Payment amount must be greater than 0");
-      return;
+      handleApiError("Payment amount must be greater than 0");
     }
 
     if (formData.amount > (outstandingData?.total_debit ?? 0)) {
-      toast.warning("Payment amount cannot exceed debit amount");
-      return;
+      handleApiError("Payment amount cannot exceed debit amount");
     }
 
-    onSubmit(formData);
+    try {
+      onSubmit(formData);
+    } catch (error: unknown) {
+      handleApiError(error, "Failed to submit payment");
+    }
   };
 
   return (
@@ -139,7 +139,7 @@ const DirectPaymentModal: React.FC<DirectPaymentModalProps> = ({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Save Payment</Button>
+            <Button onClick={handleSubmit}>Save Payment</Button>
           </div>
         </form>
       </div>

@@ -4,7 +4,7 @@ import Button from "../ui/button/Button";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import SelectDropdown from "../form/SelectDropdown";
-import { toast } from "sonner";
+import { handleApiError } from "../../helper/error_handler";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -40,22 +40,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     });
   }, [isOpen, totalAmount]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
 
     if (!formData.payment_account_id) {
-      toast.warning("Please select an account");
-      return;
+      handleApiError("Please select an account");
     }
 
     if (formData.payment_amount <= 0) {
-      toast.warning("Payment amount must be greater than 0");
-      return;
+      handleApiError("Payment amount must be greater than 0");
     }
 
     if (formData.payment_amount > totalAmount) {
-      toast.warning("Payment amount cannot exceed total amount");
-      return;
+        handleApiError("Payment amount cannot exceed total amount");
     }
 
     onSubmit(formData);
@@ -126,7 +122,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Save Payment</Button>
+            <Button  variant="primary" onClick={handleSubmit}>Save Payment</Button>
           </div>
         </form>
       </div>

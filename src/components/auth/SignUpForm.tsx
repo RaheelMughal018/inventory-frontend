@@ -5,7 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import {useForm} from 'react-hook-form';
 import {useRegisterAdminMutation} from '../../redux/services/auth'
-import {toast} from 'sonner'
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 type FormData = {
    name: string
    email: string
@@ -27,9 +27,9 @@ export default function SignUpForm() {
     try {
       await createAdmin(data).unwrap()
       reset()
-      toast.success('Form Submitted')
-    } catch (error) {
-      console.log(error)
+      handleApiSuccess('Form Submitted')
+    } catch (error: unknown) {
+      handleApiError(error, "Form Submission Failed")
     }
   }
   return (

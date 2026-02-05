@@ -4,7 +4,7 @@ import {  EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
-import {toast} from 'sonner'
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 import {useForm} from 'react-hook-form'
 import { useLoginAdminMutation } from "../../redux/services/auth";
 import {useNavigate} from 'react-router'
@@ -31,12 +31,11 @@ export default function SignInForm() {
         localStorage.setItem("access_token", token)
         localStorage.setItem("id", id)
         reset()
-        toast.success("Login Form Submitted")
+        handleApiSuccess("Login Form Submitted")
         navigate("/")
       }
-    } catch (error) {
-      console.log("🚀 ~ onSubmit ~ error:", error)
-      toast.error(`Invalid Form ${error.message}`)
+    } catch (error: unknown) {
+      handleApiError(error, "Invalid Form")
     }
   }
   return (

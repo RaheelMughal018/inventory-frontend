@@ -168,7 +168,7 @@ export default function SupplierTable({
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                   <span
-                      className={`font-medium ${summaries?.[supplier.id]?.outstanding_balance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+                      className={`font-medium ${summaries?.[supplier.id]?.outstanding_balance && summaries?.[supplier.id]?.outstanding_balance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
                     > 
                        {summaries?.[supplier.id]?.outstanding_balance ?? "-"} 
                       </span>
@@ -199,10 +199,10 @@ export default function SupplierTable({
                       >
                         <CloseIcon />
                       </button>
-                     {summaries?.[supplier.id]?.outstanding_balance > 0 && (
+                     {summaries?.[supplier.id]?.outstanding_balance && summaries?.[supplier.id]?.outstanding_balance > 0 && (
                       <button className="cursor-pointer"
                       title="Add Payment"
-                        onClick={() => onAddPayment(supplier)}
+                        onClick={() => onAddPayment?.(supplier)}
                       >
                         <PaperPlaneIcon />
                       </button>

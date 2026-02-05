@@ -274,7 +274,6 @@ const accountOptions =
                   }
                   searchable
                   disabled={supplierLoading}
-                  dropdownClassName="z-[9999]"
                 />
               </div>
 

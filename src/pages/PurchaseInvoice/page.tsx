@@ -10,7 +10,6 @@ import {
   useDeletePurchaseInvoicesMutation,
   InvoiceStatusEnum,
 } from "../../redux/services/purchaseInvoice"; 
-import { toast } from "sonner";
 import Pagination from "../../components/common/Pagination";
 import PurchaseTable from "../../components/tables/BasicTables/PurchaseTable";
 import {useAddPurchaseInvoicePaymentMutation} from "../../redux/services/purchaseInvoice";
@@ -19,6 +18,7 @@ import { useGetAllAccountsQuery } from "../../redux/services/account";
 import { useGetAllSuppliersQuery } from "../../redux/services/supplier";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import DatePicker from "../../components/form/date-picker";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const PurchaseInvoicePage = () => {
   const navigate = useNavigate(); 
@@ -73,8 +73,7 @@ const handleEndDateChange = (selectedDates: Date[]) => {
 
   // Handle export CSV
   const handleExportCSV = () => {
-    console.log("Exporting purchase invoices to CSV");
-    toast.info("Export feature coming soon");
+    handleApiSuccess("Export feature coming soon");
   };
   
   // ✅ ADD: Handle Add New Invoice - Navigate to create page
@@ -100,20 +99,19 @@ const handleEndDateChange = (selectedDates: Date[]) => {
   
   // ✅ ADD: Handle Delete Invoice
   const handleDeleteClick = async (invoice: PurchaseInvoiceSummary) => {
-       console.log("Delete invoice:", invoice.id);
       try {
         const res = await deletePurchase(invoice.id).unwrap()
         if(res){
-          toast.success(res.message);
+          handleApiSuccess(res.message);
         }
       } catch (error) {
-        toast.error(error?.data?.message)
+        handleApiError(error, "Failed to delete invoice");
       }
   };
 
   // ✅ ADD: Callback for when delete is successful in child table
   const handleDeleteSuccess = (invoice: PurchaseInvoiceSummary) => {
-    toast.success(`Invoice ${invoice.id} deleted successfully`);
+    handleApiSuccess(`Invoice ${invoice.id} deleted successfully`);
     // The table will automatically refetch due to invalidated tags
   };
   
@@ -129,7 +127,7 @@ const handleEndDateChange = (selectedDates: Date[]) => {
       },
     }).unwrap();
     
-    toast.success("Payment recorded successfully");
+    handleApiSuccess("Payment recorded successfully");
     
     // close modal & reset state
     setIsPaymentModalOpen(false);
@@ -137,8 +135,7 @@ const handleEndDateChange = (selectedDates: Date[]) => {
     
     // optionally refetch the invoices
   } catch (error) {
-    console.log("🚀 ~ handlePaymentSubmit ~ error:", error)
-    toast.error("Failed to add payment");
+    handleApiError(error, "Failed to add payment");
   }
 };
 

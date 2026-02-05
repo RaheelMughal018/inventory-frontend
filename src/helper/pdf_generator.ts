@@ -73,9 +73,9 @@ export const generateInvoicePDF = (invoice: PurchaseInvoiceResponse) => {
   const statusText = invoice.payment_status;
   const statusWidth = doc.getTextWidth(statusText) + 8;
   
-  doc.setFillColor(...statusColor.bg);
+  doc.setFillColor(statusColor.bg[0], statusColor.bg[1], statusColor.bg[2]);
   doc.roundedRect(pageWidth - 15 - statusWidth, yPosition - 4, statusWidth, 7, 2, 2, "F");
-  doc.setTextColor(...statusColor.text);
+  doc.setTextColor(statusColor.text[0], statusColor.text[1], statusColor.text[2]);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.text(statusText, pageWidth - 15 - statusWidth / 2, yPosition, { align: "center" });
@@ -149,7 +149,6 @@ export const generateInvoicePDF = (invoice: PurchaseInvoiceResponse) => {
     },
   });
 
-  // @ts-ignore - autoTable adds finalY property
   yPosition = doc.lastAutoTable.finalY + 10;
 
   // ============================================
@@ -251,7 +250,6 @@ export const generateInvoicePDF = (invoice: PurchaseInvoiceResponse) => {
       },
     });
 
-    // @ts-ignore
     yPosition = doc.lastAutoTable.finalY + 10;
   }
 
