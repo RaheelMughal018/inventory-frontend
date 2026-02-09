@@ -9,11 +9,15 @@ export interface GetSuppliersParams {
   limit?: number
 }
 
+export type OpeningBalanceType = 'DEBIT' | 'CREDIT';
+
 export interface CreateSupplier {
   name: string
   company_name: string
   phone: string
   city: string
+  opening_balance?: number
+  opening_balance_type?: OpeningBalanceType
 }
 
 export interface UpdateSupplier extends CreateSupplier {
@@ -34,6 +38,8 @@ export interface Supplier {
     created_at: string
     updated_at: string
     created_by_id: number
+    opening_balance?: number
+    opening_balance_type?: OpeningBalanceType
   }
   
   export interface SuppliersResponse {

@@ -9,11 +9,15 @@ export interface GetCustomersParams {
   limit?: number
 }
 
+export type OpeningBalanceType = 'DEBIT' | 'CREDIT';
+
 export interface CreateCustomer {
   name: string
   company_name: string
   phone: string
   city: string
+  opening_balance?: number
+  opening_balance_type?: OpeningBalanceType
 }
 
 export interface UpdateCustomer extends CreateCustomer {
@@ -37,6 +41,8 @@ export interface Customer {
     total_transactions: string
     total_paid: string
     current_balance: string
+    opening_balance?: number
+    opening_balance_type?: OpeningBalanceType
   }
   
   export interface CustomersResponse {

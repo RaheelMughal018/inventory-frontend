@@ -4,7 +4,7 @@ import { Modal } from "../ui/modal";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Radio from "../form/input/Radio";
-import { Customer } from "../../redux/services/customer";
+import { Customer, OpeningBalanceType } from "../../redux/services/customer";
 
 interface AddCustomerModalProps {
   isOpen: boolean;
@@ -20,6 +20,8 @@ export interface CustomerFormData {
   phone: string;
   city: string;
   company_name?: string;
+  opening_balance?: number;
+  opening_balance_type?: OpeningBalanceType;
 }
 
 const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
@@ -35,6 +37,8 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
     phone: "",
     city: "",
     company_name: "",
+    opening_balance: 0,
+    opening_balance_type: "DEBIT",
   });
 
   // Reset form when modal opens/closes or initialData changes
@@ -52,6 +56,8 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
         phone: initialData.phone || "",
         city: initialData.city || "",
         company_name: initialData.company_name || "",
+        opening_balance: initialData.opening_balance || 0,
+        opening_balance_type: initialData.opening_balance_type || "DEBIT",
       });
       return;
     }
@@ -62,6 +68,8 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
       phone: "",
       city: "",
       company_name: "",
+      opening_balance: 0,
+      opening_balance_type: "DEBIT",
     });
   }, [isOpen, initialData, mode]);
 
@@ -208,6 +216,79 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
               value={formData.city}
               onChange={(e) => handleChange("city", e.target.value)}
             />
+          </div>
+
+          {/* Opening Balance Section */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Opening Balance (Optional)
+              </h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Add any existing balance for this customer
+              </p>
+            </div>
+
+            {/* Opening Balance Amount */}
+            <div>
+              <Label htmlFor="customer-opening-balance">Amount</Label>
+              <Input
+                id="customer-opening-balance"
+                type="number"
+                min="0"
+                placeholder="0.00"
+                value={formData.opening_balance || ''}
+                onChange={(e) => handleChange("opening_balance", e.target.value)}
+              />
+            </div>
+
+            {/* Opening Balance Type */}
+            <div className="mt-4">
+              <Label className="mb-3">Balance Type</Label>
+              <div className="space-y-3">
+                <div 
+                  className={`p-3 rounded-lg border-2 transition-colors cursor-pointer ${
+                    formData.opening_balance_type === "DEBIT" 
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
+                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                  }`}
+                  onClick={() => handleChange("opening_balance_type", "DEBIT")}
+                >
+                  <Radio
+                    id="customer-balance-debit"
+                    name="customer_opening_balance_type"
+                    value="DEBIT"
+                    checked={formData.opening_balance_type === "DEBIT"}
+                    label="DEBIT - Customer owes you"
+                    onChange={(value) => handleChange("opening_balance_type", value)}
+                  />
+                  <p className="ml-6 text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    Use when customer has purchased on credit and hasn't paid yet
+                  </p>
+                </div>
+
+                <div 
+                  className={`p-3 rounded-lg border-2 transition-colors cursor-pointer ${
+                    formData.opening_balance_type === "CREDIT" 
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20" 
+                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                  }`}
+                  onClick={() => handleChange("opening_balance_type", "CREDIT")}
+                >
+                  <Radio
+                    id="customer-balance-credit"
+                    name="customer_opening_balance_type"
+                    value="CREDIT"
+                    checked={formData.opening_balance_type === "CREDIT"}
+                    label="CREDIT - You owe the customer"
+                    onChange={(value) => handleChange("opening_balance_type", value)}
+                  />
+                  <p className="ml-6 text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    Use when customer has paid in advance or overpaid
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Form Actions */}

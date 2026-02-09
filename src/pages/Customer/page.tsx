@@ -55,6 +55,8 @@ const CustomerPage = () => {
         phone: customerData.phone,
         city: customerData.city,
         company_name: customerData.company_name ?? "",
+        opening_balance: customerData.opening_balance || 0,
+        opening_balance_type: customerData.opening_balance_type || "DEBIT"
       };
 
       const res = await createCustomer(payload).unwrap();
@@ -74,6 +76,8 @@ const CustomerPage = () => {
         phone: customerData.phone,
         city: customerData.city,
         company_name: customerData.company_name ?? "",
+        opening_balance: customerData.opening_balance || 0,
+        opening_balance_type: customerData.opening_balance_type || "DEBIT"
       };
 
       const res = await updateCustomer({

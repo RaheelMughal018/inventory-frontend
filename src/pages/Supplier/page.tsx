@@ -49,7 +49,9 @@ const SupplierPage = () => {
         name: supplierData.name,
         phone: supplierData.phone,
         city: supplierData.city,
-        company_name: supplierData.company_name ?? ""
+        company_name: supplierData.company_name ?? "",
+        opening_balance: supplierData.opening_balance || 0,
+        opening_balance_type: supplierData.opening_balance_type || "DEBIT"
       }
       const res = await createSupplier(payload).unwrap();
       if(res) handleApiSuccess(`${res.name} is created successfully`);
@@ -68,7 +70,9 @@ const SupplierPage = () => {
         name: supplierData.name,
         phone: supplierData.phone,
         city: supplierData.city,
-        company_name: supplierData.company_name ?? ""
+        company_name: supplierData.company_name ?? "",
+        opening_balance: supplierData.opening_balance || 0,
+        opening_balance_type: supplierData.opening_balance_type || "DEBIT"
       }
       const res = await updateSupplier({ id: selectedSupplier.id, ...payload }).unwrap();
       if(res) handleApiSuccess(`${res.name} is updated successfully`);

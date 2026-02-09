@@ -281,9 +281,9 @@ const ViewProductionBatch = () => {
                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                       Qty per unit
                     </TableCell>
-                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                    {/* <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                       Total qty
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                       Avg price
                     </TableCell>
@@ -298,9 +298,9 @@ const ViewProductionBatch = () => {
                       <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-300">
                         {item.quantity_per_unit}
                       </TableCell>
-                      <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-300">
+                      {/* <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-300">
                         {item.total_quantity}
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-300">
                         {item.avg_price}
                       </TableCell>
