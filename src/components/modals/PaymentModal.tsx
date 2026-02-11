@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Modal } from "../ui/modal";
-import Button from "../ui/button/Button";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import SelectDropdown from "../form/SelectDropdown";
@@ -119,10 +118,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Button variant="outline" onClick={onClose}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-base-500 shadow-theme-xs hover:bg-base-600"
+            >
               Cancel
-            </Button>
-            <Button  variant="primary" onClick={handleSubmit}>Save Payment</Button>
+            </button>
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+            >
+              Save Payment
+            </button>
           </div>
         </form>
       </div>
