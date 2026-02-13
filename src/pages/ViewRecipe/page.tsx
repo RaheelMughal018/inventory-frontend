@@ -255,19 +255,19 @@ const ViewRecipePage = () => {
                       </TableCell>
                       <TableCell
                         isHeader
-                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                        className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400"
                       >
-                        Quantity per Unit
+                        Qty/Unit
                       </TableCell>
                       <TableCell
                         isHeader
-                        className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400"
+                        className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400"
                       >
                         Avg Price
                       </TableCell>
                       <TableCell
                         isHeader
-                        className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400"
+                        className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400"
                       >
                         Amount/Unit
                       </TableCell>
@@ -282,15 +282,15 @@ const ViewRecipePage = () => {
                         <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
                           {item.raw_item_name}
                         </TableCell>
-                        <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400">
-                          {item.quantity_per_unit}
+                          <TableCell className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">
+                          {Math.floor(Number(item.quantity_per_unit))}
                         </TableCell>
-                        <TableCell className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">
+                        <TableCell className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">
                           {item.avg_price != null
-                            ? `$${Number(item.avg_price).toFixed(2)}`
+                            ? `${Number(item.avg_price).toFixed(2)} Rs`
                             : "—"}
                         </TableCell>
-                        <TableCell className="px-5 py-3 text-end text-gray-800 dark:text-white/90">
+                        <TableCell className="px-5 py-3 text-center text-gray-800 dark:text-white/90">
                           ${Number(item.amount_per_unit).toFixed(2)}
                         </TableCell>
                       </TableRow>
