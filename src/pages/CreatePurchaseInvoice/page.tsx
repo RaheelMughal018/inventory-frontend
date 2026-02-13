@@ -309,7 +309,7 @@ const accountOptions =
                   + Add Item
                 </Button>
             </div>
-              <div className="overflow-x-auto">
+              <div className="">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
                     <tr>

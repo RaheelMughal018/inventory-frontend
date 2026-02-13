@@ -145,8 +145,8 @@ const ExpenseBulkModal: React.FC<ExpenseBulkModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Table */}
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700/80 overflow-hidden bg-gray-50/50 dark:bg-gray-800/30">
-            <div className="overflow-x-auto overflow-y-auto max-h-[min(60vh,28rem)]">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700/80 bg-gray-50/50 dark:bg-gray-800/30">
+            <div className="">
               <table className="min-w-full">
                 <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800/95 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider shadow-sm">
                   <tr>

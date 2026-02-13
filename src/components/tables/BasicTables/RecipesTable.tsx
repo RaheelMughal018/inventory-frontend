@@ -5,7 +5,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../ui/table";
-import { CloseIcon, PencilIcon } from "../../../icons";
+import { CloseIcon, EyeIcon, PencilIcon } from "../../../icons";
 import { TailSpin } from "react-loader-spinner";
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
@@ -20,12 +20,14 @@ import { handleApiError, handleApiSuccess } from "../../../helper/error_handler"
 interface RecipesTableProps {
   recipes: RecipeResponse[];
   loading: boolean;
+  onView?: (recipe: RecipeResponse) => void;
   onEdit?: (recipe: RecipeResponse) => void;
 }
 
 export default function RecipesTable({
   recipes,
   loading,
+  onView,
   onEdit,
 }: RecipesTableProps) {
   const { isOpen, closeModal, openModal } = useModal();
@@ -72,7 +74,7 @@ export default function RecipesTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Ingredients
+                  Total Ingredients Count
                 </TableCell>
                 <TableCell
                   isHeader
@@ -122,10 +124,8 @@ export default function RecipesTable({
                       {recipe.name || "—"}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400">
-                      {recipe.items.length} item(s):{" "}
-                      {recipe.items
-                        .map((i) => `${i.raw_item_name} (${i.quantity_per_unit})`)
-                        .join(", ")}
+                      {recipe.items.length} items
+                     
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
                       {recipe.total_cost_per_unit != null
@@ -137,6 +137,16 @@ export default function RecipesTable({
                     </TableCell>
                     <TableCell className="px-5 py-3 text-end">
                       <div className="flex justify-end gap-2">
+                        {onView && (
+                          <button
+                            type="button"
+                            onClick={() => onView(recipe)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                            title="View"
+                          >
+                            <EyeIcon className="size-4" />
+                          </button>
+                        )}
                         {onEdit && (
                           <button
                             type="button"
