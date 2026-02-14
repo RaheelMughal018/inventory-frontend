@@ -162,11 +162,11 @@ const accountOptions =
           quantity: item.quantity,
           unit_price: item.unit_price,
         })),
-        // Backend supports payment fields; notes not part of schema (kept in UI only for now)
+        invoice_date: invoiceDate, // YYYY-MM-DD format from date picker state
         payment_amount: paymentData.payment_amount,
         payment_account_id: paymentData.payment_account_id,
       };
-      // console.log("🚀 ~ handleSubmit ~ payload:", payload)
+      console.log("🚀 ~ handleSubmit ~ payload:", payload)
 
       const response = await createPurchaseInvoice(payload).unwrap();
       toast.success(`Invoice created successfully: ${response.id}`);
@@ -285,10 +285,8 @@ const accountOptions =
                   label="Invoice Date"
                   placeholder="Select a date"
                   defaultDate={invoiceDate}
-                  onChange={(dates, currentDateString) => {
-                    // Handle your logic
-                    console.log({ dates, currentDateString });
-                    setInvoiceDate(currentDateString)
+                  onChange={(_, currentDateString) => {
+                    setInvoiceDate(currentDateString);
                   }}
                 />
               </div>

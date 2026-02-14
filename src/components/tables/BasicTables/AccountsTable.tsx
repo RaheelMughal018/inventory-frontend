@@ -75,6 +75,18 @@ export default function AccountsTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
+                  Opening Balance
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
+                  Current Balance
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
                   Created on
                 </TableCell>
 
@@ -90,7 +102,7 @@ export default function AccountsTable({
             {/* Table Body */}
             {loading && (
               <TableRow>
-                <TableCell>
+                <TableCell colSpan={6}>
                   <div className="flex justify-center items-center py-10">
                     <TailSpin
                       height={40}
@@ -105,7 +117,7 @@ export default function AccountsTable({
 
             {!loading && accounts.length === 0 && (
               <TableRow>
-                <TableCell className="text-center py-6 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-6 text-gray-500">
                   No accounts Found
                 </TableCell>
               </TableRow>
@@ -126,6 +138,22 @@ export default function AccountsTable({
                     <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                       {account.type.replace("_", " ")}
                     </span>
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 font-medium">
+                    {account.opening_balance != null
+                      ? Number(account.opening_balance).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    {account.current_balance != null
+                      ? Number(account.current_balance).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
+                      : "—"}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     {formatDate(account.created_at)}

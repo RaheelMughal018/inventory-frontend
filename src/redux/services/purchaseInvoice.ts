@@ -35,8 +35,9 @@ export interface PurchaseItemCreate {
 }
 
 export interface PurchaseInvoiceCreate {
-  supplier_id: number| string;
+  supplier_id: number | string;
   items: PurchaseItemCreate[];
+  invoice_date?: string; // YYYY-MM-DD format
   payment_amount?: number; // default 0.00 on backend
   payment_account_id?: string | null;
 }

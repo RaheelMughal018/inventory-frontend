@@ -19,6 +19,7 @@ export interface GetAccountsParams {
 export interface CreateAccount {
   name: string
   type: AccountType
+  opening_balance?: number
 }
 
 export interface UpdateAccount extends CreateAccount {
@@ -30,11 +31,13 @@ export interface UpdateAccount extends CreateAccount {
 ========================= */
 
 export interface Account {
-    id: string
-    name: string
-    type: AccountType
-    created_at: string
-  }
+  id: string
+  name: string
+  type: AccountType
+  opening_balance?: number
+  current_balance?: number
+  created_at: string
+}
   
   export interface AccountsResponse {
     total: number

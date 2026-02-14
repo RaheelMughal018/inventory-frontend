@@ -7,7 +7,6 @@ import {
 } from "../../ui/table";
 import { TailSpin } from "react-loader-spinner";
 import { Expense } from "../../../redux/services/expense";
-import formatDateTime from "../../../helper/date_converter";
 
 interface ExpenseTableProps {
   expenses: Expense[];
@@ -68,12 +67,12 @@ export default function ExpenseTable({
               >
                 Description
               </TableCell>
-              <TableCell
+              {/* <TableCell
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
                 Created on
-              </TableCell>
+              </TableCell> */}
             </TableRow>
           </TableHeader>
 
@@ -133,9 +132,9 @@ export default function ExpenseTable({
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 max-w-xs truncate">
                   {exp.description ?? "—"}
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                {/* <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                   {formatDateTime(exp.created_at)}
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             ))}
 

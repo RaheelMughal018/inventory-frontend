@@ -63,6 +63,7 @@ const AccountPage = () => {
       const payload: CreateAccount = {
         name: accountData.name,
         type: accountData.type,
+        opening_balance: accountData.opening_balance ?? 0,
       };
       const res = await createAccount(payload).unwrap();
       toast.success(`${res.name} created successfully`);
@@ -81,6 +82,7 @@ const AccountPage = () => {
       const payload: CreateAccount = {
         name: accountData.name,
         type: accountData.type,
+        opening_balance: accountData.opening_balance ?? 0,
       };
       const res = await updateAccount({
         id: selectedAccount.id,

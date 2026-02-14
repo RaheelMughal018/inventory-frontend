@@ -116,6 +116,7 @@ const handleEndDateChange = (selectedDates: Date[]) => {
   };
   
   const handlePaymentSubmit = async (data: PaymentFormData) => {
+    console.log("🚀 ~ handlePaymentSubmit ~ data:", data)
     if (!selectedInvoice) return;
     
     try {

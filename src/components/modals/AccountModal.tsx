@@ -19,6 +19,7 @@ export interface AccountFormData {
   id: string;
   name: string;
   type: AccountType;
+  opening_balance?: number;
 }
 
 const AddAccountModal: React.FC<AddAccountModalProps> = ({
@@ -34,6 +35,7 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({
     id: "",
     type: AccountType.CASH,
     name: "",
+    opening_balance: 0,
   });
 
   const handleSelectChange =
@@ -52,13 +54,14 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({
           id: initialData.id,
           type: initialData.type || AccountType.CASH,
           name: initialData.name || "",
+          opening_balance: initialData.opening_balance ?? 0,
         });
       } else {
-        // Reset to default for add mode
         setFormData({
           id: "",
           type: AccountType.CASH,
           name: "",
+          opening_balance: 0,
         });
       }
     }
@@ -113,6 +116,24 @@ const AddAccountModal: React.FC<AddAccountModalProps> = ({
               placeholder="John Doe"
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="opening_balance">Opening Balance</Label>
+            <Input
+              id="opening_balance"
+              type="number"
+              min={0}
+              step={0.01}
+              placeholder="0"
+              value={formData.opening_balance ?? ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  opening_balance: e.target.value === "" ? 0 : Number(e.target.value),
+                }))
+              }
             />
           </div>
 

@@ -39,18 +39,22 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     });
   }, [isOpen, totalAmount]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
     if (!formData.payment_account_id) {
       handleApiError("Please select an account");
+      return;
     }
 
     if (formData.payment_amount <= 0) {
       handleApiError("Payment amount must be greater than 0");
+      return;
     }
 
     if (formData.payment_amount > totalAmount) {
-        handleApiError("Payment amount cannot exceed total amount");
+      handleApiError("Payment amount cannot exceed total amount");
+      return;
     }
 
     onSubmit(formData);
@@ -127,7 +131,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </button>
             <button
               type="submit"
-              onClick={handleSubmit}
               className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600"
             >
               Save Payment

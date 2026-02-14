@@ -18,15 +18,17 @@ export interface GetFinancialLedgerParams {
 ========================= */
 
 export interface FinancialLedger {
-    id: number
-    user_id: number
-    ref_type: string
-    ref_id: string
-    debit: string | number
-    credit: string | number
-    created_at: string
-    user: User
-  }
+  id: number
+  user_id: number
+  account_id?: string | number
+  account_name?: string
+  ref_type: string
+  ref_id: string
+  debit: string | number
+  credit: string | number
+  created_at: string
+  user: User
+}
 
   export interface FinancialLedgerTotals {
     total_debit?: number

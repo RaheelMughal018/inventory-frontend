@@ -1,47 +1,52 @@
 import { useState } from "react";
-import { Link} from "react-router";
-import {  EyeCloseIcon, EyeIcon } from "../../icons";
+import { Link, useNavigate } from "react-router";
+import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
-import {useForm} from 'react-hook-form'
 import { useLoginAdminMutation } from "../../redux/services/auth";
-import {useNavigate} from 'react-router'
-type FormData = {
-   email: string
-   password: string
-}
+
 export default function SignInForm() {
-   const {
-      register,
-      handleSubmit,
-      reset,
-      formState: {errors}
-  } = useForm<FormData>()
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loginAdmin, {isLoading}] = useLoginAdminMutation();
-  const onSubmit = async (data: FormData)=>{
-    try {
-      const res = await loginAdmin(data).unwrap();
-      if(res){
-        const token = res.access_token
-        const id = res.user.id
-        localStorage.setItem("access_token", token)
-        localStorage.setItem("id", id)
-        reset()
-        handleApiSuccess("Login Form Submitted")
-        navigate("/")
-      }
-    } catch (error: unknown) {
-      handleApiError(error, "Invalid Form")
+  const [error, setError] = useState<string | null>(null);
+
+  const [loginAdmin, { isLoading }] = useLoginAdminMutation();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
     }
-  }
+    if (!password) {
+      setError("Password is required");
+      return;
+    }
+
+    try {
+      const res = await loginAdmin({ email: email.trim(), password }).unwrap();
+      if (res) {
+        localStorage.setItem("access_token", res.access_token);
+        localStorage.setItem("id", res.user.id);
+        setEmail("");
+        setPassword("");
+        handleApiSuccess("Login Successful");
+        navigate("/");
+      }
+    } catch (err: unknown) {
+      handleApiError(err, "Invalid Credentials");
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1">
-      <div className="w-full max-w-md pt-10 mx-auto">
-      </div>
+      <div className="w-full max-w-md pt-10 mx-auto" />
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
@@ -53,34 +58,32 @@ export default function SignInForm() {
             </p>
           </div>
           <div>
-            
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
                   <Label>
-                    Email <span className="text-error-500">*</span>{" "}
+                    Email <span className="text-error-500">*</span>
                   </Label>
                   <Input
-                   placeholder="info@gmail.com"
-                   {...register('email',{
-                    required: 'Email is required'
-                   })}
-
-                    />
-                  {errors.email && <p>{errors.email.message} </p>}
+                    type="email"
+                    placeholder="info@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  {error === "Email is required" && (
+                    <p className="mt-1 text-sm text-red-500">{error}</p>
+                  )}
                 </div>
                 <div>
                   <Label>
-                    Password <span className="text-error-500">*</span>{" "}
+                    Password <span className="text-error-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
-                    {...register('password', {
-                      required: 'Password is required',
-                      
-                    })}
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -92,29 +95,31 @@ export default function SignInForm() {
                         <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                       )}
                     </span>
-
                   </div>
-                  {errors.password && <p>{errors.password.message}</p>}
+                  {error === "Password is required" && (
+                    <p className="mt-1 text-sm text-red-500">{error}</p>
+                  )}
                 </div>
                 <div className="flex items-center justify-between">
                   <Link
-                    to="/reset-password"
+                    to="/signup"
                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
                   >
-                    Forgot password?
+                    If you dont have an account, Sign up
                   </Link>
                 </div>
                 <div>
-                  <Button 
-                  // disabled={isLoading || isSubmitting}
-                  className="w-full" size="sm">
-                    {isLoading ? "saving...":"Sign in"}
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full"
+                    size="sm"
+                  >
+                    {isLoading ? "Saving..." : "Sign in"}
                   </Button>
                 </div>
               </div>
             </form>
-
-          
           </div>
         </div>
       </div>
