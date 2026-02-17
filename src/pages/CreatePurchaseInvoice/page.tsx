@@ -3,24 +3,24 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import {useGetAllItemsQuery} from "../../redux/services/item"
-import {useGetAllSuppliersQuery} from "../../redux/services/supplier"
+import { useGetAllItemsQuery } from "../../redux/services/item";
+import { useGetAllSuppliersQuery } from "../../redux/services/supplier";
+import { useGetAllAccountsQuery } from "../../redux/services/account";
 import {
-  type PurchaseInvoiceCreate,
+  type CreatePurchaseInvoice,
+  type PurchaseInvoiceItemDto,
+  PaymentStatus,
   useCreatePurchaseInvoiceMutation,
 } from "../../redux/services/purchaseInvoice";
-import { toast } from "sonner";
 import Button from "../../components/ui/button/Button";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import DatePicker from "../../components/form/date-picker";
-import { useGetAllAccountsQuery } from "../../redux/services/account";
-import PaymentModal, { PaymentFormData } from "../../components/modals/PaymentModal";
-
-// Mock data - replace with API calls later
-
+import Input from "../../components/form/input/InputField";
+import Label from "../../components/form/Label";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 interface InvoiceItem {
-  id: string;
+  item_id: number;
   item_name: string;
   quantity: number;
   unit_price: number;
@@ -29,41 +29,27 @@ interface InvoiceItem {
 
 const CreatePurchaseInvoicePage = () => {
   const navigate = useNavigate();
-  const [createPurchaseInvoice, { isLoading }] =
-    useCreatePurchaseInvoiceMutation();
-  const {data: accountsData} = useGetAllAccountsQuery({})
- 
-  const {data:itemsData, isLoading:itemLoading} = useGetAllItemsQuery({
-    
-  })
-  const {data:supplierData, isLoading:supplierLoading} = useGetAllSuppliersQuery({
-    
-  })
+  const [createPurchaseInvoice, { isLoading }] = useCreatePurchaseInvoiceMutation();
+
+  const { data: itemsData, isLoading: itemLoading } = useGetAllItemsQuery({});
+  const { data: supplierData, isLoading: supplierLoading } = useGetAllSuppliersQuery({});
+  const { data: accountsData, isLoading: accountsLoading } = useGetAllAccountsQuery({});
+
   // Form state
-  const [supplierId, setSupplierId] = useState<number|string>();
-  const [invoiceDate, setInvoiceDate] = useState<string>(
-    new Date().toISOString().split("T")[0],
-  );
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-
-const [paymentData, setPaymentData] = useState<{
-  payment_account_id: string | null;
-  payment_amount: number;
-}>({
-  payment_account_id: null,
-  payment_amount: 0,
-});
-
-const accountOptions =
-  accountsData?.accounts?.map((acc) => ({
-    id: acc.id,
-    name: `${acc.name} - ${acc.type}`,
-  })) || [];
+  const [supplierId, setSupplierId] = useState<number | string>("");
+  const [invoiceDate, setInvoiceDate] = useState<string>(new Date().toISOString());
+  const [dueDate, setDueDate] = useState<string>("");
+  const [tax, setTax] = useState<number>(0);
+  const [discount, setDiscount] = useState<number>(0);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.UNPAID);
+  const [accountId, setAccountId] = useState<string>("");
+  const [paidAmount, setPaidAmount] = useState<number>(0);
+  const [notes, setNotes] = useState<string>("");
 
   // Items state
   const [items, setItems] = useState<InvoiceItem[]>([
     {
-      id: "",
+      item_id: 0,
       item_name: "",
       quantity: 0,
       unit_price: 0.0,
@@ -73,13 +59,12 @@ const accountOptions =
 
   // Calculations
   const subtotal = items.reduce((sum, item) => sum + item.line_total, 0);
-  const discountAmount = 0;
-  const totalAmount = subtotal - discountAmount;
+  const totalAmount = subtotal + tax - discount;
 
   // Add new item row
   const handleAddItem = () => {
     const newItem: InvoiceItem = {
-      id: "",
+      item_id: 0,
       item_name: "",
       quantity: 0,
       unit_price: 0,
@@ -104,7 +89,7 @@ const accountOptions =
     if (field === "quantity") item.quantity = Number(value);
     if (field === "unit_price") item.unit_price = Number(value);
     if (field === "line_total") item.line_total = Number(value);
-    if (field === "id") item.id = String(value);
+    if (field === "item_id") item.item_id = Number(value);
 
     // Recalculate line total if quantity or unit_price changes
     if (field === "quantity" || field === "unit_price") {
@@ -112,12 +97,15 @@ const accountOptions =
     }
 
     // Update item name if item_id changes
-    if (field === "id") {
-      const selectedItem = itemsData?.items?.find((i) => i.id === String(value));
+    if (field === "item_id") {
+      const selectedItem = itemsData?.data?.find((i) => i.id === Number(value));
       if (selectedItem) {
         item.item_name = selectedItem.name;
-        item.unit_price = selectedItem.avg_price;
-        item.line_total = item.quantity * selectedItem.avg_price;
+        const avgPrice = typeof selectedItem.avg_price === 'string' 
+          ? parseFloat(selectedItem.avg_price) 
+          : selectedItem.avg_price;
+        item.unit_price = avgPrice || 0;
+        item.line_total = item.quantity * item.unit_price;
       }
     }
 
@@ -131,7 +119,7 @@ const accountOptions =
       const updatedItems = items.filter((_, i) => i !== index);
       setItems(updatedItems);
     } else {
-      toast.error("At least one item is required");
+      handleApiError(null, "At least one item is required");
     }
   };
 
@@ -139,47 +127,68 @@ const accountOptions =
   const handleSubmit = async () => {
     // Validation
     if (!supplierId) {
-      toast.error("Please select a supplier");
+      handleApiError(null, "Please select a supplier");
       return;
     }
 
     if (items.length === 0) {
-      toast.error("Please add at least one item");
+      handleApiError(null, "Please add at least one item");
       return;
     }
 
-    if (items.some((item) => !item.id || item.quantity <= 0)) {
-      toast.error("Please fill all item details correctly");
+    if (items.some((item) => !item.item_id || item.quantity <= 0)) {
+      handleApiError(null, "Please fill all item details correctly");
+      return;
+    }
+
+    // Validate payment data
+    if (paymentStatus === PaymentStatus.PAID && paidAmount !== totalAmount) {
+      handleApiError(null, "Paid amount must equal total amount for PAID status");
+      return;
+    }
+
+    if (paymentStatus === PaymentStatus.PARTIAL && (paidAmount <= 0 || paidAmount >= totalAmount)) {
+      handleApiError(null, "Paid amount must be between 0 and total amount for PARTIAL status");
+      return;
+    }
+
+    if ((paymentStatus === PaymentStatus.PAID || paymentStatus === PaymentStatus.PARTIAL) && !accountId) {
+      handleApiError(null, "Please select an account for payment");
       return;
     }
 
     try {
       // Transform data to match API payload
-      const payload: PurchaseInvoiceCreate = {
-        supplier_id: supplierId,
-        items: items.map((item) => ({
-          item_id: item.id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-        })),
-        invoice_date: invoiceDate, // YYYY-MM-DD format from date picker state
-        payment_amount: paymentData.payment_amount,
-        payment_account_id: paymentData.payment_account_id,
+      const invoiceItems: PurchaseInvoiceItemDto[] = items.map((item) => ({
+        item_id: item.item_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+      }));
+
+      const payload: CreatePurchaseInvoice = {
+        supplier_id: Number(supplierId),
+        items: invoiceItems,
+        invoice_date: invoiceDate,
+        due_date: dueDate || undefined,
+        tax: tax || 0,
+        discount: discount || 0,
+        payment_status: paymentStatus,
+        account_id: accountId ? Number(accountId) : undefined,
+        paid_amount: paidAmount || 0,
+        notes: notes || undefined,
       };
-      console.log("🚀 ~ handleSubmit ~ payload:", payload)
 
       const response = await createPurchaseInvoice(payload).unwrap();
-      toast.success(`Invoice created successfully: ${response.id}`);
-      navigate("/purchase");
+      handleApiSuccess(`Invoice ${response.data.invoice_number} created successfully`);
+      navigate("/purchase-invoices");
     } catch (error) {
-      console.error("Error creating invoice:", error);
-      toast.error("Failed to create invoice");
+      handleApiError(error, "Failed to create invoice");
     }
   };
 
   // Handle cancel
   const handleCancel = () => {
-    if (items.length > 0 || invoiceDate || supplierId !== 1) {
+    if (items.length > 0 || supplierId) {
       if (
         window.confirm(
           "Are you sure you want to cancel? All changes will be lost.",
@@ -192,29 +201,26 @@ const accountOptions =
     }
   };
 
-   // Transform suppliers for SelectDropdown
+  // Transform suppliers for SelectDropdown
   const supplierOptions =
-    supplierData?.suppliers?.map((supplier) => ({
+    supplierData?.data?.map((supplier) => ({
       id: supplier.id,
-      name: `${supplier.name}`,
+      name: supplier.name,
     })) || [];
 
   // Transform items for SelectDropdown
   const itemOptions =
-    itemsData?.items?.map((item) => ({
+    itemsData?.data?.map((item) => ({
       id: item.id,
-      name: `${item.name}`,
+      name: item.name,
     })) || [];
 
-    const handlePaymentSave = (data: PaymentFormData) => {
-  setPaymentData({
-    payment_account_id: data.payment_account_id,
-    payment_amount: data.payment_amount,
-  });
-
-  setIsPaymentModalOpen(false);
-};
-
+  // Transform accounts for SelectDropdown
+  const accountOptions =
+    accountsData?.data?.map((account) => ({
+      id: account.id,
+      name: `${account.name} (${account.account_type})`,
+    })) || [];
 
   return (
     <>
@@ -222,9 +228,7 @@ const accountOptions =
         title="Create Purchase Invoice"
         description="Create a new purchase invoice"
       />
-      <PageBreadcrumb
-        pageTitle="Create Purchase Invoice"
-      />
+      <PageBreadcrumb pageTitle="Create Purchase Invoice" />
 
       <div className="space-y-6">
         {/* Header with actions */}
@@ -255,18 +259,16 @@ const accountOptions =
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Basic Information */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Supplier & Date Card */}
-            {/* <ComponentCard title="Basic Information"> */}
+            {/* Supplier & Date Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Supplier Selection */}
-               {/* Supplier Selection */}
               <div>
                 <SelectDropdown
                   label="Supplier"
                   required
                   options={supplierOptions}
                   value={supplierId}
-                  onChange={(value) => setSupplierId(value)}
+                  onChange={(value) => setSupplierId(Number(value))}
                   placeholder={
                     supplierLoading
                       ? "Loading suppliers..."
@@ -277,28 +279,38 @@ const accountOptions =
                 />
               </div>
 
-              {/* Date (UI-only for now) */}
+              {/* Invoice Date */}
               <div>
-
                 <DatePicker
                   id="invoice-date"
                   label="Invoice Date"
-                  placeholder="Select a date"
+                  placeholder="Select invoice date"
                   defaultDate={invoiceDate}
                   onChange={(_, currentDateString) => {
                     setInvoiceDate(currentDateString);
                   }}
                 />
               </div>
+
+              {/* Due Date */}
+              <div>
+                <DatePicker
+                  id="due-date"
+                  label="Due Date (Optional)"
+                  placeholder="Select due date"
+                  onChange={(_, currentDateString) => {
+                    setDueDate(currentDateString);
+                  }}
+                />
+              </div>
             </div>
-            {/* </ComponentCard> */}
 
-            {/* Items Card */}
-            <div className="flex items-center justify-between">
-
-            <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
-                Invoice Items
-              </h3>
+            {/* Items Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+                  Invoice Items
+                </h3>
                 <Button
                   variant="outline"
                   onClick={handleAddItem}
@@ -306,8 +318,9 @@ const accountOptions =
                 >
                   + Add Item
                 </Button>
-            </div>
-              <div className="">
+              </div>
+
+              <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
                     <tr>
@@ -330,29 +343,30 @@ const accountOptions =
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {items?.map((item, index) => (
-                      <tr key={item.id}>
+                      <tr key={index}>
                         <td className="px-4 py-3">
-                        <SelectDropdown
-                          options={itemOptions}
-                          value={item.id}
-                          onChange={(value) =>
-                            handleUpdateItem(index, "id", String(value))
-                          }
-                          placeholder={
-                            itemLoading
-                              ? "Loading items..."
-                              : "Search and select item..."
-                          }
-                          searchable
-                          disabled={itemLoading}
-                          className="w-72"
-                          triggerClassName="h-9 px-3 py-1 text-xs"
-                        />
-                      </td>
+                          <SelectDropdown
+                            options={itemOptions}
+                            value={item.item_id || ""}
+                            onChange={(value) =>
+                              handleUpdateItem(index, "item_id", Number(value))
+                            }
+                            placeholder={
+                              itemLoading
+                                ? "Loading items..."
+                                : "Search and select item..."
+                            }
+                            searchable
+                            disabled={itemLoading}
+                            className="w-72"
+                            triggerClassName="h-9 px-3 py-1 text-xs"
+                          />
+                        </td>
                         <td className="px-4 py-3">
                           <input
                             type="number"
-                            min="1"
+                            min="0.001"
+                            step="0.001"
                             value={item.quantity === 0 ? "" : item.quantity}
                             onChange={(e) =>
                               handleUpdateItem(
@@ -361,7 +375,7 @@ const accountOptions =
                                 e.target.value === "" ? 0 : Number(e.target.value),
                               )
                             }
-                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -377,16 +391,16 @@ const accountOptions =
                                 e.target.value === "" ? 0 : Number(e.target.value),
                               )
                             }
-                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white"
                           />
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                          {item.line_total.toFixed(2)}
+                          ${item.line_total.toFixed(2)}
                         </td>
                         <td className="px-4 py-3">
                           <button
                             onClick={() => handleRemoveItem(index)}
-                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"
                             disabled={items.length === 1}
                           >
                             Remove
@@ -397,115 +411,186 @@ const accountOptions =
                   </tbody>
                 </table>
               </div>
-
-            {/* Notes Card removed (moved to top right) */}
+            </div>
           </div>
 
-          {/* Right Column - Summary */}
+          {/* Right Column - Summary & Payment */}
           <div className="space-y-6">
-            {/* Summary Card */}
-            <div className="space-y-4">
+            {/* Invoice Summary */}
+            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
               <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
                 Invoice Summary
               </h3>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">
-                  Subtotal
-                </span>
-                <span className="font-medium text-gray-900 dark:text-white">{subtotal.toFixed(2)}</span>
-              </div>
-
-              {/* <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">
-                  Tax (15%)
-                </span>
-                <span className="font-medium">${taxAmount.toFixed(2)}</span>
-              </div> */}
-
-              {/* <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">
-                  Shipping
-                </span>
-                <span className="font-medium">
-                  ${shippingCharges.toFixed(2)}
-                </span>
-              </div> */}
-
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">
-                 Pay 
-                </span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {paymentData.payment_amount.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">
-                  Discount
-                </span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  -{discountAmount.toFixed(2)}
-                </span>
-              </div>
-
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <div className="flex justify-between text-lg font-bold">
-                  <span className="text-gray-900 dark:text-white">Total Amount</span>
-                  <span className="text-brand-600 dark:text-brand-400">
-                    {totalAmount.toFixed(2)}
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    ${subtotal.toFixed(2)}
                   </span>
+                </div>
+
+                {/* Tax Input */}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Tax</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={tax === 0 ? "" : tax}
+                    onChange={(e) => setTax(e.target.value === "" ? 0 : Number(e.target.value))}
+                    className="w-24 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {/* Discount Input */}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Discount</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={discount === 0 ? "" : discount}
+                    onChange={(e) => setDiscount(e.target.value === "" ? 0 : Number(e.target.value))}
+                    className="w-24 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span className="text-gray-900 dark:text-white">Total Amount</span>
+                    <span className="text-brand-600 dark:text-brand-400">
+                      ${totalAmount.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-              </div>
-            {/* Quick Stats */}
-              <div className="space-y-3">
-                <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
-                Quick Stats 
+
+            {/* Payment Section */}
+            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+                Payment Details
               </h3>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Items Count
-                  </span>
-                  <span className="font-medium text-gray-900 dark:text-white">{items.length}</span>
+
+              {/* Payment Status */}
+              <div>
+                <Label>Payment Status <span className="text-red-500">*</span></Label>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => {
+                      setPaymentStatus(PaymentStatus.UNPAID);
+                      setPaidAmount(0);
+                      setAccountId("");
+                    }}
+                    className={`flex-1 px-3 py-2 text-sm rounded border ${
+                      paymentStatus === PaymentStatus.UNPAID
+                        ? "bg-red-50 border-red-500 text-red-700 dark:bg-red-900/20 dark:border-red-500 dark:text-red-400"
+                        : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    Unpaid
+                  </button>
+                  <button
+                    onClick={() => setPaymentStatus(PaymentStatus.PARTIAL)}
+                    className={`flex-1 px-3 py-2 text-sm rounded border ${
+                      paymentStatus === PaymentStatus.PARTIAL
+                        ? "bg-yellow-50 border-yellow-500 text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-500 dark:text-yellow-400"
+                        : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    Partial
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPaymentStatus(PaymentStatus.PAID);
+                      setPaidAmount(totalAmount);
+                    }}
+                    className={`flex-1 px-3 py-2 text-sm rounded border ${
+                      paymentStatus === PaymentStatus.PAID
+                        ? "bg-green-50 border-green-500 text-green-700 dark:bg-green-900/20 dark:border-green-500 dark:text-green-400"
+                        : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    Paid
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Total Items
-                  </span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {items.reduce((sum, item) => sum + item.quantity, 0)}
-                  </span>
-                </div>
-                
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
-              Payment 
-              </h3>
-              <Button
-                  variant="primary"
-                  onClick={() => setIsPaymentModalOpen(true)}
-                  className="w-full justify-center py-3"
-                >
-                  Pay
-                </Button> 
-                
               </div>
 
-           
+              {/* Show payment fields if PAID or PARTIAL */}
+              {(paymentStatus === PaymentStatus.PAID || paymentStatus === PaymentStatus.PARTIAL) && (
+                <>
+                  {/* Account Selection */}
+                  <div>
+                    <SelectDropdown
+                      label="Payment Account"
+                      required
+                      options={accountOptions}
+                      value={accountId}
+                      onChange={(value) => setAccountId(String(value))}
+                      placeholder={
+                        accountsLoading
+                          ? "Loading accounts..."
+                          : "Search and select account..."
+                      }
+                      searchable
+                      disabled={accountsLoading}
+                    />
+                  </div>
+
+                  {/* Paid Amount */}
+                  <div>
+                    <Label>Paid Amount <span className="text-red-500">*</span></Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={paidAmount === 0 ? "" : paidAmount}
+                      onChange={(e) => setPaidAmount(e.target.value === "" ? 0 : Number(e.target.value))}
+                      placeholder="0.00"
+                    />
+                    {paymentStatus === PaymentStatus.PAID && paidAmount !== totalAmount && (
+                      <p className="text-xs text-red-500 mt-1">
+                        Must equal total amount (${totalAmount.toFixed(2)})
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Quick Stats */}
+            <div className="space-y-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+                Quick Stats
+              </h3>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Items Count</span>
+                <span className="font-medium text-gray-900 dark:text-white">{items.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Total Quantity</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {items.reduce((sum, item) => sum + item.quantity, 0).toFixed(3)}
+                </span>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <Label>Notes (Optional)</Label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={4}
+                className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                placeholder="Add any additional notes..."
+              />
+            </div>
           </div>
         </div>
       </div>
-
-      <PaymentModal
-          isOpen={isPaymentModalOpen}
-          onClose={() => setIsPaymentModalOpen(false)}
-          onSubmit={handlePaymentSave}
-          totalAmount={totalAmount}
-          accounts={accountOptions}
-/>
     </>
   );
 };
