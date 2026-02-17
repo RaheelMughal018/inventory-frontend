@@ -9,12 +9,11 @@ import {
   Supplier,
   useDeleteSupplierMutation,
 } from "../../../redux/services/supplier";
-import { CloseIcon, PaperPlaneIcon, PencilIcon } from "../../../icons";
+import { CloseIcon, PencilIcon } from "../../../icons";
 import { TailSpin } from "react-loader-spinner";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
 import {  useState } from "react";
-import { SupplierPurchaseSummary } from "../../../redux/services/purchaseInvoice";
 import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 
 
@@ -22,15 +21,11 @@ interface SupplierTableProps {
   suppliers: Supplier[];
   loading: boolean;
   onEdit?: (supplier: Supplier) => void;
-  summaries?: Record<number, SupplierPurchaseSummary>; 
-  onAddPayment?: (supplier: Supplier) => void;
 }
 export default function SupplierTable({
   suppliers,
   loading,
-  onEdit,
-  summaries,
-  onAddPayment
+  onEdit
 }: SupplierTableProps) {
   const { isOpen, openModal, closeModal } = useModal();
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
@@ -44,7 +39,7 @@ export default function SupplierTable({
 
     try {
       const res = await deleteSupplier(selectedSupplier.id).unwrap();
-      if (res.message) handleApiSuccess(res.message);
+      if (res?.data?.message) handleApiSuccess(res.data.message);
       closeModal();
       setSelectedSupplier(null);
     } catch (error) {
@@ -87,7 +82,7 @@ export default function SupplierTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  City
+                  Address
                 </TableCell>
                 <TableCell
                   isHeader
@@ -99,19 +94,13 @@ export default function SupplierTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Due Amount
+                  Opening Balance
                 </TableCell>
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Paid Amount
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Total Purchases
+                  Current Balance
                 </TableCell>
                 <TableCell
                   isHeader
@@ -151,62 +140,56 @@ export default function SupplierTable({
                 <TableRow key={supplier.id}>
                   <TableCell className="px-5 py-4 sm:px-6 text-start">
                     <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                      {supplier.user_id}
+                      {supplier.id}
                     </span>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     {supplier.name}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {supplier.company_name}
+                    {supplier.company_name || '-'}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {supplier.city}
+                    {supplier.address || '-'}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {supplier.phone}
+                    {supplier.phone || '-'}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  <span
-                      className={`font-medium ${summaries?.[supplier.id]?.outstanding_balance && summaries?.[supplier.id]?.outstanding_balance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
-                    > 
-                       {summaries?.[supplier.id]?.outstanding_balance ?? "-"} 
-                      </span>
-                    </TableCell> 
+                    <span className="font-medium text-gray-800 dark:text-white/90">
+                      {Number(supplier.opening_balance).toLocaleString('en-US', { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                      })}
+                    </span>
+                  </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      <span className="font-medium text-gray-800 dark:text-white/90">
-                        {summaries?.[supplier.id]?.total_paid ?? "-"}
-                      </span>
-                    </TableCell> 
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      <span className="font-medium text-gray-800 dark:text-white/90">
-                        {summaries?.[supplier.id]?.total_purchases ?? "-"}
-                      </span>
-                    </TableCell> 
+                    <span className={`font-semibold ${Number(supplier.current_balance) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-white/90'}`}>
+                      {Number(supplier.current_balance).toLocaleString('en-US', { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                      })}
+                    </span>
+                  </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <button 
-                        className="cursor-pointer" title="Edit Supplier"
+                        className="cursor-pointer hover:opacity-70 transition-opacity" 
+                        title="Edit Supplier"
                         onClick={() => onEdit?.(supplier)}
                       >
                         <PencilIcon width={40} />
                       </button>
-                      <button className="cursor-pointer text-red-800" title="Delete Supplier"
-                      onClick={()=>{
-                    setSelectedSupplier(supplier)
-                    openModal()
-                  }}
+                      <button 
+                        className="cursor-pointer text-red-800 hover:opacity-70 transition-opacity" 
+                        title="Delete Supplier"
+                        onClick={()=>{
+                          setSelectedSupplier(supplier)
+                          openModal()
+                        }}
                       >
                         <CloseIcon />
                       </button>
-                     {summaries?.[supplier.id]?.outstanding_balance && summaries?.[supplier.id]?.outstanding_balance > 0 && (
-                      <button className="cursor-pointer"
-                      title="Add Payment"
-                        onClick={() => onAddPayment?.(supplier)}
-                      >
-                        <PaperPlaneIcon />
-                      </button>
-                     )} 
                     </div>
                   </TableCell>
                 </TableRow>

@@ -15,13 +15,10 @@ const CategoryPage = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
 
-  const skip = (page - 1) * limit;
-
   const { data, isLoading } = useGetAllCategoriesQuery({
     search: search || undefined,
     limit,
-    skip,
-
+    page,
   });
   const [createCategory] = useCreateCategoryMutation();
   const [updateCategory] = useUpdateCategoryMutation();
@@ -51,7 +48,7 @@ const CategoryPage = () => {
       };
 
       const res = await createCategory(payload).unwrap();
-      if (res) handleApiSuccess(`${res.name} is created successfully`);
+      if (res) handleApiSuccess(`${res.data.name} is created successfully`);
       setIsAddModalOpen(false);
     } catch (error) {
       handleApiError(error, "Failed to create category");
@@ -70,7 +67,7 @@ const CategoryPage = () => {
         id: selectedCategory.id,
         ...payload,
       }).unwrap();
-      if (res) handleApiSuccess(`${res.name} is updated successfully`);
+      if (res) handleApiSuccess(`${res.data.name} is updated successfully`);
       setIsEditModalOpen(false);
       setSelectedCategory(null);
     } catch (error) {
@@ -111,7 +108,7 @@ const CategoryPage = () => {
           }
         >
           <CategoryTable
-            categories={data?.categories ?? []}
+            categories={data?.data ?? []}
             loading={isLoading}
             onEdit={handleEditClick}
           />
@@ -119,7 +116,7 @@ const CategoryPage = () => {
             <Pagination
               currentPage={page}
               pageSize={limit}
-              total={data?.total ?? 0}
+              total={data?.meta?.totalItems ?? data?.data?.length ?? 0}
               onPageChange={setPage}
             />
           </div>

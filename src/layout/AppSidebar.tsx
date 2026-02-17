@@ -67,7 +67,7 @@ const navItems: NavItem[] = [
     name: "Invoices",
     subItems: [
       { name: "Sale invoice", path: "/sale-invoice", pro: false },
-      { name: "Purchase invoice", path: "/purchase", pro: false },
+      { name: "Purchase invoice", path: "/purchase-invoices", pro: false },
     ],
   },
   {
@@ -79,6 +79,11 @@ const navItems: NavItem[] = [
     icon: <Layers />,
     name: "Stock Ledger",
     path: "/stock-ledger",
+  },
+  {
+    icon: <Layers />,
+    name: "Stock Adjustment",
+    path: "/stock-adjustment",
   },
   {
     icon: <Banknote />,

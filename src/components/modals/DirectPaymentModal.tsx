@@ -15,16 +15,16 @@ export interface DirectPaymentFormData {
 interface DirectPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: DirectPaymentFormData) => void | Promise<void>;
-  accounts: { id: string; name: string }[];
+  // onSubmit: (data: DirectPaymentFormData) => void | Promise<void>;
+  // accounts: { id: string; name: string }[];
   supplierId: number;
 }
 
 const DirectPaymentModal: React.FC<DirectPaymentModalProps> = ({
   isOpen,
   onClose,
-  onSubmit,
-  accounts,
+  // onSubmit,
+  // accounts,
   supplierId,
 }) => {
   const { data: outstandingData } = useGetSupplierOutstandingQuery(supplierId, {
@@ -56,7 +56,7 @@ const DirectPaymentModal: React.FC<DirectPaymentModalProps> = ({
 
   const onFormSubmit = async (data: DirectPaymentFormData) => {
     try {
-      await onSubmit(data);
+      // await onSubmit(data);
     } catch (error: unknown) {
       handleApiError(error, "Failed to submit payment");
       throw error;
@@ -90,7 +90,7 @@ const DirectPaymentModal: React.FC<DirectPaymentModalProps> = ({
               }}
               render={({ field }) => (
                 <SelectDropdown
-                  options={accounts}
+                  // options={accounts}
                   value={field.value}
                   onChange={(value) => field.onChange(String(value))}
                   placeholder="Select payment account..."

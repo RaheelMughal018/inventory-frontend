@@ -4,7 +4,7 @@ import { Modal } from "../ui/modal"; // Your existing modal
 import Input from "../form/input/InputField"; // Your Input component
 import Label from "../form/Label"; // Your Label component
 import Radio from "../form/input/Radio"; // Your Radio component
-import { Supplier, OpeningBalanceType } from "../../redux/services/supplier";
+import { Supplier } from "../../redux/services/supplier";
 
 interface AddSupplierModalProps {
   isOpen: boolean;
@@ -18,10 +18,9 @@ export interface SupplierFormData {
   type: "individual" | "organization";
   name: string;
   phone: string;
-  city: string;
+  address: string;
   company_name?: string;
   opening_balance?: number;
-  opening_balance_type?: OpeningBalanceType;
 }
 
 const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
@@ -35,10 +34,9 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
     type: "individual",
     name: "",
     phone: "",
-    city: "",
+    address: "",
     company_name: "",
     opening_balance: 0,
-    opening_balance_type: "DEBIT",
   });
 
   // Reset form when modal opens/closes or initialData changes
@@ -51,10 +49,9 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
           type: supplierType,
           name: initialData.name || "",
           phone: initialData.phone || "",
-          city: initialData.city || "",
+          address: initialData.address || "",
           company_name: initialData.company_name || "",
           opening_balance: initialData.opening_balance || 0,
-          opening_balance_type: initialData.opening_balance_type || "DEBIT",
         });
       } else {
         // Reset to default for add mode
@@ -62,10 +59,9 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
           type: "individual",
           name: "",
           phone: "",
-          city: "",
+          address: "",
           company_name: "",
           opening_balance: 0,
-          opening_balance_type: "DEBIT",
         });
       }
     }
@@ -76,8 +72,15 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
     onSubmit(formData);
   };
 
-  const handleChange = (field: keyof SupplierFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof SupplierFormData, value: string | number) => {
+    if (field === 'opening_balance') {
+      setFormData((prev) => ({ 
+        ...prev, 
+        [field]: typeof value === 'string' ? (value ? parseFloat(value) : 0) : value 
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value as string }));
+    }
   };
 
   return (
@@ -160,7 +163,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 
           {/* Phone Number */}
           <div>
-            <Label htmlFor="phone">Phone Number *</Label>
+            <Label htmlFor="phone">Phone Number</Label>
             <Input
               id="phone"
               type="tel"
@@ -170,15 +173,15 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
             />
           </div>
 
-          {/* City */}
+          {/* Address */}
           <div>
-            <Label htmlFor="city">City *</Label>
+            <Label htmlFor="address">Address</Label>
             <Input
-              id="city"
+              id="address"
               type="text"
-              placeholder="Enter city name"
-              value={formData.city}
-              onChange={(e) => handleChange("city", e.target.value)}
+              placeholder="Enter full address"
+              value={formData.address}
+              onChange={(e) => handleChange("address", e.target.value)}
             />
           </div>
 
@@ -189,7 +192,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
                 Opening Balance (Optional)
               </h4>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Add any existing balance for this supplier
+                Add any existing balance you owe to this supplier
               </p>
             </div>
 
@@ -201,57 +204,9 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
                 type="number"
                 min="0"
                 placeholder="0.00"
-                value={formData.opening_balance || ''}
+                value={formData.opening_balance?.toString() || ''}
                 onChange={(e) => handleChange("opening_balance", e.target.value)}
               />
-            </div>
-
-            {/* Opening Balance Type */}
-            <div className="mt-4">
-              <Label className="mb-3">Balance Type</Label>
-              <div className="space-y-3">
-                <div 
-                  className={`p-3 rounded-lg border-2 transition-colors cursor-pointer ${
-                    formData.opening_balance_type === "DEBIT" 
-                      ? "border-red-500 bg-red-50 dark:bg-red-900/20" 
-                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                  }`}
-                  onClick={() => handleChange("opening_balance_type", "DEBIT")}
-                >
-                  <Radio
-                    id="balance-debit"
-                    name="opening_balance_type"
-                    value="DEBIT"
-                    checked={formData.opening_balance_type === "DEBIT"}
-                    label="DEBIT - You owe the supplier"
-                    onChange={(value) => handleChange("opening_balance_type", value)}
-                  />
-                  <p className="ml-6 text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    Use when you have received goods/services but haven't paid yet
-                  </p>
-                </div>
-
-                <div 
-                  className={`p-3 rounded-lg border-2 transition-colors cursor-pointer ${
-                    formData.opening_balance_type === "CREDIT" 
-                      ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
-                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                  }`}
-                  onClick={() => handleChange("opening_balance_type", "CREDIT")}
-                >
-                  <Radio
-                    id="balance-credit"
-                    name="opening_balance_type"
-                    value="CREDIT"
-                    checked={formData.opening_balance_type === "CREDIT"}
-                    label="CREDIT - Supplier owes you"
-                    onChange={(value) => handleChange("opening_balance_type", value)}
-                  />
-                  <p className="ml-6 text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    Use when you have paid in advance or overpaid
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 

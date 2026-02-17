@@ -4,7 +4,7 @@ import { Modal } from "../ui/modal";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Radio from "../form/input/Radio";
-import { Customer, OpeningBalanceType } from "../../redux/services/customer";
+import { Customer } from "../../redux/services/customer";
 
 interface AddCustomerModalProps {
   isOpen: boolean;
@@ -18,10 +18,9 @@ export interface CustomerFormData {
   type: "individual" | "organization";
   name: string;
   phone: string;
-  city: string;
+  address: string;
   company_name?: string;
   opening_balance?: number;
-  opening_balance_type?: OpeningBalanceType;
 }
 
 const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
@@ -35,10 +34,9 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
     type: "individual",
     name: "",
     phone: "",
-    city: "",
+    address: "",
     company_name: "",
     opening_balance: 0,
-    opening_balance_type: "DEBIT",
   });
 
   // Reset form when modal opens/closes or initialData changes
@@ -54,10 +52,9 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
         type: customerType,
         name: initialData.name || "",
         phone: initialData.phone || "",
-        city: initialData.city || "",
+        address: initialData.address || "",
         company_name: initialData.company_name || "",
         opening_balance: initialData.opening_balance || 0,
-        opening_balance_type: initialData.opening_balance_type || "DEBIT",
       });
       return;
     }
@@ -66,10 +63,9 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
       type: "individual",
       name: "",
       phone: "",
-      city: "",
+      address: "",
       company_name: "",
       opening_balance: 0,
-      opening_balance_type: "DEBIT",
     });
   }, [isOpen, initialData, mode]);
 
@@ -79,14 +75,6 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
     // Validation
     if (!formData.name.trim()) {
       alert("Name is required!");
-      return;
-    }
-    if (!formData.phone.trim()) {
-      alert("Phone number is required!");
-      return;
-    }
-    if (!formData.city.trim()) {
-      alert("City is required!");
       return;
     }
     if (
@@ -100,8 +88,15 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
     onSubmit(formData);
   };
 
-  const handleChange = (field: keyof CustomerFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof CustomerFormData, value: string | number) => {
+    if (field === 'opening_balance') {
+      setFormData((prev) => ({ 
+        ...prev, 
+        [field]: typeof value === 'string' ? (value ? parseFloat(value) : 0) : value 
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value as string }));
+    }
   };
 
   return (
@@ -192,9 +187,7 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 
           {/* Phone Number */}
           <div>
-            <Label htmlFor="customer-phone">
-              Phone Number <span className="text-red-500">*</span>
-            </Label>
+            <Label htmlFor="customer-phone">Phone Number</Label>
             <Input
               id="customer-phone"
               type="tel"
@@ -204,17 +197,15 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
             />
           </div>
 
-          {/* City */}
+          {/* Address */}
           <div>
-            <Label htmlFor="customer-city">
-              City <span className="text-red-500">*</span>
-            </Label>
+            <Label htmlFor="customer-address">Address</Label>
             <Input
-              id="customer-city"
+              id="customer-address"
               type="text"
-              placeholder="Enter city name"
-              value={formData.city}
-              onChange={(e) => handleChange("city", e.target.value)}
+              placeholder="Enter full address"
+              value={formData.address}
+              onChange={(e) => handleChange("address", e.target.value)}
             />
           </div>
 
@@ -225,7 +216,7 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
                 Opening Balance (Optional)
               </h4>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Add any existing balance for this customer
+                Add any existing balance the customer owes you
               </p>
             </div>
 
@@ -237,57 +228,9 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
                 type="number"
                 min="0"
                 placeholder="0.00"
-                value={formData.opening_balance || ''}
+                value={formData.opening_balance?.toString() || ''}
                 onChange={(e) => handleChange("opening_balance", e.target.value)}
               />
-            </div>
-
-            {/* Opening Balance Type */}
-            <div className="mt-4">
-              <Label className="mb-3">Balance Type</Label>
-              <div className="space-y-3">
-                <div 
-                  className={`p-3 rounded-lg border-2 transition-colors cursor-pointer ${
-                    formData.opening_balance_type === "DEBIT" 
-                      ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
-                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                  }`}
-                  onClick={() => handleChange("opening_balance_type", "DEBIT")}
-                >
-                  <Radio
-                    id="customer-balance-debit"
-                    name="customer_opening_balance_type"
-                    value="DEBIT"
-                    checked={formData.opening_balance_type === "DEBIT"}
-                    label="DEBIT - Customer owes you"
-                    onChange={(value) => handleChange("opening_balance_type", value)}
-                  />
-                  <p className="ml-6 text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    Use when customer has purchased on credit and hasn't paid yet
-                  </p>
-                </div>
-
-                <div 
-                  className={`p-3 rounded-lg border-2 transition-colors cursor-pointer ${
-                    formData.opening_balance_type === "CREDIT" 
-                      ? "border-red-500 bg-red-50 dark:bg-red-900/20" 
-                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                  }`}
-                  onClick={() => handleChange("opening_balance_type", "CREDIT")}
-                >
-                  <Radio
-                    id="customer-balance-credit"
-                    name="customer_opening_balance_type"
-                    value="CREDIT"
-                    checked={formData.opening_balance_type === "CREDIT"}
-                    label="CREDIT - You owe the customer"
-                    onChange={(value) => handleChange("opening_balance_type", value)}
-                  />
-                  <p className="ml-6 text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    Use when customer has paid in advance or overpaid
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 

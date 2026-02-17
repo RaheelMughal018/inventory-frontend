@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import {useForm} from 'react-hook-form';
 import {useRegisterAdminMutation} from '../../redux/services/auth'
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
+import { useAuth } from "../../context/AuthContext";
+
 type FormData = {
    name: string
    email: string
@@ -13,6 +15,8 @@ type FormData = {
 }
 
 export default function SignUpForm() {
+  const navigate = useNavigate();
+  const { setAuth } = useAuth();
   const {
       register,
       handleSubmit,
@@ -25,11 +29,16 @@ export default function SignUpForm() {
   const [createAdmin,{isLoading}] = useRegisterAdminMutation();
   const onSubmit = async (data: FormData) =>{
     try {
-      await createAdmin(data).unwrap()
-      reset()
-      handleApiSuccess('Form Submitted')
+      const res = await createAdmin(data).unwrap()
+      if (res?.data) {
+        // Store auth data using context (refreshToken is in httpOnly cookie)
+        setAuth(res.data.user, res.data.accessToken);
+        reset()
+        handleApiSuccess('Registration Successful')
+        navigate("/");
+      }
     } catch (error: unknown) {
-      handleApiError(error, "Form Submission Failed")
+      handleApiError(error, "Registration Failed")
     }
   }
   return (

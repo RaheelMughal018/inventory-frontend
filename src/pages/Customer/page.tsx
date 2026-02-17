@@ -20,13 +20,13 @@ const CustomerPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const skip = (page - 1) * limit;
 
   const { data, isLoading } = useGetAllCustomersQuery({
-    search: search || undefined,
+    page,
     limit,
-    skip,
+    search: search || undefined,
   });
+  console.log("🚀 ~ CustomerPage ~ data:", data)
   const [createCustomer] = useCreateCustomerMutation();
   const [updateCustomer] = useUpdateCustomerMutation();
 
@@ -53,14 +53,13 @@ const CustomerPage = () => {
       const payload: CreateCustomer = {
         name: customerData.name,
         phone: customerData.phone,
-        city: customerData.city,
-        company_name: customerData.company_name ?? "",
+        address: customerData.address,
+        company_name: customerData.company_name,
         opening_balance: customerData.opening_balance || 0,
-        opening_balance_type: customerData.opening_balance_type || "DEBIT"
       };
 
       const res = await createCustomer(payload).unwrap();
-      if (res) handleApiSuccess(`${res.name} is created successfully`);
+      if (res?.data) handleApiSuccess(`${res.data.name} created successfully`);
       setIsAddModalOpen(false);
     } catch (error) {
       handleApiError(error, "Failed to create customer");
@@ -74,17 +73,16 @@ const CustomerPage = () => {
       const payload: CreateCustomer = {
         name: customerData.name,
         phone: customerData.phone,
-        city: customerData.city,
-        company_name: customerData.company_name ?? "",
+        address: customerData.address,
+        company_name: customerData.company_name,
         opening_balance: customerData.opening_balance || 0,
-        opening_balance_type: customerData.opening_balance_type || "DEBIT"
       };
 
       const res = await updateCustomer({
         id: selectedCustomer.id,
         ...payload,
       }).unwrap();
-      if (res) handleApiSuccess(`${res.name} is updated successfully`);
+      if (res?.data) handleApiSuccess(`${res.data.name} updated successfully`);
       setIsEditModalOpen(false);
       setSelectedCustomer(null);
     } catch (error) {
@@ -122,7 +120,7 @@ const CustomerPage = () => {
           }
         >
           <CustomerTable
-            customers={data?.customers ?? []}
+            customers={data?.data ?? []}
             loading={isLoading}
             onEdit={handleEditClick}
           />
@@ -130,7 +128,7 @@ const CustomerPage = () => {
             <Pagination
               currentPage={page}
               pageSize={limit}
-              total={data?.total ?? 0}
+              total={data?.meta?.totalItems ?? data?.data?.length ?? 0}
               onPageChange={setPage}
             />
           </div>

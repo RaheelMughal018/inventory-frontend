@@ -27,7 +27,7 @@ export default function CustomerTable({customers, loading, onEdit}: customerTabl
 
     try {
       const res = await deleteCustomer(selectedCustomer.id).unwrap()
-      if(res.message) handleApiSuccess(res.message);
+      if(res?.data?.message) handleApiSuccess(res.data.message);
       closeModal();
       setSelectedCustomer(null);
     } catch (error) {
@@ -64,7 +64,7 @@ export default function CustomerTable({customers, loading, onEdit}: customerTabl
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                City
+                Address
               </TableCell>
               <TableCell
                 isHeader
@@ -72,24 +72,18 @@ export default function CustomerTable({customers, loading, onEdit}: customerTabl
               >
                 Phone
               </TableCell>
-              {/* <TableCell
+              <TableCell
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Due
+                Opening Balance
               </TableCell>
               <TableCell
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Paid
+                Current Balance
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Total
-              </TableCell> */}
               <TableCell
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
@@ -132,30 +126,37 @@ export default function CustomerTable({customers, loading, onEdit}: customerTabl
               <TableRow key={customer.id}>
                 <TableCell className="px-5 py-4 sm:px-6 text-start">
                 <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                        {customer.user_id}
+                        {customer.id}
                       </span> 
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                   {customer.name}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {customer.company_name}
+                  {customer.company_name || '-'}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {customer.city}
+                    {customer.address || '-'}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {customer.phone}
+                  {customer.phone || '-'}
                 </TableCell>
-                {/* <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {customer.current_balance}
+                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  <span className="font-medium text-gray-800 dark:text-white/90">
+                    {Number(customer.opening_balance).toLocaleString('en-US', { 
+                      minimumFractionDigits: 2, 
+                      maximumFractionDigits: 2 
+                    })}
+                  </span>
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {customer.total_paid}
+                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  <span className={`font-semibold ${Number(customer.current_balance) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-white/90'}`}>
+                    {Number(customer.current_balance).toLocaleString('en-US', { 
+                      minimumFractionDigits: 2, 
+                      maximumFractionDigits: 2 
+                    })}
+                  </span>
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {customer.total_transactions}
-                </TableCell> */}
                 <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                 <div className="flex items-center">
                     

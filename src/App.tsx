@@ -27,6 +27,7 @@ import ItemPage from "./pages/Item/page";
 import AccountPage from "./pages/Accounts/page";
 import PurchaseInvoicePage from "./pages/PurchaseInvoice/page";
 import CreatePurchaseInvoicePage from "./pages/CreatePurchaseInvoice/page";
+import EditPurchaseInvoicePage from "./pages/EditPurchaseInvoice/page";
 import ViewPurchaseInvoicePage from "./pages/ViewPurchaseInvoice";
 import FinancialLedgerPage from "./pages/FinancialLedger/page";
 import StockLedgerPage from "./pages/StockLedger/page";
@@ -37,6 +38,7 @@ import CreateRecipePage from "./pages/CreateRecipe/page";
 import ViewRecipePage from "./pages/ViewRecipe/page";
 import ProductionPage from "./pages/Production/page";
 import ViewProductionBatch from "./pages/ViewProductionBatch";
+import StockAdjustmentPage from "./pages/StockAdjustment/page";
 
 export default function App() {
   return (
@@ -57,9 +59,22 @@ export default function App() {
               <Route path="/categories" element={<CategoryPage />} />
               <Route path="/items" element={<ItemPage />} />
               <Route path="/accounts" element={<AccountPage />} />
-              <Route path="/purchase" element={<PurchaseInvoicePage />} />
+              <Route path="/purchase-invoices" element={<PurchaseInvoicePage />} />
+              <Route
+                path="/purchase-invoices/create"
+                element={<CreatePurchaseInvoicePage />}
+              />
+              <Route
+                path="/purchase-invoices/edit/:id"
+                element={<EditPurchaseInvoicePage />}
+              />
+              <Route
+                path="/purchase-invoices/view/:id"
+                element={<ViewPurchaseInvoicePage />}
+              />
               <Route path="/financial-ledger" element={<FinancialLedgerPage />} />
               <Route path="/stock-ledger" element={<StockLedgerPage />} />
+              <Route path="/stock-adjustment" element={<StockAdjustmentPage />} />
               <Route path="/expense-categories" element={<ExpenseCategoryPage />} />
               <Route path="/expenses" element={<ExpensePage />} />
               <Route path="/recipes" element={<RecipePage />} />
@@ -69,14 +84,6 @@ export default function App() {
               <Route
                 path="/production/batches/view/:id"
                 element={<ViewProductionBatch />}
-              />
-              <Route
-                path="/purchase/create"
-                element={<CreatePurchaseInvoicePage />}
-              />
-              <Route
-                path="/purchase-invoices/view/:id"
-                element={<ViewPurchaseInvoicePage />}
               />
               <Route path="/blank" element={<Blank />} />
 

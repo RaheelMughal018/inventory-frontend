@@ -4,7 +4,7 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Radio from "../form/input/Radio";
 import CategorySelect from "../form/CategorySelect";
-import { Item, ItemType, ItemUnit } from "../../redux/services/item";
+import { Item, ItemType, UnitType } from "../../redux/services/item";
 import { Category } from "../../redux/services/category";
 
 interface ItemModalProps {
@@ -14,14 +14,14 @@ interface ItemModalProps {
   initialData?: Item | null;
   mode?: "add" | "edit";
   categories: Category[];
-  categoryId?: string; // For edit mode, we need the category ID separately
+  categoryId?: number; // For edit mode, we need the category ID separately
 }
 
 export interface ItemFormData {
   name: string;
-  type: ItemType;
-  unit_type: ItemUnit;
-  category_id: string; // Category ID as string
+  item_type: ItemType;
+  unit_type: UnitType;
+  category_id: number; // Category ID as number
 }
 
 const ItemModal: React.FC<ItemModalProps> = ({
@@ -35,9 +35,9 @@ const ItemModal: React.FC<ItemModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<ItemFormData>({
     name: "",
-    type: ItemType.RAW_MATERIAL,
-    unit_type: ItemUnit.PCS,
-    category_id: "",
+    item_type: ItemType.RAW,
+    unit_type: UnitType.PCS,
+    category_id: 0,
   });
 
   // Reset form when modal opens/closes or initialData changes
@@ -47,9 +47,9 @@ const ItemModal: React.FC<ItemModalProps> = ({
     if (mode === "edit" && initialData) {
       setFormData({
         name: initialData.name || "",
-        type: initialData.type || ItemType.RAW_MATERIAL,
-        unit_type: initialData.unit_type || ItemUnit.PCS,
-        category_id: categoryId || initialData.category_id || "",
+        item_type: initialData.item_type || ItemType.RAW,
+        unit_type: initialData.unit_type || UnitType.PCS,
+        category_id: initialData.category_id || 0,
       });
       return;
     }
@@ -57,9 +57,9 @@ const ItemModal: React.FC<ItemModalProps> = ({
     // Reset to default for add mode
     setFormData({
       name: "",
-      type: ItemType.RAW_MATERIAL,
-      unit_type: ItemUnit.PCS,
-      category_id: "",
+      item_type: ItemType.RAW,
+      unit_type: UnitType.PCS,
+      category_id: 0,
     });
   }, [isOpen, initialData, mode, categoryId]);
 
@@ -79,8 +79,12 @@ const ItemModal: React.FC<ItemModalProps> = ({
     onSubmit(formData);
   };
 
-  const handleChange = (field: keyof ItemFormData, value: string | ItemType | ItemUnit) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof ItemFormData, value: string | ItemType | UnitType | number) => {
+    if (field === 'category_id') {
+      setFormData((prev) => ({ ...prev, [field]: Number(value) }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   return (
@@ -116,7 +120,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
           <div>
             <CategorySelect
               categories={categories}
-              value={formData.category_id}
+              value={String(formData.category_id)}
               onChange={(categoryId) => handleChange("category_id", categoryId)}
               label="Category"
               placeholder="Search and select category..."
@@ -124,7 +128,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
             />
             {mode === "edit" && initialData?.category && (
               <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                Current category: <span className="font-medium">{initialData.category.name}</span>
+                Current category: <span className="font-medium">{initialData?.category?.name || "N/A"}</span>
               </p>
             )}
           </div>
@@ -137,21 +141,28 @@ const ItemModal: React.FC<ItemModalProps> = ({
             <div className="flex space-x-6">
               <Radio
                 id="item-type-raw"
-                name="type"
-                value={ItemType.RAW_MATERIAL}
-                checked={formData.type === ItemType.RAW_MATERIAL}
+                name="item_type"
+                value={ItemType.RAW}
+                checked={formData.item_type === ItemType.RAW}
                 label="Raw Material"
-                onChange={(value) => handleChange("type", value as ItemType)}
+                onChange={(value) => handleChange("item_type", value as ItemType)}
+                disabled={mode === "edit"}
               />
               <Radio
                 id="item-type-final"
-                name="type"
-                value={ItemType.FINAL_PRODUCT}
-                checked={formData.type === ItemType.FINAL_PRODUCT}
+                name="item_type"
+                value={ItemType.FINAL}
+                checked={formData.item_type === ItemType.FINAL}
                 label="Final Product"
-                onChange={(value) => handleChange("type", value as ItemType)}
+                onChange={(value) => handleChange("item_type", value as ItemType)}
+                disabled={mode === "edit"}
               />
             </div>
+            {mode === "edit" && (
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                Item type cannot be changed after creation
+              </p>
+            )}
           </div>
 
           {/* Unit */}
@@ -162,21 +173,28 @@ const ItemModal: React.FC<ItemModalProps> = ({
             <div className="flex space-x-6">
               <Radio
                 id="item-unit-pcs"
-                name="unit"
-                value={ItemUnit.PCS}
-                checked={formData.unit_type === ItemUnit.PCS}
+                name="unit_type"
+                value={UnitType.PCS}
+                checked={formData.unit_type === UnitType.PCS}
                 label="PCS"
-                onChange={(value) => handleChange("unit_type", value as ItemUnit)}
+                onChange={(value) => handleChange("unit_type", value as UnitType)}
+                disabled={mode === "edit"}
               />
               <Radio
                 id="item-unit-set"
-                name="unit"
-                value={ItemUnit.SET}
-                checked={formData.unit_type === ItemUnit.SET}
+                name="unit_type"
+                value={UnitType.SET}
+                checked={formData.unit_type === UnitType.SET}
                 label="SET"
-                onChange={(value) => handleChange("unit_type", value as ItemUnit)}
+                onChange={(value) => handleChange("unit_type", value as UnitType)}
+                disabled={mode === "edit"}
               />
             </div>
+            {mode === "edit" && (
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                Unit type cannot be changed after creation
+              </p>
+            )}
           </div>
 
           {/* Form Actions */}

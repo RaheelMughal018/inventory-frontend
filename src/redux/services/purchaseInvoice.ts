@@ -1,401 +1,203 @@
-// redux/services/purchaseInvoice.ts
-import { baseApi } from "./baseApi";
+import { baseApi } from './baseApi'
 
 /* =========================
-   Enums (aligned with backend)
+   Enums
 ========================= */
-
-export enum InvoiceStatusEnum {
-  UNPAID = "UNPAID",
-  PARTIAL = "PARTIAL",
-  PAID = "PAID",
-}
-
-export enum PaymentTypeEnum {
-  FULL = "FULL",
-  PARTIAL = "PARTIAL",
-  UN_PAID = "UN_PAID",
-}
-
-export enum PaymentAccountTypeEnum {
-  CASH = "CASH",
-  BANK = "BANK",
-  JAZZCASH = "JAZZCASH",
-  EASYPAISA = "EASYPAISA",
+export enum PaymentStatus {
+  PAID = 'PAID',
+  UNPAID = 'UNPAID',
+  PARTIAL = 'PARTIAL',
 }
 
 /* =========================
    Request Interfaces
 ========================= */
-
-export interface PurchaseItemCreate {
-  item_id: string;
-  quantity: number;
-  unit_price: number;
+export interface PurchaseInvoiceItemDto {
+  item_id: number
+  quantity: number
+  unit_price: number
 }
 
-export interface PurchaseInvoiceCreate {
-  supplier_id: number | string;
-  items: PurchaseItemCreate[];
-  invoice_date?: string; // YYYY-MM-DD format
-  payment_amount?: number; // default 0.00 on backend
-  payment_account_id?: string | null;
-}
-export interface PurchaseInvoiceUpdate {
-  id: string
-  supplier_id: number| string;
-  items: PurchaseItemCreate[];
-  payment_amount?: number; 
-  payment_account_id?: string | null;
+export interface CreatePurchaseInvoice {
+  supplier_id: number
+  invoice_date?: string
+  due_date?: string
+  items: PurchaseInvoiceItemDto[]
+  tax?: number
+  discount?: number
+  payment_status: PaymentStatus
+  account_id?: number
+  paid_amount?: number
+  notes?: string
 }
 
-export interface PaymentCreate {
-  amount: number;
-  account_id: string;
+export interface UpdatePurchaseInvoice {
+  id: number
+  invoice_date?: string
+  due_date?: string
+  items?: PurchaseInvoiceItemDto[]
+  tax?: number
+  discount?: number
+  notes?: string
 }
 
-export interface PurchaseInvoiceFilters {
-  skip?: number;
-  limit?: number;
-  supplier_id?: number;
-  payment_status?: InvoiceStatusEnum;
-  search?: string;
-  start_date?:string;
-  end_date?:string;
-}
-
-export interface StockLedgerFilters {
-  skip?: number;
-  limit?: number;
-  item_id?: string;
-  ref_type?: string;
+export interface GetPurchaseInvoicesParams {
+  page?: number
+  limit?: number
+  search?: string
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  supplier_id?: number
+  payment_status?: PaymentStatus
+  from_date?: string
+  to_date?: string
 }
 
 /* =========================
    Response Interfaces
 ========================= */
-
-export interface SupplierResponse {
-  id: number;
-  user_id: string;
-  name: string;
-  email?: string | null;
+export interface PurchaseInvoiceItem {
+  id: number
+  item_id: number
+  item_name?: string
+  quantity: string | number
+  unit_price: string | number
+  total_price: string | number
+  created_at: string
 }
 
-export interface PurchaseItemResponse {
-  id: number;
-  item_id: string;
-  item_name: string;
-  quantity: number;
-  unit_price: number;
-  line_total: number;
+export interface PurchaseInvoice {
+  id: number
+  invoice_number: string
+  supplier_id: number
+  supplier_name?: string
+  admin_id: number
+  admin_name?: string
+  invoice_date: string
+  due_date?: string
+  subtotal: string | number
+  tax: string | number
+  discount: string | number
+  total_amount: string | number
+  paid_amount: string | number
+  payment_status: PaymentStatus
+  notes?: string
+  created_at: string
+  updated_at: string
+  items?: PurchaseInvoiceItem[]
+  outstanding_amount?: string | number
 }
 
-export interface PaymentResponse {
-  id: string;
-  amount: number;
-  account_id: string;
-  account_name?: string | null;
-  account_type?: PaymentAccountTypeEnum | null;
-  payment_type: PaymentTypeEnum;
-  created_at: string;
+export interface PaginationMeta {
+  page: number
+  limit: number
+  totalItems: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
 }
 
-export interface PurchaseInvoiceResponse {
-  id: string;
-  supplier_id: number;
-  supplier: SupplierResponse;
-  total_amount: number;
-  paid_amount: number;
-  balance_due: number;
-  payment_status: InvoiceStatusEnum;
-  created_at: string;
-  items: PurchaseItemResponse[];
-  payments: PaymentResponse[];
+export interface PurchaseInvoicesResponse {
+  data: PurchaseInvoice[]
+  meta?: PaginationMeta
 }
 
 export interface PurchaseInvoiceSummary {
-  id: string;
-  supplier_id: number;
-  supplier_name: string;
-  supplier_user_id: string;
-  total_amount: number;
-  paid_amount: number;
-  balance_due: number;
-  payment_status: InvoiceStatusEnum;
-  created_at: string;
-  item_count: number;
-  payment_count: number;
+  total_invoices: number
+  total_amount: string
+  paid_count: number
+  unpaid_count: number
+  partial_count: number
+  outstanding_amount: string
+  paid_amount: string
 }
 
-export interface PurchaseInvoiceListResponse {
-  invoices: PurchaseInvoiceSummary[];
-  total: number;
-  skip: number;
-  limit: number;
-}
-
-export interface StockLedgerEntry {
-  id: string;
-  item_id: string;
-  item_name?: string | null;
-  ref_type: string;
-  ref_id: string;
-  qty_in: number;
-  qty_out: number;
-  unit_price?: number | null;
-  created_at: string;
-}
-
-export interface StockLedgerListResponse {
-  entries: StockLedgerEntry[];
-  total: number;
-  skip: number;
-  limit: number;
-}
-
-export interface ItemStockSummary {
-  item_id: string;
-  item_name: string;
-  current_quantity: number;
-  avg_price: number;
-  total_value: number;
-  total_qty_in: number;
-  total_qty_out: number;
-  unit_type: string;
-}
-
-export interface SupplierBalance {
-  supplier_id: number;
-  supplier_name?: string | null;
-  supplier_user_id?: string | null;
-  total_debit: number;
-  total_credit: number;
-  balance: number;
-}
-
-export interface SupplierPurchaseSummary {
-  supplier_id: number;
-  supplier_name: string;
-  supplier_user_id: string;
-  total_purchases: number;
-  total_paid: number;
-  outstanding_balance: number;
-  total_invoices: number;
-  unpaid_invoices: number;
-  partial_invoices: number;
-  paid_invoices: number;
-}
-
-export interface SupplierSummaryTotal {
-  total_purchases: number;
-  total_paid: number;
-  outstanding_balance: number;
-  total_invoices: number;
-  unpaid_invoices: number;
-  partial_invoices: number;
-  paid_invoices: number;
-}
-
-export interface SupplierSummaryResponse {
-  summaries: SupplierPurchaseSummary[];
-  total: SupplierSummaryTotal;
-}
-
-export interface SuccessResponse {
-  message: string;
-  data?: Record<string, unknown> | null;
+export interface DeleteResponse {
+  message: string
 }
 
 /* =========================
-   API Endpoints (aligned with backend)
+   API
 ========================= */
-
 export const purchaseInvoiceApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // CREATE purchase invoice
-    createPurchaseInvoice: builder.mutation<
-      PurchaseInvoiceResponse,
-      PurchaseInvoiceCreate
-    >({
-      query: (data) => {
-
-        const id = localStorage.getItem("id")
-        return{
-        url: "/purchase/",
-        method: "POST",
+    createPurchaseInvoice: builder.mutation<{ data: PurchaseInvoice }, CreatePurchaseInvoice>({
+      query: (data) => ({
+        url: '/purchase-invoices',
+        method: 'POST',
         body: data,
-        params:{
-          performed_by_id: id
-        }
-      }
-    },
-      invalidatesTags: ["purchase_invoice", "supplier", "item"],
-    }),
-
-    // LIST purchase invoices
-    getAllPurchaseInvoices: builder.query<
-      PurchaseInvoiceListResponse,
-      PurchaseInvoiceFilters
-    >({
-      query: (params) => ({
-        url: "/purchase/",
-        method: "GET",
-        params,
       }),
-      providesTags: ["purchase_invoice"],
+      invalidatesTags: ['purchase_invoice', 'supplier', 'item']
     }),
 
-    // update invoice
-    updatePurchaseInvoices: builder.mutation<
-      PurchaseInvoiceResponse,
-      PurchaseInvoiceUpdate
-    >({
-      query: ({id, ...data}) => ({
-        url: `/purchase/${id}`,
-        method: "PUT",
-        body: data
+    getAllPurchaseInvoices: builder.query<PurchaseInvoicesResponse, GetPurchaseInvoicesParams>({
+      query: ({ page = 1, limit = 10, search, sortBy, sortOrder, supplier_id, payment_status, from_date, to_date }) => ({
+        url: '/purchase-invoices',
+        method: 'GET',
+        params: {
+          page,
+          limit,
+          ...(search && { search }),
+          ...(sortBy && { sortBy }),
+          ...(sortOrder && { sortOrder }),
+          ...(supplier_id && { supplier_id }),
+          ...(payment_status && { payment_status }),
+          ...(from_date && { from_date }),
+          ...(to_date && { to_date }),
+        },
       }),
-      invalidatesTags: ["purchase_invoice", "supplier", "item"],
-    }),
-    // update invoice
-    deletePurchaseInvoices: builder.mutation<
-      SuccessResponse,
-      string
-    >({
-      query: (id) => {
-        const author_id= localStorage.getItem("id")
-        return{
-
-          url: `/purchase/${id}`,
-          method: "DELETE",
-          params:{
-            performed_by_id: author_id
-          } 
+      transformResponse: (response: { data: PurchaseInvoice[] | { data: PurchaseInvoice[]; meta: PaginationMeta } }) => {
+        // Handle wrapped response
+        if (Array.isArray(response.data)) {
+          return { data: response.data, meta: undefined };
+        } else if (response.data?.data && Array.isArray(response.data.data)) {
+          return { data: response.data.data, meta: response.data.meta };
         }
+        return { data: [], meta: undefined };
       },
-      invalidatesTags: ["purchase_invoice", "supplier", "item"],
+      providesTags: ['purchase_invoice']
     }),
 
-    // GET purchase invoice details
-    getPurchaseInvoiceById: builder.query<PurchaseInvoiceResponse, string>({
-      query: (invoice_id) => ({
-        url: `/purchase/invoices/${invoice_id}`,
-        method: "GET",
+    getPurchaseInvoiceSummary: builder.query<PurchaseInvoiceSummary, void>({
+      query: () => ({
+        url: '/purchase-invoices/summary',
+        method: 'GET',
       }),
-      providesTags: ["purchase_invoice"],
+      providesTags: ['purchase_invoice']
     }),
 
-    // PAYMENTS: add payment to invoice
-    addPurchaseInvoicePayment: builder.mutation<
-      PaymentResponse,
-      { invoice_id: string; data: PaymentCreate }
-    >({
-      query: ({ invoice_id, data }) => ({
-        url: `/purchase/invoices/${invoice_id}/payments`,
-        method: "POST",
+    getPurchaseInvoiceById: builder.query<{ data: PurchaseInvoice }, number>({
+      query: (id) => ({
+        url: `/purchase-invoices/${id}`,
+        method: 'GET',
+      }),
+      providesTags: ['purchase_invoice']
+    }),
+
+    updatePurchaseInvoice: builder.mutation<{ data: PurchaseInvoice }, UpdatePurchaseInvoice>({
+      query: ({ id, ...data }) => ({
+        url: `/purchase-invoices/${id}`,
+        method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: ["purchase_invoice", "supplier"],
+      invalidatesTags: ['purchase_invoice', 'supplier', 'item']
     }),
 
-    // PAYMENTS: get all payments for an invoice
-    getPurchaseInvoicePayments: builder.query<PaymentResponse[], string>({
-      query: (invoice_id) => ({
-        url: `/purchase/invoices/${invoice_id}/payments`,
-        method: "GET",
+    deletePurchaseInvoice: builder.mutation<{ data: DeleteResponse }, number>({
+      query: (id) => ({
+        url: `/purchase-invoices/${id}`,
+        method: 'DELETE',
       }),
-      providesTags: ["purchase_invoice"],
-    }),
-
-    // PAYMENTS: delete a payment
-    deletePayment: builder.mutation<SuccessResponse, string>({
-      query: (payment_id) => ({
-        url: `/purchase/payments/${payment_id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["purchase_invoice", "supplier"],
-    }),
-
-    // SUPPLIER: invoices for supplier
-    getSupplierPurchaseInvoices: builder.query<
-      PurchaseInvoiceListResponse,
-      { supplier_id: number; params?: PurchaseInvoiceFilters }
-    >({
-      query: ({ supplier_id, params }) => ({
-        url: `/purchase/suppliers/${supplier_id}/invoices`,
-        method: "GET",
-        params,
-      }),
-      providesTags: ["purchase_invoice", "supplier"],
-    }),
-
-    // SUPPLIER: balance
-    getSupplierBalance: builder.query<SupplierBalance, number>({
-      query: (supplier_id) => ({
-        url: `/purchase/suppliers/${supplier_id}/balance`,
-        method: "GET",
-      }),
-      providesTags: ["supplier"],
-    }),
-
-    // SUPPLIER: summary
-    getSuppliersSummary: builder.query<SupplierSummaryResponse, void>({
-      query: () => ({
-        url: `/purchase/suppliers/summary`,
-        method: "GET",
-      }),
-      providesTags: ["supplier"],
-    }),
-
-    // ITEM: stock summary
-    getItemStockSummary: builder.query<ItemStockSummary, string>({
-      query: (item_id) => ({
-        url: `/purchase/items/${item_id}/stock`,
-        method: "GET",
-      }),
-      providesTags: ["item"],
-    }),
-
-    // ITEM: stock history
-    getItemStockHistory: builder.query<
-      StockLedgerEntry[],
-      { item_id: string; limit?: number }
-    >({
-      query: ({ item_id, limit }) => ({
-        url: `/purchase/items/${item_id}/history`,
-        method: "GET",
-        params: limit ? { limit } : undefined,
-      }),
-      providesTags: ["item"],
-    }),
-
-    // STOCK LEDGER: list entries
-    getStockLedger: builder.query<StockLedgerListResponse, StockLedgerFilters>({
-      query: (params) => ({
-        url: "/purchase/stock-ledger",
-        method: "GET",
-        params,
-      }),
-      providesTags: ["item"],
+      invalidatesTags: ['purchase_invoice', 'supplier', 'item']
     }),
   }),
-});
+})
 
 export const {
   useCreatePurchaseInvoiceMutation,
   useGetAllPurchaseInvoicesQuery,
+  useGetPurchaseInvoiceSummaryQuery,
   useGetPurchaseInvoiceByIdQuery,
-  useAddPurchaseInvoicePaymentMutation,
-  useGetPurchaseInvoicePaymentsQuery,
-  useDeletePaymentMutation,
-  useGetSupplierPurchaseInvoicesQuery,
-  useGetSupplierBalanceQuery,
-  useGetSuppliersSummaryQuery,
-  useGetItemStockSummaryQuery,
-  useGetItemStockHistoryQuery,
-  useGetStockLedgerQuery,
-  useDeletePurchaseInvoicesMutation,
-  useUpdatePurchaseInvoicesMutation
-} = purchaseInvoiceApi;
-
+  useUpdatePurchaseInvoiceMutation,
+  useDeletePurchaseInvoiceMutation,
+} = purchaseInvoiceApi

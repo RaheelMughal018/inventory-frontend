@@ -4,9 +4,11 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import {  useNavigate } from "react-router";
 import { useLogoutAdminMutation } from "../../redux/services/auth";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const { clearAuth } = useAuth();
   const [logout,{isLoading}] = useLogoutAdminMutation();
   const navigate = useNavigate()
   function toggleDropdown() {
@@ -21,11 +23,13 @@ export default function UserDropdown() {
       const res = await logout().unwrap();
       if(res.message){
         handleApiSuccess(res.message)
-        localStorage.removeItem('access_token')
+        clearAuth(); // Clear auth context and localStorage
         navigate('/signin')
       }
     } catch (error: unknown) {
       handleApiError(error, "Error while logout")
+      clearAuth(); // Clear auth even if logout API fails
+      navigate('/signin')
     }
   }
   return (

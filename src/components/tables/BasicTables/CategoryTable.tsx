@@ -29,7 +29,7 @@ export default function CategoryTable({categories, loading, onEdit}: CategoryTab
 
     try {
       const res = await deleteCategory(selectedCategory.id).unwrap()
-      if(res.message) handleApiSuccess(res.message);
+      if(res?.data?.message) handleApiSuccess(res.data.message);
       closeModal();
       setSelectedCategory(null);
     } catch (error) {

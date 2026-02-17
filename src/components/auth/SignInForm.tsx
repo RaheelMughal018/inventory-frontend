@@ -6,9 +6,11 @@ import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 import { useLoginAdminMutation } from "../../redux/services/auth";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SignInForm() {
   const navigate = useNavigate();
+  const { setAuth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,9 +33,9 @@ export default function SignInForm() {
 
     try {
       const res = await loginAdmin({ email: email.trim(), password }).unwrap();
-      if (res) {
-        localStorage.setItem("access_token", res.access_token);
-        localStorage.setItem("id", res.user.id);
+      if (res?.data) {
+        // Store auth data using context (refreshToken is in httpOnly cookie)
+        setAuth(res.data.user, res.data.accessToken);
         setEmail("");
         setPassword("");
         handleApiSuccess("Login Successful");

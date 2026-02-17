@@ -4,20 +4,19 @@ import { baseApi } from './baseApi'
    Request Interfaces
 ========================= */
 export interface GetCustomersParams {
-  search?: string
-  skip?: number
+  page?: number
   limit?: number
+  search?: string
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
-
-export type OpeningBalanceType = 'DEBIT' | 'CREDIT';
 
 export interface CreateCustomer {
   name: string
-  company_name: string
-  phone: string
-  city: string
+  company_name?: string
+  phone?: string
+  address?: string
   opening_balance?: number
-  opening_balance_type?: OpeningBalanceType
 }
 
 export interface UpdateCustomer extends CreateCustomer {
@@ -29,30 +28,34 @@ export interface UpdateCustomer extends CreateCustomer {
 ========================= */
 
 export interface Customer {
-    id: number
-    name: string
-    company_name: string | null
-    phone: string
-    city: string
-    user_id: string
-    created_at: string
-    updated_at: string
-    created_by_id: number
-    total_transactions: string
-    total_paid: string
-    current_balance: string
-    opening_balance?: number
-    opening_balance_type?: OpeningBalanceType
-  }
-  
-  export interface CustomersResponse {
-    total: number
-    customers: Customer[]
-  }
+  id: number
+  name: string
+  company_name?: string
+  phone?: string
+  address?: string
+  opening_balance: number
+  current_balance: number
+  created_at: string
+  updated_at: string
+}
 
-  export interface DeleteResponse {
-    message: string
-  }
+export interface PaginationMeta {
+  page: number
+  limit: number
+  totalItems: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+export interface CustomersResponse {
+  data: Customer[]
+  meta?: PaginationMeta
+}
+
+export interface DeleteResponse {
+  message: string
+}
 
 /* =========================
    API
@@ -60,47 +63,77 @@ export interface Customer {
 
 export const customerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    createCustomer: builder.mutation<Customer, CreateCustomer>({
+    createCustomer: builder.mutation<{ data: Customer }, CreateCustomer>({
       query: (data) => ({
         url: '/customers',
         method: 'POST',
         body: data,
       }),
-      invalidatesTags:['customer']
+      invalidatesTags: ['customer']
     }),
 
     getAllCustomers: builder.query<CustomersResponse, GetCustomersParams>({
-      query: (params) => ({
+      query: ({ page = 1, limit = 10, search, sortBy, sortOrder }) => ({
         url: '/customers',
         method: 'GET',
-        params,
+        params: {
+          page,
+          limit,
+          ...(search && { search }),
+          ...(sortBy && { sortBy }),
+          ...(sortOrder && { sortOrder }),
+        },
       }),
-      providesTags:['customer']
+      transformResponse: (response: { data: Customer[] | { data: Customer[]; meta: PaginationMeta } }) => {
+        // Handle wrapped response: { statusCode, message, data }
+        // Backend returns: { statusCode, message, data: Customer[] | { data: Customer[], meta: {} } }
+        
+        if (Array.isArray(response.data)) {
+          // If data is directly an array
+          return {
+            data: response.data,
+            meta: undefined
+          };
+        } else if (response.data?.data && Array.isArray(response.data.data)) {
+          // If data is wrapped in { data, meta }
+          return {
+            data: response.data.data,
+            meta: response.data.meta
+          };
+        }
+        
+        // Fallback
+        return {
+          data: [],
+          meta: undefined
+        };
+      },
+      providesTags: ['customer']
     }),
 
-    getCustomerById: builder.query<Customer, number>({
+    getCustomerById: builder.query<{ data: Customer }, number>({
       query: (id) => ({
         url: `/customers/${id}`,
         method: 'GET',
       }),
-      providesTags:['customer']
+      providesTags: ['customer']
     }),
 
-    updateCustomer: builder.mutation<Customer, UpdateCustomer>({
+    updateCustomer: builder.mutation<{ data: Customer }, UpdateCustomer>({
       query: ({ id, ...data }) => ({
         url: `/customers/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
-      invalidatesTags:['customer']
+      invalidatesTags: ['customer']
     }),
 
-    deleteCustomer: builder.mutation<DeleteResponse, string|number>({
+    deleteCustomer: builder.mutation<{ data: DeleteResponse }, string | number>({
       query: (id) => ({
         url: `/customers/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags:['customer']
+      invalidatesTags: ['customer']
     }),
   }),
 })

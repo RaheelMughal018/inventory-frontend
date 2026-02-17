@@ -1,52 +1,67 @@
 import { baseApi } from './baseApi'
 
 export enum AccountType {
-   CASH = "CASH",
-    BANK = "BANK",
-    JAZZCASH = "JAZZCASH",
-    EASYPAISA = "EASYPAISA"
-
+  BANK = "BANK",
+  JAZZCASH = "JAZZCASH",
+  EASYPAISA = "EASYPAISA",
+  IN_HAND = "IN_HAND"
 }
+
 /* =========================
    Request Interfaces
 ========================= */
 export interface GetAccountsParams {
-  search?: string
-  skip?: number
+  page?: number
   limit?: number
+  search?: string
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  account_type?: AccountType
 }
 
 export interface CreateAccount {
   name: string
-  type: AccountType
+  account_type: AccountType
+  account_number?: string
+  bank_name?: string
   opening_balance?: number
 }
 
-export interface UpdateAccount extends CreateAccount {
-  id: string
+export interface UpdateAccount {
+  id: number
+  name?: string
+  account_number?: string
+  bank_name?: string
 }
 
 /* =========================
    Response Interfaces
 ========================= */
-
 export interface Account {
-  id: string
+  id: number
   name: string
-  type: AccountType
-  opening_balance?: number
-  current_balance?: number
+  account_type: string
+  account_number: string | null
+  bank_name: string | null
+  opening_balance: string | number
+  current_balance: string | number
   created_at: string
+  updated_at: string
 }
-  
-  export interface AccountsResponse {
-    total: number
-    accounts: Account[]
-  }
 
-  export interface DeleteAccountResponse{
-    message: string
+export interface AccountsResponse {
+  data: Account[]
+  meta: {
+    currentPage: number
+    totalPages: number
+    totalItems: number
+    itemsPerPage: number
   }
+}
+
+export interface DeleteResponse {
+  message: string
+}
 
 /* =========================
    API
@@ -54,13 +69,13 @@ export interface Account {
 
 export const accountApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    createAccount: builder.mutation<Account, CreateAccount>({
+    createAccount: builder.mutation<{ data: Account }, CreateAccount>({
       query: (data) => ({
         url: '/accounts',
         method: 'POST',
         body: data,
       }),
-      invalidatesTags:['account']
+      invalidatesTags: ['account']
     }),
 
     getAllAccounts: builder.query<AccountsResponse, GetAccountsParams>({
@@ -68,35 +83,34 @@ export const accountApi = baseApi.injectEndpoints({
         url: '/accounts',
         method: 'GET',
         params,
-
       }),
-      providesTags:['account']
+      transformResponse: (response: AccountsResponse) => response,
+      providesTags: ['account']
     }),
 
-    getAccountById: builder.query<Account, number>({
+    getAccountById: builder.query<{ data: Account }, number>({
       query: (id) => ({
         url: `/accounts/${id}`,
         method: 'GET',
       }),
-      providesTags:['account']
+      providesTags: ['account']
     }),
 
-    updateAccount: builder.mutation<Account, UpdateAccount>({
+    updateAccount: builder.mutation<{ data: Account }, UpdateAccount>({
       query: ({ id, ...data }) => ({
         url: `/accounts/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
-      invalidatesTags:['account']
-
+      invalidatesTags: ['account']
     }),
-    deleteAccount: builder.mutation<DeleteAccountResponse, string|number>({
+
+    deleteAccount: builder.mutation<DeleteResponse, string | number>({
       query: (id) => ({
         url: `/accounts/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags:['account']
-
+      invalidatesTags: ['account']
     }),
   }),
 })

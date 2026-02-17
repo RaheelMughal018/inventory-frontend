@@ -37,7 +37,7 @@ export default function ItemsTable({
 
     try {
       const res = await deleteItem(selectedItem.id).unwrap();
-      if (res.message) handleApiSuccess(res.message);
+      if (res?.data?.message) handleApiSuccess(res.data.message);
       closeModal();
       setSelectedItem(null);
     } catch (error) {
@@ -152,7 +152,7 @@ export default function ItemsTable({
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                      {item.type.replace("_", " ")}
+                      {item.item_type.replace("_", " ")}
                     </span>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
@@ -161,10 +161,10 @@ export default function ItemsTable({
                     </span>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {typeof item.avg_price === 'number' ? item.avg_price.toFixed(2) : item.avg_price || "0.00"}
+                    {typeof item.avg_price === 'number' ? item.avg_price.toFixed(2) : parseFloat(String(item.avg_price)).toFixed(2) || "0.00"}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {item.total_quantity}
+                    {typeof item.quantity === 'number' ? Math.round(item.quantity) : Math.round(parseFloat(String(item.quantity))) || 0}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     {formatDateTime(item.created_at)}

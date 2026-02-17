@@ -1,14 +1,14 @@
 import { baseApi } from './baseApi'
-import { ItemType } from './item'
 
 /* =========================
    Request Interfaces
 ========================= */
 export interface GetCategoriesParams {
-  search?: string
-  skip?: number
+  page?: number
   limit?: number
-  item_type?: ItemType
+  search?: string
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
 
 export interface CreateCategory {
@@ -16,7 +16,7 @@ export interface CreateCategory {
 }
 
 export interface UpdateCategory extends CreateCategory {
-  id: string 
+  id: number 
 }
 
 /* =========================
@@ -24,20 +24,29 @@ export interface UpdateCategory extends CreateCategory {
 ========================= */
 
 export interface Category {
-    id: string
-    name: string
-    created_at: string
-    updated_at: string
-  }
-  
-export interface CategoriesResponse {
-  total: number
-  categories: Category[]
+  id: number
+  name: string
+  created_at: string
+  updated_at: string
 }
 
-  export interface DeleteResponse {
-    message: string
-  }
+export interface PaginationMeta {
+  page: number
+  limit: number
+  totalItems: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+export interface CategoriesResponse {
+  data: Category[]
+  meta?: PaginationMeta
+}
+
+export interface DeleteResponse {
+  message: string
+}
 
 /* =========================
    API
@@ -45,47 +54,62 @@ export interface CategoriesResponse {
 
 export const categoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    createCategory: builder.mutation<Category, CreateCategory>({
+    createCategory: builder.mutation<{ data: Category }, CreateCategory>({
       query: (data) => ({
         url: '/categories',
         method: 'POST',
         body: data,
       }),
-      invalidatesTags:['category']
+      invalidatesTags: ['category']
     }),
 
     getAllCategories: builder.query<CategoriesResponse, GetCategoriesParams>({
-      query: (params) => ({
+      query: ({ page = 1, limit = 10, search, sortBy, sortOrder }) => ({
         url: '/categories',
         method: 'GET',
-        params,
+        params: {
+          page,
+          limit,
+          ...(search && { search }),
+          ...(sortBy && { sortBy }),
+          ...(sortOrder && { sortOrder }),
+        },
       }),
-      providesTags:['category']
+      transformResponse: (response: { data: Category[] | { data: Category[]; meta: PaginationMeta } }) => {
+        // Handle wrapped response
+        if (Array.isArray(response.data)) {
+          return { data: response.data, meta: undefined };
+        } else if (response.data?.data && Array.isArray(response.data.data)) {
+          return { data: response.data.data, meta: response.data.meta };
+        }
+        return { data: [], meta: undefined };
+      },
+      providesTags: ['category']
     }),
 
-    getCategoryById: builder.query<Category, number>({
+    getCategoryById: builder.query<{ data: Category }, number>({
       query: (id) => ({
         url: `/categories/${id}`,
         method: 'GET',
       }),
-      providesTags:['category']
+      providesTags: ['category']
     }),
 
-    updateCategory: builder.mutation<Category, UpdateCategory>({
+    updateCategory: builder.mutation<{ data: Category }, UpdateCategory>({
       query: ({ id, ...data }) => ({
         url: `/categories/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
-      invalidatesTags:['category']
+      invalidatesTags: ['category']
     }),
 
-    deleteCategory: builder.mutation<DeleteResponse, string|number>({
+    deleteCategory: builder.mutation<{ data: DeleteResponse }, string | number>({
       query: (id) => ({
         url: `/categories/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags:['category']
+      invalidatesTags: ['category']
     }),
   }),
 })

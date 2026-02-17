@@ -12,18 +12,18 @@ import {
   useUpdateAccountMutation,
   useGetAllAccountsQuery,
   CreateAccount,
-  AccountType, // Make sure this is imported
+  AccountType,
 } from "../../redux/services/account";
-import { toast } from "sonner";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import AccountsTable from "../../components/tables/BasicTables/AccountsTable";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
-// ✅ CORRECT FORMAT: Convert to {id, name} for SelectDropdown
+// Account type options for dropdown
 const accountTypeOptions = [
-  { id: AccountType.CASH, name: "Cash" },
+  { id: AccountType.IN_HAND, name: "In Hand" },
   { id: AccountType.BANK, name: "Bank" },
-  { id: AccountType.JAZZCASH, name: "Jazzcash" },
+  { id: AccountType.JAZZCASH, name: "JazzCash" },
   { id: AccountType.EASYPAISA, name: "EasyPaisa" },
 ];
 
@@ -31,12 +31,11 @@ const AccountPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const skip = (page - 1) * limit;
 
   const { data, isLoading } = useGetAllAccountsQuery({
     search: search || undefined,
+    page,
     limit,
-    skip,
   });
 
   const [createAccount] = useCreateAccountMutation();
@@ -55,6 +54,7 @@ const AccountPage = () => {
   // Handle export CSV
   const handleExportCSV = () => {
     console.log("Exporting accounts to CSV");
+    // TODO: Implement CSV export functionality
   };
 
   // Handle form submission for adding
@@ -62,15 +62,21 @@ const AccountPage = () => {
     try {
       const payload: CreateAccount = {
         name: accountData.name,
-        type: accountData.type,
+        account_type: accountData.account_type,
         opening_balance: accountData.opening_balance ?? 0,
       };
+
+      // Add bank-specific fields if BANK type
+      if (accountData.account_type === AccountType.BANK) {
+        payload.account_number = accountData.account_number;
+        payload.bank_name = accountData.bank_name;
+      }
+
       const res = await createAccount(payload).unwrap();
-      toast.success(`${res.name} created successfully`);
+      handleApiSuccess(`${res.data.name} created successfully`);
       setIsAddModalOpen(false);
     } catch (error) {
-      console.log(error);
-      toast.error("Error while creating account");
+      handleApiError(error, "Failed to create account");
     }
   };
 
@@ -79,21 +85,23 @@ const AccountPage = () => {
     if (!selectedAccount) return;
 
     try {
-      const payload: CreateAccount = {
-        name: accountData.name,
-        type: accountData.type,
-        opening_balance: accountData.opening_balance ?? 0,
-      };
-      const res = await updateAccount({
+      const payload: any = {
         id: selectedAccount.id,
-        ...payload,
-      }).unwrap();
-      toast.success(`${res.name} updated successfully`);
+        name: accountData.name,
+      };
+
+      // Add bank-specific fields if BANK type
+      if (accountData.account_type === AccountType.BANK) {
+        payload.account_number = accountData.account_number;
+        payload.bank_name = accountData.bank_name;
+      }
+
+      const res = await updateAccount(payload).unwrap();
+      handleApiSuccess(`${res.data.name} updated successfully`);
       setIsEditModalOpen(false);
       setSelectedAccount(null);
     } catch (error) {
-      console.log(error);
-      toast.error("Error while updating account");
+      handleApiError(error, "Failed to update account");
     }
   };
 
@@ -110,8 +118,8 @@ const AccountPage = () => {
       <div className="space-y-6">
         <ComponentCard
           title="Accounts"
-          exportButtonText="Export Accounts CSV" // ✅ Changed
-          addButtonText="Add New Account" // ✅ Changed
+          exportButtonText="Export Accounts CSV"
+          addButtonText="Add New Account"
           onExportClick={handleExportCSV}
           onAddClick={() => setIsAddModalOpen(true)}
           extra={
@@ -119,12 +127,12 @@ const AccountPage = () => {
               value={search}
               onChange={setSearch}
               onSubmit={handleSearch}
-              placeholder="Search accounts..." // ✅ Changed
+              placeholder="Search accounts..."
             />
           }
         >
           <AccountsTable
-            accounts={data?.accounts ?? []}
+            accounts={data?.data ?? []}
             loading={isLoading}
             onEdit={handleEditClick}
           />
@@ -132,12 +140,13 @@ const AccountPage = () => {
             <Pagination
               currentPage={page}
               pageSize={limit}
-              total={data?.total ?? 0}
+              total={data?.meta?.totalItems ?? 0}
               onPageChange={setPage}
             />
           </div>
         </ComponentCard>
       </div>
+
       {/* Add Account Modal */}
       <AddAccountModal
         isOpen={isAddModalOpen}
@@ -146,6 +155,7 @@ const AccountPage = () => {
         mode="add"
         types={accountTypeOptions}
       />
+
       {/* Edit Account Modal */}
       <AddAccountModal
         isOpen={isEditModalOpen}
@@ -153,7 +163,7 @@ const AccountPage = () => {
           setIsEditModalOpen(false);
           setSelectedAccount(null);
         }}
-        onSubmit={handleEditAccount} // ✅ Changed from handleEditSupplier
+        onSubmit={handleEditAccount}
         initialData={selectedAccount}
         mode="edit"
         types={accountTypeOptions}

@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router';
+import { useAuth } from '../../context/AuthContext';
 
 const isTokenExpired = (token: string): boolean => {
   try {
@@ -13,12 +14,21 @@ const isTokenExpired = (token: string): boolean => {
 };
 
 const ProtectedRoute = () => {
-  const token = localStorage.getItem('access_token');
+  const { accessToken, isAuthenticated, clearAuth, isLoading } = useAuth();
 
-  // Check if token exists and is not expired
-  if (!token || isTokenExpired(token)) {
-    // Remove expired token from localStorage
-    localStorage.removeItem('access_token');
+  // Wait for auth state to load from localStorage
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Check if user is authenticated and token is not expired
+  if (!isAuthenticated || !accessToken || isTokenExpired(accessToken)) {
+    // Clear expired/invalid auth data
+    clearAuth();
     return <Navigate to="/signin" replace />;
   }
 

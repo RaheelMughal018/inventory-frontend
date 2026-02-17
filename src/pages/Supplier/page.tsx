@@ -1,40 +1,38 @@
-import { useState } from "react"; // Add this import
+import { useState } from "react";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import SupplierTable from "../../components/tables/BasicTables/SuppliersTable";
-import AddSupplierModal from "../../components/modals/SupplierModal"; // Import modal
+import AddSupplierModal from "../../components/modals/SupplierModal";
 import { useGetAllSuppliersQuery , useCreateSupplierMutation, useUpdateSupplierMutation, CreateSupplier, Supplier} from "../../redux/services/supplier";
 import {SupplierFormData} from '../../components/modals/SupplierModal'
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
-import { SupplierPurchaseSummary, useGetSuppliersSummaryQuery } from "../../redux/services/purchaseInvoice";
-import DirectPaymentModal, { DirectPaymentFormData } from "../../components/modals/DirectPaymentModal";
-import { CreateDirectPayment, useCreateDirectPaymentMutation } from "../../redux/services/supplierPayment";
-import { useGetAllAccountsQuery } from "../../redux/services/account";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const SupplierPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const skip = (page - 1) * limit;
-  const { data, isLoading } = useGetAllSuppliersQuery({
-    search: search || undefined,
+  const { data, isLoading, error } = useGetAllSuppliersQuery({
+    page,
     limit,
-    skip,
+    search: search || undefined,
   });
+  
+  // Debug logging
+  console.log('Supplier Data:', data);
+  console.log('Is Loading:', isLoading);
+  console.log('Error:', error);
+  console.log('Suppliers Array:', data?.data);
   
   const [createSupplier] = useCreateSupplierMutation()
   const [updateSupplier] = useUpdateSupplierMutation()
-  const {data:summary} = useGetSuppliersSummaryQuery()
-  const {data:accountsData} = useGetAllAccountsQuery({})
-  const [createDirectPayment] = useCreateDirectPaymentMutation()
+  
   // Add state to control modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   
 
@@ -48,13 +46,12 @@ const SupplierPage = () => {
       const payload: CreateSupplier = {
         name: supplierData.name,
         phone: supplierData.phone,
-        city: supplierData.city,
-        company_name: supplierData.company_name ?? "",
+        address: supplierData.address,
+        company_name: supplierData.company_name,
         opening_balance: supplierData.opening_balance || 0,
-        opening_balance_type: supplierData.opening_balance_type || "DEBIT"
       }
       const res = await createSupplier(payload).unwrap();
-      if(res) handleApiSuccess(`${res.name} is created successfully`);
+      if(res?.data) handleApiSuccess(`${res.data.name} created successfully`);
       setIsAddModalOpen(false);
     } catch (error) {
       handleApiError(error, "Failed to create supplier");
@@ -69,13 +66,12 @@ const SupplierPage = () => {
       const payload: CreateSupplier = {
         name: supplierData.name,
         phone: supplierData.phone,
-        city: supplierData.city,
-        company_name: supplierData.company_name ?? "",
+        address: supplierData.address,
+        company_name: supplierData.company_name,
         opening_balance: supplierData.opening_balance || 0,
-        opening_balance_type: supplierData.opening_balance_type || "DEBIT"
       }
       const res = await updateSupplier({ id: selectedSupplier.id, ...payload }).unwrap();
-      if(res) handleApiSuccess(`${res.name} is updated successfully`);
+      if(res?.data) handleApiSuccess(`${res.data.name} updated successfully`);
       setIsEditModalOpen(false);
       setSelectedSupplier(null);
     } catch (error) {
@@ -89,42 +85,6 @@ const SupplierPage = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleAddPayment = (supplier: Supplier) => {
-    setSelectedSupplier(supplier)
-    setIsPaymentModalOpen(true)
-  }
-  const summaryMap: Record<number, SupplierPurchaseSummary> = {};
-  summary?.summaries?.forEach((s) => {
-    summaryMap[s.supplier_id] = s;
-  });
-
-  const accountOptions =
-  accountsData?.accounts?.map((acc) => ({
-    id: acc.id,
-    name: `${acc.name} - ${acc.type}`,
-  })) || [];
-  
- 
-
-const handlePaymentSubmit = async (data: DirectPaymentFormData) => {
-  if (!selectedSupplier) return;
-  try {
-    const payload: CreateDirectPayment = {
-      supplier_id: selectedSupplier?.id ?? 0,
-      amount: data.amount,
-      account_id: data.account_id,
-      allocation_method: "FIFO",
-
-    }
-    const res = await createDirectPayment(payload).unwrap();
-    if(res){
-      handleApiSuccess("Payment created successfully");
-      setIsPaymentModalOpen(false);
-    }
-  } catch (error) {
-    handleApiError(error, "Failed to create direct payment");
-  }
-};
 
   return (
     <>
@@ -149,38 +109,16 @@ const handlePaymentSubmit = async (data: DirectPaymentFormData) => {
             />
           }
         >
-          {summary?.total && (
-            <div className="mb-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700/80 bg-gray-50/50 dark:bg-gray-800/30 grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total purchases</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white mt-0.5">{summary.total.total_purchases.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total paid</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white mt-0.5">{summary.total.total_paid.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Outstanding</p>
-                <p className="text-lg font-semibold text-amber-600 dark:text-amber-400 mt-0.5">{summary.total.outstanding_balance.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total invoices</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white mt-0.5">{summary.total.total_invoices}</p>
-              </div>
-            </div>
-          )}
           <SupplierTable
-            suppliers={data?.suppliers ?? []}
+            suppliers={data?.data ?? []}
             loading={isLoading}
             onEdit={handleEditClick}
-            summaries = {summaryMap}
-            onAddPayment={handleAddPayment}
           />
           <div className="pt-4">
             <Pagination
               currentPage={page}
               pageSize={limit}
-              total={data?.total ?? 0}
+              total={data?.meta?.totalItems ?? data?.data?.length ?? 0}
               onPageChange={setPage}
             />
           </div>
@@ -206,17 +144,6 @@ const handlePaymentSubmit = async (data: DirectPaymentFormData) => {
         initialData={selectedSupplier}
         mode="edit"
       />
-
-    {/* Modal - Opens when add payment button is clicked */}
-    {isPaymentModalOpen && (
-    <DirectPaymentModal
-      isOpen={isPaymentModalOpen}
-      onClose={() => { setIsPaymentModalOpen(false); setSelectedSupplier(null); }}
-      onSubmit={handlePaymentSubmit}
-      accounts={accountOptions}
-      supplierId={selectedSupplier?.id ?? 0}
-      />
-    )}
     </>
   );
 };
