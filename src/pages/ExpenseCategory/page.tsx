@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ExpenseCategoryTable from "../../components/tables/BasicTables/ExpenseCategoryTable";
 import {
-  ExpenseCategory,
   CreateExpenseCategory,
+  ExpenseCategory,
   useCreateExpenseCategoryMutation,
   useGetAllExpenseCategoriesQuery,
   useUpdateExpenseCategoryMutation,
@@ -13,41 +13,43 @@ import {
 import { ExpenseCategoryFormData } from "../../components/modals/ExpenseCategoryModal";
 import ExpenseCategoryModal from "../../components/modals/ExpenseCategoryModal";
 import SearchBar from "../../components/common/SearchBar";
-import Pagination from "../../components/common/Pagination";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const ExpenseCategoryPage = () => {
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const skip = (page - 1) * limit;
 
-  const { data, isLoading } = useGetAllExpenseCategoriesQuery({
-    search: search || undefined,
-    limit,
-    skip,
-  });
+  const { data: categoriesData, isLoading } = useGetAllExpenseCategoriesQuery();
   const [createCategory] = useCreateExpenseCategoryMutation();
   const [updateCategory] = useUpdateExpenseCategoryMutation();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] =
-    useState<ExpenseCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+
+  const categories = Array.isArray(categoriesData) ? categoriesData : categoriesData?.data ?? [];
+
+  const filteredCategories = useMemo(() => {
+    if (!search.trim()) return categories;
+    const term = search.trim().toLowerCase();
+    return categories.filter(
+      (cat) =>
+        cat.name.toLowerCase().includes(term) ||
+        (cat.description ?? "").toLowerCase().includes(term)
+    );
+  }, [categories, search]);
 
   const handleExportCSV = () => {
     handleApiSuccess("Export feature coming soon");
   };
 
-  const handleSearch = () => {
-    setPage(1);
-  };
-
   const handleAddCategory = async (formData: ExpenseCategoryFormData) => {
     try {
-      const payload: CreateExpenseCategory = { name: formData.name };
+      const payload: CreateExpenseCategory = {
+        name: formData.name,
+        description: formData.description,
+      };
       const res = await createCategory(payload).unwrap();
-      if (res) handleApiSuccess(`${res.name} is created successfully`);
+      handleApiSuccess(`${(res as ExpenseCategory).name} created successfully`);
       setIsAddModalOpen(false);
     } catch (error: unknown) {
       handleApiError(error, "Failed to create expense category");
@@ -57,12 +59,11 @@ const ExpenseCategoryPage = () => {
   const handleEditCategory = async (formData: ExpenseCategoryFormData) => {
     if (!selectedCategory) return;
     try {
-      const payload: CreateExpenseCategory = { name: formData.name };
       const res = await updateCategory({
         id: selectedCategory.id,
-        ...payload,
+        data: { name: formData.name, description: formData.description },
       }).unwrap();
-      if (res) handleApiSuccess(`${res.name} is updated successfully`);
+      handleApiSuccess(`${(res as ExpenseCategory).name} updated successfully`);
       setIsEditModalOpen(false);
       setSelectedCategory(null);
     } catch (error: unknown) {
@@ -79,7 +80,7 @@ const ExpenseCategoryPage = () => {
     <>
       <PageMeta
         title="Expense Categories"
-        description="Manage expense categories (bills, bike repair, etc.)"
+        description="Manage expense categories (Utilities, Office supplies, etc.)"
       />
       <PageBreadcrumb pageTitle="Expense Categories" />
       <div className="space-y-6">
@@ -94,25 +95,17 @@ const ExpenseCategoryPage = () => {
               <SearchBar
                 value={search}
                 onChange={setSearch}
-                onSubmit={handleSearch}
+                onSubmit={() => {}}
                 placeholder="Search categories..."
               />
             </div>
           }
         >
           <ExpenseCategoryTable
-            categories={data?.categories ?? []}
+            categories={filteredCategories}
             loading={isLoading}
             onEdit={handleEditClick}
           />
-          <div className="pt-4">
-            <Pagination
-              currentPage={page}
-              pageSize={limit}
-              total={data?.total ?? 0}
-              onPageChange={setPage}
-            />
-          </div>
         </ComponentCard>
       </div>
 
@@ -129,7 +122,7 @@ const ExpenseCategoryPage = () => {
           setSelectedCategory(null);
         }}
         onSubmit={handleEditCategory}
-        initialData={selectedCategory}
+        initialData={selectedCategory ?? undefined}
         mode="edit"
       />
     </>

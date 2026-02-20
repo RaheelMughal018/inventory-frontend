@@ -41,7 +41,7 @@ export default function ExpenseTable({
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Name
+                Description
               </TableCell>
               <TableCell
                 isHeader
@@ -53,26 +53,26 @@ export default function ExpenseTable({
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Account
-              </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
                 Category
               </TableCell>
               <TableCell
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Description
+                Account
               </TableCell>
-              {/* <TableCell
+              <TableCell
                 isHeader
                 className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Created on
-              </TableCell> */}
+                Created by
+              </TableCell>
+              <TableCell
+                isHeader
+                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+              >
+                Notes
+              </TableCell>
             </TableRow>
           </TableHeader>
 
@@ -111,30 +111,30 @@ export default function ExpenseTable({
                   </span>
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {typeof exp.date === "string"
-                    ? exp.date.slice(0, 10)
-                    : exp.date}
+                  {typeof exp.expense_date === "string"
+                    ? exp.expense_date.slice(0, 10)
+                    : exp.expense_date}
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {exp.name ?? "—"}
+                <TableCell className="px-4 py-3 text-gray-800 dark:text-white/90 max-w-xs truncate">
+                  {exp.description ?? "—"}
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 font-medium">
-                  {exp.amount}
-                </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {exp.account?.name ?? exp.account_id}
+                <TableCell className="px-4 py-3 text-gray-800 dark:text-white/90 font-medium">
+                 {Number(exp.amount).toFixed(2)}
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                   <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                    {exp.category?.name ?? exp.expense_category_id}
+                    {exp.category?.name ?? "—"}
                   </span>
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 max-w-xs truncate">
-                  {exp.description ?? "—"}
+                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  {exp.account?.name ?? "—"}
                 </TableCell>
-                {/* <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                  {formatDateTime(exp.created_at)}
-                </TableCell> */}
+                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  {exp.admin?.name ?? "—"}
+                </TableCell>
+                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 max-w-xs truncate">
+                  {exp.notes ?? "—"}
+                </TableCell>
               </TableRow>
             ))}
 
@@ -149,7 +149,7 @@ export default function ExpenseTable({
                   </span>
                 </TableCell>
                 <TableCell className="px-4 py-3 text-gray-800 text-theme-sm dark:text-white/90">
-                  {totalAmount}
+                  {Number(totalAmount).toFixed(2)}
                 </TableCell>
                 <TableCell colSpan={4} className="px-4 py-3">
                   {" "}

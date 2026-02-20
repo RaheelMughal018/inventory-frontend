@@ -2,13 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Modal } from "../ui/modal";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import { RecipeResponse, RecipeItemCreate } from "../../redux/services/recipe";
-import { Item } from "../../redux/services/item";
+import SelectDropdown from "../form/SelectDropdown";
+import { Recipe, RecipeIngredient } from "../../redux/services/recipe";
+import { Item, ItemType } from "../../redux/services/item";
+import Button from "../ui/button/Button";
 
 export interface RecipeFormData {
-  final_product_id: string;
   name: string;
-  items: { raw_item_id: string; quantity_per_unit: number }[];
+  description?: string;
+  final_product_id: number;
+  ingredients: RecipeIngredient[];
 }
 
 interface RecipeModalProps {
@@ -16,9 +19,9 @@ interface RecipeModalProps {
   onClose: () => void;
   onSubmit: (data: RecipeFormData) => void;
   mode: "add" | "edit";
-  initialData?: RecipeResponse | null;
-  finalProducts: Item[];
-  rawItems: Item[];
+  initialData?: Recipe | null;
+  items: Item[];
+  isLoading?: boolean;
 }
 
 const RecipeModal: React.FC<RecipeModalProps> = ({
@@ -27,184 +30,286 @@ const RecipeModal: React.FC<RecipeModalProps> = ({
   onSubmit,
   mode,
   initialData,
-  finalProducts,
-  rawItems,
+  items,
+  isLoading = false,
 }) => {
-  const [finalProductId, setFinalProductId] = useState("");
   const [name, setName] = useState("");
-  const [items, setItems] = useState<{ raw_item_id: string; quantity_per_unit: number }[]>([]);
+  const [description, setDescription] = useState("");
+  const [finalProductId, setFinalProductId] = useState<number>(0);
+  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([
+    { item_id: 0, quantity: 1 },
+  ]);
+
+  // Get FINAL and RAW items
+  const finalProducts = items.filter((item) => item.item_type === ItemType.FINAL);
+  const rawItems = items.filter((item) => item.item_type === ItemType.RAW);
 
   useEffect(() => {
     if (!isOpen) return;
+
     if (mode === "edit" && initialData) {
-      setFinalProductId(initialData.final_product_id);
       setName(initialData.name || "");
-      setItems(
-        initialData.items.map((i) => ({
-          raw_item_id: i.raw_item_id,
-          quantity_per_unit: Number(i.quantity_per_unit),
+      setDescription(initialData.description || "");
+      setFinalProductId(initialData.final_product_id);
+      setIngredients(
+        initialData.ingredients.map((ing) => ({
+          item_id: ing.item_id,
+          quantity: Number(ing.quantity),
         }))
       );
-      return;
+    } else {
+      setName("");
+      setDescription("");
+      setFinalProductId(0);
+      setIngredients([{ item_id: 0, quantity: 1 }]);
     }
-    setFinalProductId("");
-    setName("");
-    setItems([{ raw_item_id: "", quantity_per_unit: 0 }]);
   }, [isOpen, mode, initialData]);
 
-  const addRow = () => {
-    setItems((prev) => [...prev, { raw_item_id: "", quantity_per_unit: 0 }]);
+  const addIngredient = () => {
+    setIngredients((prev) => [...prev, { item_id: 0, quantity: 1 }]);
   };
 
-  const removeRow = (index: number) => {
-    if (items.length <= 1) return;
-    setItems((prev) => prev.filter((_, i) => i !== index));
+  const removeIngredient = (index: number) => {
+    if (ingredients.length <= 1) return;
+    setIngredients((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateRow = (index: number, field: "raw_item_id" | "quantity_per_unit", value: string | number) => {
-    setItems((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], [field]: value };
-      return next;
+  const updateIngredient = (
+    index: number,
+    field: keyof RecipeIngredient,
+    value: number
+  ) => {
+    setIngredients((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validItems = items.filter((row) => row.raw_item_id && row.quantity_per_unit > 0);
-    if (validItems.length === 0) {
-      alert("Add at least one ingredient with a positive quantity.");
+
+    // Validation
+    if (!name.trim()) {
+      alert("Recipe name is required");
       return;
     }
+
     if (mode === "add" && !finalProductId) {
-      alert("Select a final product.");
+      alert("Please select a final product");
       return;
     }
+
+    const validIngredients = ingredients.filter(
+      (ing) => ing.item_id > 0 && ing.quantity > 0
+    );
+
+    if (validIngredients.length === 0) {
+      alert("Add at least one ingredient with a valid quantity");
+      return;
+    }
+
+    // Check for duplicate ingredients
+    const itemIds = validIngredients.map((ing) => ing.item_id);
+    const uniqueIds = new Set(itemIds);
+    if (itemIds.length !== uniqueIds.size) {
+      alert("Duplicate ingredients are not allowed");
+      return;
+    }
+
     onSubmit({
+      name: name.trim(),
+      description: description.trim() || undefined,
       final_product_id: finalProductId,
-      name: name.trim() || undefined,
-      items: validItems as RecipeItemCreate[],
-    } as RecipeFormData);
+      ingredients: validIngredients,
+    });
   };
 
+  const finalProductOptions = finalProducts.map((item) => ({
+    id: item.id,
+    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`,
+  }));
+
+  const rawItemOptions = rawItems.map((item) => ({
+    id: item.id,
+    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`,
+  }));
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl">
       <div className="p-6 sm:p-8">
         <div className="mb-6">
           <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">
-            {mode === "edit" ? "Edit Recipe" : "Add Recipe"}
+            {mode === "edit" ? "Edit Recipe" : "Create Recipe"}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {mode === "edit"
-              ? "Update ingredients and quantities for this final product."
-              : "Define which raw items and how much is needed per unit of final product."}
+              ? "Update recipe details and ingredients. Note: Only editable if no DONE production exists."
+              : "Define a recipe for a final product with its raw material ingredients."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {mode === "add" && (
+          {/* Final Product Selection */}
+          {mode === "add" ? (
             <div>
-              <Label>Final Product</Label>
-              <select
+              <Label htmlFor="final_product">
+                Final Product <span className="text-red-500">*</span>
+              </Label>
+              <SelectDropdown
+                options={finalProductOptions}
                 value={finalProductId}
-                onChange={(e) => setFinalProductId(e.target.value)}
-                className="mt-1 w-full h-11 rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                required
-              >
-                <option value="">Select final product</option>
-                {finalProducts.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setFinalProductId(Number(value))}
+                placeholder="Select final product..."
+                searchable
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Only FINAL type items can be selected
+              </p>
             </div>
-          )}
-          {mode === "edit" && (
+          ) : (
             <div>
               <Label>Final Product</Label>
               <p className="mt-1 text-gray-800 dark:text-white font-medium">
-                {initialData?.final_product_name ?? "—"}
+                {initialData?.final_product.name}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                (Cannot be changed after creation)
               </p>
             </div>
           )}
 
+          {/* Recipe Name */}
           <div>
-            <Label>Recipe name (optional)</Label>
+            <Label htmlFor="name">
+              Recipe Name <span className="text-red-500">*</span>
+            </Label>
             <Input
+              id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Noodle Recipe"
-              className="mt-1"
+              placeholder="e.g., Standard Car Assembly"
             />
           </div>
 
+          {/* Description */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label>Ingredients (raw items & quantity per 1 unit)</Label>
+            <Label htmlFor="description">Description (Optional)</Label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional notes about this recipe..."
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </div>
+
+          {/* Ingredients */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label>
+                Ingredients (Raw Items) <span className="text-red-500">*</span>
+              </Label>
               <button
                 type="button"
-                onClick={addRow}
-                className="text-sm text-brand-500 hover:underline"
+                onClick={addIngredient}
+                className="text-sm text-brand-500 hover:text-brand-600 font-medium"
               >
-                + Add row
+                + Add Ingredient
               </button>
             </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {items.map((row, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <select
-                    value={row.raw_item_id}
-                    onChange={(e) => updateRow(index, "raw_item_id", e.target.value)}
-                    className="flex-1 h-10 rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                  >
-                    <option value="">Select raw item</option>
-                    {rawItems.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} (stock: {r.total_quantity})
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={0.01}
-                    step={0.01}
-                    value={row.quantity_per_unit || ""}
-                    onChange={(e) =>
-                      updateRow(index, "quantity_per_unit", parseFloat(e.target.value) || 0)
-                    }
-                    placeholder="Qty"
-                    className="w-24 h-10 rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                  />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Specify quantity per unit of final product
+            </p>
+
+            <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
+              {ingredients.map((ingredient, index) => (
+                <div
+                  key={index}
+                  className="flex gap-3 items-start p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+                >
+                  <div className="flex-1">
+                    <Label htmlFor={`ingredient-${index}`} className="text-xs">
+                      Raw Item
+                    </Label>
+                    <SelectDropdown
+                      options={rawItemOptions}
+                      value={ingredient.item_id}
+                      onChange={(value) =>
+                        updateIngredient(index, "item_id", Number(value))
+                      }
+                      placeholder="Select raw item..."
+                      searchable
+                    />
+                  </div>
+
+                  <div className="w-32">
+                    <Label htmlFor={`quantity-${index}`} className="text-xs">
+                      Quantity/Unit
+                    </Label>
+                    <Input
+                      id={`quantity-${index}`}
+                      type="number"
+                      min="0.001"
+                      value={ingredient.quantity}
+                      onChange={(e) =>
+                        updateIngredient(
+                          index,
+                          "quantity",
+                          parseFloat(e.target.value) || 0
+                        )
+                      }
+                      placeholder="Qty"
+                    />
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => removeRow(index)}
-                    disabled={items.length <= 1}
-                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-40"
-                    title="Remove row"
+                    onClick={() => removeIngredient(index)}
+                    disabled={ingredients.length <= 1}
+                    className="mt-6 p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Remove ingredient"
                   >
-                    ×
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
                   </button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
+          {/* Actions */}
+          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+              disabled={isLoading}
             >
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600"
-            >
-              {mode === "edit" ? "Update Recipe" : "Create Recipe"}
-            </button>
+            </Button>
+            <Button type="submit" variant="primary" disabled={isLoading}>
+              {isLoading
+                ? mode === "edit"
+                  ? "Updating..."
+                  : "Creating..."
+                : mode === "edit"
+                  ? "Update Recipe"
+                  : "Create Recipe"}
+            </Button>
           </div>
         </form>
       </div>

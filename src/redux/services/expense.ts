@@ -3,95 +3,109 @@ import { baseApi } from './baseApi'
 /* =========================
    Request Interfaces
 ========================= */
-
-export interface ExpenseCreate {
-  date?: string | null // YYYY-MM-DD, optional (server defaults to today)
-  name?: string
+export interface CreateExpense {
+  category_id: number
+  account_id: number
   amount: number
-  account_id: string
-  expense_category_id: string
-  description?: string | null
-  user_id?: number | null
+  description: string
+  expense_date?: string
+  notes?: string
+  receipt_image?: string
 }
 
-export interface ExpenseCreateBulk {
-  date?: string | null
-  expenses: ExpenseCreate[]
+export interface UpdateExpense {
+  category_id?: number
+  account_id?: number
+  amount?: number
+  description?: string
+  expense_date?: string
+  notes?: string
+  receipt_image?: string
+}
+
+/** Single item for bulk create by day (date comes from parent) */
+export interface ExpenseItemDto {
+  category_id: number
+  account_id: number
+  amount: number
+  description: string
+  notes?: string
+}
+
+export interface BulkExpensesByDay {
+  date: string
+  expenses: ExpenseItemDto[]
 }
 
 export interface GetExpensesParams {
-  skip?: number
-  limit?: number
-  search?: string // search by description and name
-  user_id?: number
-  expense_category_id?: string
-  expense_date?: string // YYYY-MM-DD
-  start_date?: string
-  end_date?: string
+  from?: string
+  to?: string
+  search?: string
 }
 
 /* =========================
    Response Interfaces
 ========================= */
+export interface ExpenseCategoryRef {
+  id: number
+  name: string
+}
 
 export interface ExpenseAccountRef {
-  id: string
+  id: number
   name: string
+  account_type?: string
 }
 
-export interface ExpenseCategoryRef {
-  id: string
-  name: string
-}
-
-export interface ExpenseUserRef {
+export interface ExpenseAdminRef {
   id: number
   name: string
 }
 
 export interface Expense {
-  id: string
-  date: string
-  name?: string | null
+  id: number
+  category_id: number
+  account_id: number
+  admin_id: number
   amount: string | number
-  account_id: string
-  expense_category_id: string
-  description: string | null
-  user_id: number | null
+  description: string
+  expense_date: string
+  notes: string | null
+  receipt_image: string | null
   created_at: string
-  account: ExpenseAccountRef
+  updated_at: string
   category: ExpenseCategoryRef
-  user: ExpenseUserRef | null
-}
-
-export interface ExpenseListResponse {
-  total: number
-  total_amount: string | number
-  expenses: Expense[]
-}
-
-export interface ExpenseTotalTodayResponse {
-  date: string
-  total_amount: string | number
-  count: number
+  account: ExpenseAccountRef
+  admin: ExpenseAdminRef
 }
 
 /* =========================
    API
 ========================= */
-
 export const expenseApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getAllExpenses: builder.query<ExpenseListResponse, GetExpensesParams>({
+    getAllExpenses: builder.query<Expense[], GetExpensesParams | void>({
       query: (params) => ({
         url: '/expenses',
         method: 'GET',
-        params,
+        params: params ?? undefined,
       }),
+      transformResponse: (raw: Expense[] | { data: Expense[] }) =>
+        Array.isArray(raw) ? raw : (raw?.data ?? []),
       providesTags: ['expense'],
     }),
 
-    createExpense: builder.mutation<Expense, ExpenseCreate>({
+    getExpenseById: builder.query<Expense, number>({
+      query: (id) => ({
+        url: `/expenses/${id}`,
+        method: 'GET',
+      }),
+      transformResponse: (raw: Expense | { data: Expense }) =>
+        (raw as { data?: Expense })?.data ?? (raw as Expense),
+      providesTags: (_result, _err, id) => [{ type: 'expense', id }],
+    }),
+
+    createExpense: builder.mutation<Expense, CreateExpense>({
       query: (data) => ({
         url: '/expenses',
         method: 'POST',
@@ -100,29 +114,41 @@ export const expenseApi = baseApi.injectEndpoints({
       invalidatesTags: ['expense', 'account'],
     }),
 
-    createExpensesBulk: builder.mutation<Expense[], ExpenseCreateBulk>({
+    createBulkByDay: builder.mutation<Expense[], BulkExpensesByDay>({
       query: (data) => ({
-        url: '/expenses/bulk',
+        url: '/expenses/bulk-by-day',
         method: 'POST',
         body: data,
       }),
+      transformResponse: (raw: Expense[] | { data: Expense[] }) =>
+        Array.isArray(raw) ? raw : (raw?.data ?? []),
       invalidatesTags: ['expense', 'account'],
     }),
 
-    getTotalExpenseToday: builder.query<ExpenseTotalTodayResponse, void | { user_id?: number }>({
-      query: (params) => ({
-        url: '/expenses/total-today',
-        method: 'GET',
-        params: params || undefined,
+    updateExpense: builder.mutation<Expense, { id: number; data: UpdateExpense }>({
+      query: ({ id, data }) => ({
+        url: `/expenses/${id}`,
+        method: 'PATCH',
+        body: data,
       }),
-      providesTags: ['expense'],
+      invalidatesTags: (_result, _err, { id }) => [{ type: 'expense', id }, 'expense'],
+    }),
+
+    deleteExpense: builder.mutation<{ message: string }, number>({
+      query: (id) => ({
+        url: `/expenses/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_result, _err, id) => [{ type: 'expense', id }, 'expense', 'account'],
     }),
   }),
 })
 
 export const {
   useGetAllExpensesQuery,
+  useGetExpenseByIdQuery,
   useCreateExpenseMutation,
-  useCreateExpensesBulkMutation,
-  useGetTotalExpenseTodayQuery,
+  useCreateBulkByDayMutation,
+  useUpdateExpenseMutation,
+  useDeleteExpenseMutation,
 } = expenseApi

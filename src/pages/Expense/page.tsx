@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import Pagination from "../../components/common/Pagination";
 import ExpenseTable from "../../components/tables/BasicTables/ExpenseTable";
 import ExpenseBulkModal from "../../components/modals/ExpenseBulkModal";
 import {
   useGetAllExpensesQuery,
-  useCreateExpensesBulkMutation,
-  ExpenseCreateBulk,
+  useCreateBulkByDayMutation,
+  BulkExpensesByDay,
+  Expense,
 } from "../../redux/services/expense";
 import { useGetAllAccountsQuery } from "../../redux/services/account";
 import { useGetAllExpenseCategoriesQuery } from "../../redux/services/expenseCategory";
@@ -16,60 +16,38 @@ import DatePicker from "../../components/form/date-picker";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import SearchBar from "../../components/common/SearchBar";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
+import Label from "../../components/form/Label";
 
 const ExpensePage = () => {
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const skip = (page - 1) * limit;
   const [search, setSearch] = useState("");
-  const [startDate, setStartDate] = useState<string | undefined>(undefined);
-  const [endDate, setEndDate] = useState<string | undefined>(undefined);
-  const [expenseCategoryId, setExpenseCategoryId] = useState<string | null>(
-    null
-  );
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+  const [categoryFilterId, setCategoryFilterId] = useState<number | "all">("all");
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
-  const { data, isLoading } = useGetAllExpensesQuery({
-    limit,
-    skip,
-    search: search || undefined,
-    start_date: startDate,
-    end_date: endDate,
-    expense_category_id: expenseCategoryId ?? undefined,
+  const { data: expensesData, isLoading } = useGetAllExpensesQuery({
+    from: fromDate || undefined,
+    to: toDate || undefined,
+    search: search.trim() || undefined,
   });
-  const [createExpensesBulk] = useCreateExpensesBulkMutation();
+  const [createBulkByDay] = useCreateBulkByDayMutation();
   const { data: accountsData } = useGetAllAccountsQuery({});
-  const { data: categoriesData } = useGetAllExpenseCategoriesQuery({});
+  const { data: categoriesData } = useGetAllExpenseCategoriesQuery();
 
-  const handleStartDateChange = (selectedDates: Date[]) => {
-    if (selectedDates.length > 0) {
-      const d = selectedDates[0];
-      const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      setStartDate(formatted);
-      setPage(1);
-    } else {
-      setStartDate(undefined);
-    }
-  };
+  const expenses = useMemo((): Expense[] => {
+    const raw = expensesData ?? [];
+    if (categoryFilterId === "all") return raw;
+    return raw.filter((e) => e.category_id === categoryFilterId);
+  }, [expensesData, categoryFilterId]);
 
-  const handleEndDateChange = (selectedDates: Date[]) => {
-    if (selectedDates.length > 0) {
-      const d = selectedDates[0];
-      const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      setEndDate(formatted);
-      setPage(1);
-    } else {
-      setEndDate(undefined);
-    }
-  };
+  const totalAmount = useMemo(
+    () => expenses.reduce((sum, e) => sum + Number(e.amount), 0),
+    [expenses]
+  );
 
-  const handleSearch = () => {
-    setPage(1);
-  };
-
-  const handleBulkExpenses = async (payload: ExpenseCreateBulk) => {
+  const handleBulkExpenses = async (payload: BulkExpensesByDay) => {
     try {
-      await createExpensesBulk(payload).unwrap();
+      await createBulkByDay(payload).unwrap();
       handleApiSuccess(`${payload.expenses.length} expense(s) added successfully`);
       setIsBulkModalOpen(false);
     } catch (error: unknown) {
@@ -77,20 +55,20 @@ const ExpensePage = () => {
     }
   };
 
-  const accountOptions =
-    accountsData?.accounts?.map((acc) => ({
-      id: acc.id,
-      name: `${acc.name} - ${acc.type}`,
-    })) ?? [];
-  const categoryOptions =
-    categoriesData?.categories?.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-    })) ?? [];
-  const expenseCategoryFilterOptions = [
+  const accounts = accountsData?.data ?? [];
+  const categories = categoriesData ?? [];
+
+  const accountOptions = accounts.map((acc) => ({
+    id: acc.id,
+    name: acc.name,
+  }));
+  const categoryOptions = categories.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+  }));
+  const categoryFilterOptions: { id: number | "all"; name: string }[] = [
     { id: "all", name: "All Categories" },
-    ...(categoriesData?.categories?.map((c) => ({ id: c.id, name: c.name })) ??
-      []),
+    ...categoryOptions,
   ];
 
   return (
@@ -107,52 +85,44 @@ const ExpensePage = () => {
               <SearchBar
                 value={search}
                 onChange={setSearch}
-                onSubmit={handleSearch}
-                placeholder="Search by name or description..."
+                onSubmit={() => {}}
+                placeholder="Search description, notes, category, account..."
               />
               <div className="w-44">
+                <Label>From</Label>
                 <DatePicker
-                  id="expense-start-date"
-                  label="Start Date"
-                  placeholder="Start date"
-                  onChange={handleStartDateChange}
+                  id="expense-from-date"
+                  placeholder="From date"
+                  onChange={(_selectedDates, dateStr) => setFromDate(dateStr || "")}
                 />
               </div>
               <div className="w-44">
+                <Label>To</Label>
                 <DatePicker
-                  id="expense-end-date"
-                  label="End Date"
-                  placeholder="End date"
-                  onChange={handleEndDateChange}
+                  id="expense-to-date"
+                  placeholder="To date"
+                  onChange={(_selectedDates, dateStr) => setToDate(dateStr || "")}
                 />
               </div>
-              <SelectDropdown
-                options={expenseCategoryFilterOptions}
-                value={expenseCategoryId ?? "all"}
-                onChange={(value) => {
-                  setExpenseCategoryId(value === "all" ? null : String(value));
-                  setPage(1);
-                }}
-                placeholder="Filter by category..."
-                searchable
-                className="w-48"
-              />
+              <div className="w-48">
+                <SelectDropdown
+                  options={categoryFilterOptions}
+                  value={categoryFilterId}
+                  onChange={(value) =>
+                    setCategoryFilterId(value === "all" ? "all" : Number(value))
+                  }
+                  placeholder="Filter by category..."
+                  searchable
+                />
+              </div>
             </div>
           }
         >
           <ExpenseTable
-            expenses={data?.expenses ?? []}
+            expenses={expenses}
             loading={isLoading}
-            totalAmount={data?.total_amount}
+            totalAmount={totalAmount}
           />
-          <div className="pt-4">
-            <Pagination
-              currentPage={page}
-              pageSize={limit}
-              total={data?.total ?? 0}
-              onPageChange={setPage}
-            />
-          </div>
         </ComponentCard>
       </div>
 

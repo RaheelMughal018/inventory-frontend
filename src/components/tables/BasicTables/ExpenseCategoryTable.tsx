@@ -37,7 +37,7 @@ export default function ExpenseCategoryTable({
     if (!selectedCategory) return;
     try {
       const res = await deleteCategory(selectedCategory.id).unwrap();
-      if (res.message) handleApiSuccess(res.message);
+      if (res?.message) handleApiSuccess(res.message);
       closeModal();
       setSelectedCategory(null);
     } catch (error: unknown) {
@@ -68,6 +68,18 @@ export default function ExpenseCategoryTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
+                  Description
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
+                  Expenses
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
                   Created on
                 </TableCell>
                 <TableCell
@@ -81,7 +93,7 @@ export default function ExpenseCategoryTable({
 
             {loading && (
               <TableRow>
-                <TableCell colSpan={4}>
+                <TableCell colSpan={6}>
                   <div className="flex justify-center items-center py-10">
                     <TailSpin
                       height={40}
@@ -96,7 +108,7 @@ export default function ExpenseCategoryTable({
 
             {!loading && categories.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-6 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-6 text-gray-500">
                   No expense categories found
                 </TableCell>
               </TableRow>
@@ -110,8 +122,14 @@ export default function ExpenseCategoryTable({
                       {cat.id}
                     </span>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  <TableCell className="px-4 py-3 text-gray-800 dark:text-white/90 font-medium">
                     {cat.name}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 max-w-xs truncate">
+                    {cat.description ?? "—"}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    {cat._count?.expenses ?? 0}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     {formatDateTime(cat.created_at)}
@@ -147,7 +165,7 @@ export default function ExpenseCategoryTable({
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Delete Expense Category
           </h3>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             Are you sure you want to delete{" "}
             <span className="font-medium text-gray-800 dark:text-white">
               {selectedCategory?.name}
@@ -157,14 +175,14 @@ export default function ExpenseCategoryTable({
           <div className="mt-6 flex justify-end gap-3">
             <button
               onClick={closeModal}
-              className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100"
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Cancel
             </button>
             <button
               disabled={isLoading}
               onClick={handleDelete}
-              className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
             >
               Delete
             </button>

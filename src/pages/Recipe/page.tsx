@@ -1,58 +1,49 @@
-import { useState } from "react";
 import { useNavigate } from "react-router";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import RecipesTable from "../../components/tables/BasicTables/RecipesTable";
-import { useListRecipesQuery } from "../../redux/services/recipe";
-import SearchBar from "../../components/common/SearchBar";
+import {
+  useGetAllRecipesQuery,
+  Recipe,
+} from "../../redux/services/recipe";
 
 const RecipePage = () => {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
 
-  const { data: recipesData, isLoading } = useListRecipesQuery({
-    search: search || undefined,
-    limit: 100,
-    skip: 0,
-  });
+  // Fetch recipes
+  const { data: recipesData, isLoading: recipesLoading } = useGetAllRecipesQuery();
 
-  const handleAddRecipe = () => {
+  const recipes = recipesData?.data ?? [];
+
+  const handleAddClick = () => {
     navigate("/recipes/create");
   };
 
-  const handleView = (recipe: { id: string }) => {
-    navigate(`/recipes/view/${recipe.id}`);
+  const handleEdit = (recipe: Recipe) => {
+    navigate(`/recipes/edit/${recipe.id}`);
   };
 
-  const handleEdit = (recipe: { id: string }) => {
-    navigate(`/recipes/view/${recipe.id}?mode=edit`);
+  const handleView = (recipe: Recipe) => {
+    navigate(`/recipes/edit/${recipe.id}`);
   };
 
   return (
     <>
       <PageMeta
         title="Recipes"
-        description="Manage recipes for final products (raw items and quantities)"
+        description="Manage recipes for final products with raw material ingredients"
       />
       <PageBreadcrumb pageTitle="Recipes" />
       <div className="space-y-6">
         <ComponentCard
           title="Recipes"
           addButtonText="Add Recipe"
-          onAddClick={handleAddRecipe}
-          extra={
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={() => {}}
-              placeholder="Search recipes..."
-            />
-          }
+          onAddClick={handleAddClick}
         >
           <RecipesTable
-            recipes={recipesData?.recipes ?? []}
-            loading={isLoading}
+            recipes={recipes}
+            loading={recipesLoading}
             onView={handleView}
             onEdit={handleEdit}
           />

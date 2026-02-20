@@ -1,113 +1,117 @@
 import { baseApi } from './baseApi'
 
 /* =========================
+   Enums
+========================= */
+export enum ProductionStatus {
+  DRAFT = 'DRAFT',
+  IN_PROCESS = 'IN_PROCESS',
+  DONE = 'DONE',
+}
+
+/* =========================
    Request Interfaces
 ========================= */
-export interface ProductionFeasibilityRequest {
-  final_product_id: string
+export interface CreateProduction {
+  recipe_id: number
+  quantity: number
+  batch_number: string
+  notes?: string
+}
+
+export interface UpdateProduction {
+  notes?: string
+}
+
+export interface ProductionIngredient {
+  item_id: number
   quantity: number
 }
 
-export interface ProductionDraftCreate {
-  final_product_id: string
-  quantity: number
-  serial_numbers: string[]
+export interface UpdateProductionIngredients {
+  ingredients: ProductionIngredient[]
+}
+
+export interface CompleteProduction {
+  serialNumbers: string[]
 }
 
 /* =========================
    Response Interfaces
 ========================= */
-export interface RawItemRequirement {
-  raw_item_id: string
-  raw_item_name: string
-  quantity_required: number | string
-  quantity_per_unit: number | string
-  avg_price: number | null
-  available_quantity: number
-  sufficient: boolean
-}
-
-export interface ProductionPreviewResponse {
-  final_product_id: string
-  final_product_name: string
-  quantity: number
-  raw_requirements: RawItemRequirement[]
-  total_estimated_cost: number
-}
-
-export interface InsufficientItem {
-  raw_item_id: string
-  raw_item_name: string
-  required_quantity: number
-  available_quantity: number
-  shortfall: number
-}
-
-export interface ProductionFeasibilityResponse {
-  feasible: boolean
-  requested_quantity: number
-  max_producible_quantity: number
-  insufficient_items: InsufficientItem[]
-  message: string
-}
-
-export type ProductionStageEnum = 'DRAFT' | 'IN_PROCESS' | 'DONE'
-
-export interface ProductionBatchResponse {
-  id: string
-  final_product_id: string
-  final_product_name: string
-  quantity_produced: number
-  stage: ProductionStageEnum
-  serial_numbers: string[]
-  created_at: string
-  updated_at: string | null
-}
-
-export interface ProductionBatchListResponse {
-  total: number
-  batches: ProductionBatchResponse[]
-}
-
-export interface ListBatchesParams {
-  skip?: number
-  limit?: number
-  final_product_id?: string
-  stage?: ProductionStageEnum
-}
-
-export interface RecipeItem {
+export interface ProductionIngredientResponse {
   id: number
-  raw_item_id: string
-  raw_item_name: string
-  quantity_per_unit: string | number
-  avg_price: string | number
-  total_quantity: number
-}
-
-export interface ProductionBatchDetailResponse {
-  id: string
-  final_product_id: string
-  final_product_name: string
-  quantity_produced: number
-  stage: ProductionStageEnum
-  serial_numbers: string[]
-  recipe_items: RecipeItem[]
-  total_estimated_cost: string | number
-  cost_per_unit: string | number
+  production_id: number
+  item_id: number
+  quantity: string | number
+  is_from_recipe: boolean
   created_at: string
   updated_at: string
+  item: {
+    id: number
+    name: string
+    quantity: string | number
+    avg_price: string | number
+  }
 }
 
-export interface UpdateBatchRecipeItem {
-  raw_item_id: string
-  quantity_per_unit: number
+export interface ProductionItem {
+  id: number
+  production_id: number
+  item_id: number
+  serial_number: string
+  cost_per_unit: string | number
+  created_at: string
 }
 
-export interface UpdateProductionBatch {
-  quantity?: number
-  serial_numbers?: string[]
-  recipe_items?: UpdateBatchRecipeItem[]
+export interface Production {
+  id: number
+  batch_number: string
+  recipe_id: number
+  admin_id: number
+  quantity: number
+  status: ProductionStatus
+  total_cost: string | number
+  cost_per_unit: string | number
+  start_date: string | null
+  completion_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  recipe: {
+    id: number
+    name: string
+    final_product_id: number
+    final_product: {
+      id: number
+      name: string
+      quantity: string | number
+      avg_price: string | number
+      item_type: string
+    }
+  }
+  admin: {
+    id: number
+    name: string
+  }
+  production_ingredients: ProductionIngredientResponse[]
+  production_items: ProductionItem[]
+}
+
+export interface FeasibilityIngredient {
+  item_id: number
+  item_name: string
+  required: number
+  available: number
+  sufficient: boolean
+  avg_price: number
+  line_cost: number
+}
+
+export interface Feasibility {
+  canProduce: boolean
+  ingredients: FeasibilityIngredient[]
+  total_estimated_cost: number
 }
 
 /* =========================
@@ -115,115 +119,113 @@ export interface UpdateProductionBatch {
 ========================= */
 export const productionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    productionPreview: builder.query<
-      ProductionPreviewResponse,
-      { final_product_id: string; quantity: number }
-    >({
-      query: ({ final_product_id, quantity }) => ({
-        url: '/production/preview',
-        method: 'GET',
-        params: { final_product_id, quantity },
-      }),
-    }),
-
-    productionFeasibility: builder.mutation<
-      ProductionFeasibilityResponse,
-      ProductionFeasibilityRequest
-    >({
-      query: (body) => ({ url: '/production/feasibility', method: 'POST', body }),
-    }),
-
-    createProductionDraft: builder.mutation<ProductionBatchResponse, ProductionDraftCreate>({
-      query: (body) => ({ url: '/production/draft', method: 'POST', body }),
+    // Create production (DRAFT)
+    createProduction: builder.mutation<{ data: Production }, CreateProduction>({
+      query: (data) => ({ url: '/productions', method: 'POST', body: data }),
       invalidatesTags: [{ type: 'production', id: 'LIST' }],
     }),
 
-    executeProductionDraft: builder.mutation<ProductionBatchResponse, string>({
-      query: (batchId) => ({
-        url: `/production/batches/${batchId}/execute`,
-        method: 'POST',
-      }),
-      invalidatesTags: (_result, _err, batchId) => [
-        { type: 'production', id: batchId },
-        { type: 'production', id: 'LIST' },
-        'item',
-      ],
-    }),
-
-    completeProductionBatch: builder.mutation<ProductionBatchResponse, string>({
-      query: (batchId) => ({
-        url: `/production/batches/${batchId}/complete`,
-        method: 'POST',
-      }),
-      invalidatesTags: (_result, _err, batchId) => [
-        { type: 'production', id: batchId },
-        { type: 'production', id: 'LIST' },
-        'item',
-      ],
-    }),
-
-    listProductionBatches: builder.query<ProductionBatchListResponse, ListBatchesParams | void>({
-      query: (params = {}) => ({
-        url: '/production/batches',
+    // Get all productions (with optional status filter)
+    getAllProductions: builder.query<{ data: Production[] }, ProductionStatus | void>({
+      query: (status) => ({
+        url: '/productions',
         method: 'GET',
-        params: { skip: 0, limit: 100, ...params },
+        params: status ? { status } : undefined,
       }),
       providesTags: (result) =>
-        result
+        result?.data
           ? [
-              ...result.batches.map((b) => ({ type: 'production' as const, id: b.id })),
+              ...result.data.map((p) => ({ type: 'production' as const, id: p.id })),
               { type: 'production', id: 'LIST' },
             ]
           : [{ type: 'production', id: 'LIST' }],
     }),
 
-    getProductionBatch: builder.query<ProductionBatchResponse, string>({
-      query: (batchId) => ({ url: `/production/batches/${batchId}`, method: 'GET' }),
+    // Get production by ID
+    getProductionById: builder.query<{ data: Production }, number>({
+      query: (id) => ({ url: `/productions/${id}`, method: 'GET' }),
       providesTags: (_result, _err, id) => [{ type: 'production', id }],
     }),
 
-    getProductionBatchDetail: builder.query<ProductionBatchDetailResponse, string>({
-      query: (batchId) => ({ url: `/production/batches/${batchId}/detail`, method: 'GET' }),
-      providesTags: (_result, _err, id) => [{ type: 'production', id }],
+    // Get production feasibility
+    getProductionFeasibility: builder.query<{ data: Feasibility }, number>({
+      query: (id) => ({ url: `/productions/${id}/feasibility`, method: 'GET' }),
+      providesTags: (_result, _err, id) => [{ type: 'production', id: `feasibility-${id}` }],
     }),
 
-    updateProductionBatch: builder.mutation<
-      ProductionBatchDetailResponse,
-      { batchId: string; data: UpdateProductionBatch }
-    >({
-      query: ({ batchId, data }) => ({
-        url: `/production/batches/${batchId}`,
+    // Update production (notes only, DRAFT only)
+    updateProduction: builder.mutation<{ data: Production }, { id: number; data: UpdateProduction }>({
+      query: ({ id, data }) => ({
+        url: `/productions/${id}`,
         method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: (_result, _err, { batchId }) => [
-        { type: 'production', id: batchId },
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: 'production', id },
         { type: 'production', id: 'LIST' },
       ],
     }),
 
-    deleteProductionBatch: builder.mutation<void, string>({
-      query: (batchId) => ({
-        url: `/production/batches/${batchId}`,
-        method: 'DELETE',
+    // Update production ingredients
+    updateProductionIngredients: builder.mutation<
+      { data: Production },
+      { id: number; data: UpdateProductionIngredients }
+    >({
+      query: ({ id, data }) => ({
+        url: `/productions/${id}/ingredients`,
+        method: 'PATCH',
+        body: data,
       }),
-      invalidatesTags: (_result, _err, batchId) => [
-        { type: 'production', id: batchId },
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: 'production', id },
         { type: 'production', id: 'LIST' },
+        { type: 'production', id: `feasibility-${id}` },
       ],
+    }),
+
+    // Start production (DRAFT → IN_PROCESS)
+    startProduction: builder.mutation<{ data: Production }, number>({
+      query: (id) => ({
+        url: `/productions/${id}/start`,
+        method: 'POST',
+      }),
+      invalidatesTags: (_result, _err, id) => [
+        { type: 'production', id },
+        { type: 'production', id: 'LIST' },
+        'item', // Invalidate items because stock is deducted
+      ],
+    }),
+
+    // Complete production (IN_PROCESS → DONE)
+    completeProduction: builder.mutation<{ data: Production }, { id: number; data: CompleteProduction }>({
+      query: ({ id, data }) => ({
+        url: `/productions/${id}/complete`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: 'production', id },
+        { type: 'production', id: 'LIST' },
+        'item', // Invalidate items because final products are added
+      ],
+    }),
+
+    // Delete production (DRAFT only)
+    deleteProduction: builder.mutation<{ message: string }, number>({
+      query: (id) => ({ url: `/productions/${id}`, method: 'DELETE' }),
+      invalidatesTags: (_result, _err, id) => [{ type: 'production', id }, { type: 'production', id: 'LIST' }],
     }),
   }),
 })
 
 export const {
-  useProductionPreviewQuery,
-  useProductionFeasibilityMutation,
-  useCreateProductionDraftMutation,
-  useExecuteProductionDraftMutation,
-  useCompleteProductionBatchMutation,
-  useListProductionBatchesQuery,
-  useGetProductionBatchQuery,
-  useGetProductionBatchDetailQuery,
-  useUpdateProductionBatchMutation,
-  useDeleteProductionBatchMutation,
+  useCreateProductionMutation,
+  useGetAllProductionsQuery,
+  useGetProductionByIdQuery,
+  useGetProductionFeasibilityQuery,
+  useUpdateProductionMutation,
+  useUpdateProductionIngredientsMutation,
+  useStartProductionMutation,
+  useCompleteProductionMutation,
+  useDeleteProductionMutation,
 } = productionApi

@@ -3,62 +3,54 @@ import { baseApi } from './baseApi'
 /* =========================
    Request Interfaces
 ========================= */
-export interface GetExpenseCategoriesParams {
-  search?: string
-  skip?: number
-  limit?: number
-}
-
 export interface CreateExpenseCategory {
   name: string
+  description?: string
 }
 
 export interface UpdateExpenseCategory {
-  id: string
   name?: string
+  description?: string
 }
 
 /* =========================
    Response Interfaces
 ========================= */
-
 export interface ExpenseCategory {
-  id: string
+  id: number
   name: string
+  description: string | null
   created_at: string
-}
-
-export interface ExpenseCategoryListResponse {
-  total: number
-  categories: ExpenseCategory[]
-}
-
-export interface ExpenseCategoryDeleteResponse {
-  message: string
+  updated_at: string
+  _count?: { expenses: number }
 }
 
 /* =========================
    API
 ========================= */
-
 export const expenseCategoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getAllExpenseCategories: builder.query<
-      ExpenseCategoryListResponse,
-      GetExpenseCategoriesParams
-    >({
-      query: (params) => ({
+    getAllExpenseCategories: builder.query<ExpenseCategory[], void>({
+      query: () => ({
         url: '/expense-categories',
         method: 'GET',
-        params,
       }),
+      transformResponse: (raw: ExpenseCategory[] | { data: ExpenseCategory[] }) =>
+        Array.isArray(raw) ? raw : (raw?.data ?? []),
       providesTags: ['expense_category'],
     }),
 
-    createExpenseCategory: builder.mutation<
-      ExpenseCategory,
-      CreateExpenseCategory
-    >({
+    getExpenseCategoryById: builder.query<ExpenseCategory, number>({
+      query: (id) => ({
+        url: `/expense-categories/${id}`,
+        method: 'GET',
+      }),
+      transformResponse: (raw: ExpenseCategory | { data: ExpenseCategory }) =>
+        (raw as { data?: ExpenseCategory })?.data ?? (raw as ExpenseCategory),
+      providesTags: (_result, _err, id) => [{ type: 'expense_category', id }],
+    }),
+
+    createExpenseCategory: builder.mutation<ExpenseCategory, CreateExpenseCategory>({
       query: (data) => ({
         url: '/expense-categories',
         method: 'POST',
@@ -69,31 +61,29 @@ export const expenseCategoryApi = baseApi.injectEndpoints({
 
     updateExpenseCategory: builder.mutation<
       ExpenseCategory,
-      UpdateExpenseCategory
+      { id: number; data: UpdateExpenseCategory }
     >({
-      query: ({ id, ...data }) => ({
+      query: ({ id, data }) => ({
         url: `/expense-categories/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: ['expense_category'],
+      invalidatesTags: (_result, _err, { id }) => [{ type: 'expense_category', id }, 'expense_category'],
     }),
 
-    deleteExpenseCategory: builder.mutation<
-      ExpenseCategoryDeleteResponse,
-      string
-    >({
+    deleteExpenseCategory: builder.mutation<{ message: string }, number>({
       query: (id) => ({
         url: `/expense-categories/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['expense_category'],
+      invalidatesTags: (_result, _err, id) => [{ type: 'expense_category', id }, 'expense_category'],
     }),
   }),
 })
 
 export const {
   useGetAllExpenseCategoriesQuery,
+  useGetExpenseCategoryByIdQuery,
   useCreateExpenseCategoryMutation,
   useUpdateExpenseCategoryMutation,
   useDeleteExpenseCategoryMutation,

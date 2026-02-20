@@ -35,10 +35,13 @@ import ExpenseCategoryPage from "./pages/ExpenseCategory/page";
 import ExpensePage from "./pages/Expense/page";
 import RecipePage from "./pages/Recipe/page";
 import CreateRecipePage from "./pages/CreateRecipe/page";
-import ViewRecipePage from "./pages/ViewRecipe/page";
+import EditRecipePage from "./pages/EditRecipe/page";
 import ProductionPage from "./pages/Production/page";
-import ViewProductionBatch from "./pages/ViewProductionBatch";
+import ViewProductionPage from "./pages/ViewProduction/page";
 import StockAdjustmentPage from "./pages/StockAdjustment/page";
+import SupplierStatementPage from "./pages/SupplierStatement/page";
+import PaymentsPage from "./pages/Payments/page";
+import CreatePaymentPage from "./pages/CreatePayment/page";
 
 export default function App() {
   return (
@@ -55,6 +58,7 @@ export default function App() {
               <Route path="/profile" element={<UserProfiles />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/supplier" element={<SupplierPage />} />
+              <Route path="/supplier-statement" element={<SupplierStatementPage />} />
               <Route path="/customer" element={<CustomerPage />} />
               <Route path="/categories" element={<CategoryPage />} />
               <Route path="/items" element={<ItemPage />} />
@@ -72,6 +76,8 @@ export default function App() {
                 path="/purchase-invoices/view/:id"
                 element={<ViewPurchaseInvoicePage />}
               />
+              <Route path="/payments" element={<PaymentsPage />} />
+              <Route path="/payments/create" element={<CreatePaymentPage />} />
               <Route path="/financial-ledger" element={<FinancialLedgerPage />} />
               <Route path="/stock-ledger" element={<StockLedgerPage />} />
               <Route path="/stock-adjustment" element={<StockAdjustmentPage />} />
@@ -79,12 +85,9 @@ export default function App() {
               <Route path="/expenses" element={<ExpensePage />} />
               <Route path="/recipes" element={<RecipePage />} />
               <Route path="/recipes/create" element={<CreateRecipePage />} />
-              <Route path="/recipes/view/:id" element={<ViewRecipePage />} />
+              <Route path="/recipes/edit/:id" element={<EditRecipePage />} />
               <Route path="/production" element={<ProductionPage />} />
-              <Route
-                path="/production/batches/view/:id"
-                element={<ViewProductionBatch />}
-              />
+              <Route path="/production/view/:id" element={<ViewProductionPage />} />
               <Route path="/blank" element={<Blank />} />
 
               {/* Forms */}

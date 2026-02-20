@@ -3,55 +3,79 @@ import { baseApi } from './baseApi'
 /* =========================
    Request Interfaces
 ========================= */
-export interface RecipeItemCreate {
-  raw_item_id: string
-  quantity_per_unit: number
+export interface RecipeIngredient {
+  item_id: number
+  quantity: number
 }
 
-export interface RecipeCreate {
-  final_product_id: string
-  name?: string
-  items: RecipeItemCreate[]
+export interface CreateRecipe {
+  name: string
+  description?: string
+  final_product_id: number
+  ingredients: RecipeIngredient[]
 }
 
-export interface RecipeUpdate {
+export interface UpdateRecipe {
   name?: string
-  items?: RecipeItemCreate[]
+  description?: string
+  ingredients?: RecipeIngredient[]
+}
+
+export interface AddIngredient {
+  item_id: number
+  quantity: number
+}
+
+export interface UpdateIngredient {
+  quantity: number
 }
 
 /* =========================
    Response Interfaces
 ========================= */
-export interface RecipeItemResponse {
+export interface RecipeIngredientResponse {
   id: number
-  raw_item_id: string
-  raw_item_name: string
-  quantity_per_unit: string
-  avg_price: string | null
-  amount_per_unit: string
-  total_quantity: number
-}
-
-export interface RecipeResponse {
-  id: string
-  final_product_id: string
-  final_product_name: string
-  name: string | null
-  items: RecipeItemResponse[]
-  total_cost_per_unit: string | null
+  recipe_id: number
+  item_id: number
+  quantity: string | number
   created_at: string
   updated_at: string
+  item: {
+    id: number
+    name: string
+    avg_price: string | number
+    quantity: string | number
+  }
 }
 
-export interface RecipeListResponse {
-  total: number
-  recipes: RecipeResponse[]
+export interface Recipe {
+  id: number
+  name: string
+  description: string | null
+  final_product_id: number
+  created_at: string
+  updated_at: string
+  final_product: {
+    id: number
+    name: string
+    item_type: string
+    quantity: string | number
+    avg_price: string | number
+  }
+  ingredients: RecipeIngredientResponse[]
 }
 
-export interface GetRecipesParams {
-  skip?: number
-  limit?: number
-  search?: string
+export interface CostBreakdown {
+  item_id: number
+  item_name: string
+  quantity: number
+  avg_price: number
+  line_cost: number
+}
+
+export interface RecipeCost {
+  cost_per_unit: number
+  breakdown: CostBreakdown[]
 }
 
 /* =========================
@@ -59,63 +83,112 @@ export interface GetRecipesParams {
 ========================= */
 export const recipeApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    listRecipes: builder.query<RecipeListResponse, GetRecipesParams | void>({
-      query: (params = {}) => ({
+    // Get all recipes
+    getAllRecipes: builder.query<{ data: Recipe[] }, void>({
+      query: () => ({
         url: '/recipes',
         method: 'GET',
-        params: { skip: 0, limit: 100, ...params },
       }),
       providesTags: (result) =>
-        result
+        result?.data
           ? [
-              ...result.recipes.map((r) => ({ type: 'recipe' as const, id: r.id })),
+              ...result.data.map((r) => ({ type: 'recipe' as const, id: r.id })),
               { type: 'recipe', id: 'LIST' },
             ]
           : [{ type: 'recipe', id: 'LIST' }],
     }),
 
-    getRecipeById: builder.query<RecipeResponse, string>({
+    // Get recipe by ID
+    getRecipeById: builder.query<{ data: Recipe }, number>({
       query: (id) => ({ url: `/recipes/${id}`, method: 'GET' }),
       providesTags: (_result, _err, id) => [{ type: 'recipe', id }],
     }),
 
-    getRecipeByProductId: builder.query<RecipeResponse, string>({
-      query: (finalProductId) => ({
-        url: `/recipes/product/${finalProductId}`,
-        method: 'GET',
-      }),
-      providesTags: (_result, _err, id) => [{ type: 'recipe', id: `product-${id}` }],
+    // Get recipe cost per unit
+    getRecipeCost: builder.query<{ data: RecipeCost }, number>({
+      query: (id) => ({ url: `/recipes/${id}/cost`, method: 'GET' }),
+      providesTags: (_result, _err, id) => [{ type: 'recipe', id: `cost-${id}` }],
     }),
 
-    createRecipe: builder.mutation<RecipeResponse, RecipeCreate>({
+    // Create recipe
+    createRecipe: builder.mutation<{ data: Recipe }, CreateRecipe>({
       query: (data) => ({ url: '/recipes', method: 'POST', body: data }),
-      invalidatesTags: [{ type: 'recipe', id: 'LIST' }],
+      invalidatesTags: [{ type: 'recipe', id: 'LIST' }, 'item'],
     }),
 
-    updateRecipe: builder.mutation<RecipeResponse, { recipeId: string; data: RecipeUpdate }>({
-      query: ({ recipeId, data }) => ({
-        url: `/recipes/${recipeId}`,
-        method: 'PUT',
+    // Update recipe
+    updateRecipe: builder.mutation<{ data: Recipe }, { id: number; data: UpdateRecipe }>({
+      query: ({ id, data }) => ({
+        url: `/recipes/${id}`,
+        method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: (_result, _err, { recipeId }) => [
-        { type: 'recipe', id: recipeId },
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: 'recipe', id },
         { type: 'recipe', id: 'LIST' },
       ],
     }),
 
-    deleteRecipe: builder.mutation<void, string>({
-      query: (recipeId) => ({ url: `/recipes/${recipeId}`, method: 'DELETE' }),
+    // Delete recipe
+    deleteRecipe: builder.mutation<{ message: string }, number>({
+      query: (id) => ({ url: `/recipes/${id}`, method: 'DELETE' }),
       invalidatesTags: (_result, _err, id) => [{ type: 'recipe', id }, { type: 'recipe', id: 'LIST' }],
+    }),
+
+    // Add ingredient to recipe
+    addIngredient: builder.mutation<{ data: Recipe }, { id: number; data: AddIngredient }>({
+      query: ({ id, data }) => ({
+        url: `/recipes/${id}/ingredients`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: 'recipe', id },
+        { type: 'recipe', id: 'LIST' },
+        { type: 'recipe', id: `cost-${id}` },
+      ],
+    }),
+
+    // Update ingredient in recipe
+    updateIngredient: builder.mutation<
+      { data: Recipe },
+      { id: number; itemId: number; data: UpdateIngredient }
+    >({
+      query: ({ id, itemId, data }) => ({
+        url: `/recipes/${id}/ingredients/${itemId}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: 'recipe', id },
+        { type: 'recipe', id: 'LIST' },
+        { type: 'recipe', id: `cost-${id}` },
+      ],
+    }),
+
+    // Remove ingredient from recipe
+    removeIngredient: builder.mutation<{ data: Recipe }, { id: number; itemId: number }>({
+      query: ({ id, itemId }) => ({
+        url: `/recipes/${id}/ingredients/${itemId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: 'recipe', id },
+        { type: 'recipe', id: 'LIST' },
+        { type: 'recipe', id: `cost-${id}` },
+      ],
     }),
   }),
 })
 
 export const {
-  useListRecipesQuery,
+  useGetAllRecipesQuery,
   useGetRecipeByIdQuery,
-  useGetRecipeByProductIdQuery,
+  useGetRecipeCostQuery,
   useCreateRecipeMutation,
   useUpdateRecipeMutation,
   useDeleteRecipeMutation,
+  useAddIngredientMutation,
+  useUpdateIngredientMutation,
+  useRemoveIngredientMutation,
 } = recipeApi

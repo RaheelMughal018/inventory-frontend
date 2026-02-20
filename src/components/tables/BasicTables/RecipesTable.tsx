@@ -11,17 +11,17 @@ import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
 import { Modal } from "../../ui/modal";
 import {
-  RecipeResponse,
+  Recipe,
   useDeleteRecipeMutation,
 } from "../../../redux/services/recipe";
 import formatDateTime from "../../../helper/date_converter";
 import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 
 interface RecipesTableProps {
-  recipes: RecipeResponse[];
+  recipes: Recipe[];
   loading: boolean;
-  onView?: (recipe: RecipeResponse) => void;
-  onEdit?: (recipe: RecipeResponse) => void;
+  onView?: (recipe: Recipe) => void;
+  onEdit?: (recipe: Recipe) => void;
 }
 
 export default function RecipesTable({
@@ -31,10 +31,10 @@ export default function RecipesTable({
   onEdit,
 }: RecipesTableProps) {
   const { isOpen, closeModal, openModal } = useModal();
-  const [selectedRecipe, setSelectedRecipe] = useState<RecipeResponse | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [deleteRecipe, { isLoading }] = useDeleteRecipeMutation();
 
-  const handleDeleteClick = (recipe: RecipeResponse) => {
+  const handleDeleteClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     openModal();
   };
@@ -74,13 +74,13 @@ export default function RecipesTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Total Ingredients Count
+                  Ingredients
                 </TableCell>
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Cost/Unit
+                  Avg Price
                 </TableCell>
                 <TableCell
                   isHeader
@@ -118,19 +118,19 @@ export default function RecipesTable({
                     className="border-b border-gray-100 last:border-0 dark:border-white/[0.05]"
                   >
                     <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
-                      {recipe.final_product_name}
+                      {recipe.final_product.name}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
-                      {recipe.name || "—"}
+                      {recipe.name}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400">
-                      {recipe.items.length} items
-                     
+                      {recipe.ingredients.length} item{recipe.ingredients.length !== 1 ? 's' : ''}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
-                      {recipe.total_cost_per_unit != null
-                        ? `$${Number(recipe.total_cost_per_unit).toFixed(2)}`
-                        : "—"}
+                      $
+                      {recipe.final_product.avg_price
+                        ? Number(recipe.final_product.avg_price).toFixed(2)
+                        : "0.00"}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400">
                       {formatDateTime(recipe.created_at)}
@@ -181,8 +181,10 @@ export default function RecipesTable({
             Delete Recipe
           </h3>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Are you sure you want to delete the recipe for &quot;{selectedRecipe?.final_product_name}&quot;?
-            This cannot be undone.
+            Are you sure you want to delete the recipe &quot;{selectedRecipe?.name}&quot; for &quot;{selectedRecipe?.final_product.name}&quot;?
+          </p>
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+            Note: Recipe can only be deleted if no production batches are using it.
           </p>
           <div className="mt-6 flex gap-3 justify-end">
             <button

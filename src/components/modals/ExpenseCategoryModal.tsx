@@ -14,6 +14,7 @@ interface ExpenseCategoryModalProps {
 
 export interface ExpenseCategoryFormData {
   name: string;
+  description?: string;
 }
 
 const ExpenseCategoryModal: React.FC<ExpenseCategoryModalProps> = ({
@@ -25,6 +26,7 @@ const ExpenseCategoryModal: React.FC<ExpenseCategoryModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<ExpenseCategoryFormData>({
     name: "",
+    description: "",
   });
 
   useEffect(() => {
@@ -33,11 +35,12 @@ const ExpenseCategoryModal: React.FC<ExpenseCategoryModalProps> = ({
     if (mode === "edit" && initialData) {
       setFormData({
         name: initialData.name || "",
+        description: initialData.description ?? "",
       });
       return;
     }
 
-    setFormData({ name: "" });
+    setFormData({ name: "", description: "" });
   }, [isOpen, initialData, mode]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,7 +49,10 @@ const ExpenseCategoryModal: React.FC<ExpenseCategoryModalProps> = ({
       alert("Name is required!");
       return;
     }
-    onSubmit(formData);
+    onSubmit({
+      name: formData.name.trim(),
+      description: formData.description?.trim() || undefined,
+    });
   };
 
   const handleChange = (field: keyof ExpenseCategoryFormData, value: string) => {
@@ -62,8 +68,8 @@ const ExpenseCategoryModal: React.FC<ExpenseCategoryModalProps> = ({
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {mode === "edit"
-              ? "Update expense category name"
-              : "Enter expense category name (e.g. bike repair, bills)"}
+              ? "Update expense category name and description"
+              : "Enter expense category name (e.g. Utilities, Office supplies)"}
           </p>
         </div>
 
@@ -75,9 +81,20 @@ const ExpenseCategoryModal: React.FC<ExpenseCategoryModalProps> = ({
             <Input
               id="expense-category-name"
               type="text"
-              placeholder="e.g. Bills"
+              placeholder="e.g. Utilities"
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="expense-category-desc">Description (Optional)</Label>
+            <textarea
+              id="expense-category-desc"
+              placeholder="e.g. Electricity, gas, water"
+              value={formData.description ?? ""}
+              onChange={(e) => handleChange("description", e.target.value)}
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
           </div>
 

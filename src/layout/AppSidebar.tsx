@@ -44,6 +44,7 @@ const navItems: NavItem[] = [
     name: "People",
     subItems: [
       { name: "Supplier", path: "/supplier", pro: false },
+      { name: "Supplier Statement", path: "/supplier-statement", pro: false },
       { name: "Customer", path: "/customer", pro: false },
     ],
   },
@@ -69,6 +70,11 @@ const navItems: NavItem[] = [
       { name: "Sale invoice", path: "/sale-invoice", pro: false },
       { name: "Purchase invoice", path: "/purchase-invoices", pro: false },
     ],
+  },
+  {
+    icon: <BadgeDollarSign />,
+    name: "Sales & Payments",
+    path: "/payments",
   },
   {
     icon: <BadgeDollarSign />,
