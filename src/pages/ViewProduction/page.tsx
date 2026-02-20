@@ -262,7 +262,7 @@ const ViewProductionPage = () => {
                         {item.serial_number}
                       </TableCell>
                       <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-300">
-                        {Number(item.cost_per_unit).toFixed(2)}
+                        {Number(item.cost_price).toFixed(2)}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -60,7 +60,7 @@ export interface ProductionItem {
   production_id: number
   item_id: number
   serial_number: string
-  cost_per_unit: string | number
+  cost_price: string | number
   created_at: string
 }
 

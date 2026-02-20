@@ -26,17 +26,18 @@ const ExpenseCategoryPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
 
-  const categories = Array.isArray(categoriesData) ? categoriesData : categoriesData?.data ?? [];
-
   const filteredCategories = useMemo(() => {
+    const categories: ExpenseCategory[] = Array.isArray(categoriesData)
+      ? categoriesData
+      : (categoriesData as unknown as { data?: ExpenseCategory[] })?.data ?? [];
     if (!search.trim()) return categories;
     const term = search.trim().toLowerCase();
     return categories.filter(
-      (cat) =>
+      (cat: ExpenseCategory) =>
         cat.name.toLowerCase().includes(term) ||
         (cat.description ?? "").toLowerCase().includes(term)
     );
-  }, [categories, search]);
+  }, [categoriesData, search]);
 
   const handleExportCSV = () => {
     handleApiSuccess("Export feature coming soon");
