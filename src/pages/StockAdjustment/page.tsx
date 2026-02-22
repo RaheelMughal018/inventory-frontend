@@ -21,7 +21,7 @@ import Button from "../../components/ui/button/Button";
 const StockAdjustmentPage = () => {
   const [selectedItemId, setSelectedItemId] = useState<number>(0);
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(30);
 
   const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery({});
   const { data: historyData, isLoading: historyLoading } = useGetStockHistoryQuery(

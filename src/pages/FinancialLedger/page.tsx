@@ -12,7 +12,7 @@ import DatePicker from "../../components/form/date-picker";
 const FinancialLedgerPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(30);
   const skip = (page - 1) * limit;
   const [startDate, setStartDate] = useState<string | undefined>(undefined);
   const [endDate, setEndDate] = useState<string | undefined>(undefined);

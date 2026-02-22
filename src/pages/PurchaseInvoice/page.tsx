@@ -20,7 +20,7 @@ const PurchaseInvoicePage = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(30);
 
   // Filter states
   const [supplierFilter, setSupplierFilter] = useState<string>("");

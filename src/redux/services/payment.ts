@@ -70,7 +70,7 @@ export const paymentApi = baseApi.injectEndpoints({
         method: 'GET',
         params: {
           page: params?.page ?? 1,
-          limit: params?.limit ?? 10,
+          limit: params?.limit ?? 30,
           search: params?.search,
           sortBy: params?.sortBy ?? 'created_at',
           sortOrder: params?.sortOrder ?? 'desc',
@@ -88,7 +88,7 @@ export const paymentApi = baseApi.injectEndpoints({
         if (response.data?.data && Array.isArray(response.data.data)) {
           return { data: response.data.data, meta: response.data.meta };
         }
-        return { data: [], meta: { page: 1, limit: 10, totalItems: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false } };
+        return { data: [], meta: { page: 1, limit: 30, totalItems: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false } };
       },
       providesTags: (result) =>
         result?.data

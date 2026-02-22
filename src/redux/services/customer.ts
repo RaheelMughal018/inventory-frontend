@@ -73,7 +73,7 @@ export const customerApi = baseApi.injectEndpoints({
     }),
 
     getAllCustomers: builder.query<CustomersResponse, GetCustomersParams>({
-      query: ({ page = 1, limit = 10, search, sortBy, sortOrder }) => ({
+      query: ({ page = 1, limit = 30, search, sortBy, sortOrder }) => ({
         url: '/customers',
         method: 'GET',
         params: {

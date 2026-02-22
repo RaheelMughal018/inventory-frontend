@@ -64,7 +64,7 @@ export const categoryApi = baseApi.injectEndpoints({
     }),
 
     getAllCategories: builder.query<CategoriesResponse, GetCategoriesParams>({
-      query: ({ page = 1, limit = 10, search, sortBy, sortOrder }) => ({
+      query: ({ page = 1, limit = 30, search, sortBy, sortOrder }) => ({
         url: '/categories',
         method: 'GET',
         params: {

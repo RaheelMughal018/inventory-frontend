@@ -19,7 +19,7 @@ import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 const CustomerPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(30);
 
   const { data, isLoading } = useGetAllCustomersQuery({
     page,

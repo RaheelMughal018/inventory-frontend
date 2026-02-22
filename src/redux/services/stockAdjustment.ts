@@ -81,7 +81,7 @@ export const stockAdjustmentApi = baseApi.injectEndpoints({
         if (response.data?.data && Array.isArray(response.data.data)) {
           return { data: response.data.data, meta: response.data.meta };
         }
-        return { data: [], meta: { currentPage: 1, totalPages: 0, totalItems: 0, itemsPerPage: 10 } };
+        return { data: [], meta: { currentPage: 1, totalPages: 0, totalItems: 0, itemsPerPage: 30 } };
       },
       providesTags: ['stock_adjustment']
     }),

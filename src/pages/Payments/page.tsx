@@ -16,7 +16,7 @@ import { useGetAllAccountsQuery } from "../../redux/services/account";
 const PaymentsPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(30);
   const [search, setSearch] = useState("");
   const [supplierId, setSupplierId] = useState<number | "">("");
   const [accountId, setAccountId] = useState<number | "">("");

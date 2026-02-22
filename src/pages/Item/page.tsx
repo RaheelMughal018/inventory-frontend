@@ -22,12 +22,12 @@ import SelectDropdown from "../../components/form/SelectDropdown";
 const ItemPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(30);
 
   const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
   const { data: categoriesFilterData } = useGetAllCategoriesQuery({
     page: 1,
-    limit: 10,
+    limit: 30,
     search: categoryFilterSearch || undefined,
     sortBy: "created_at",
     sortOrder: "desc",

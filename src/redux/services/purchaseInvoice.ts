@@ -131,7 +131,7 @@ export const purchaseInvoiceApi = baseApi.injectEndpoints({
     }),
 
     getAllPurchaseInvoices: builder.query<PurchaseInvoicesResponse, GetPurchaseInvoicesParams>({
-      query: ({ page = 1, limit = 10, search, sortBy, sortOrder, supplier_id, payment_status, from_date, to_date }) => ({
+      query: ({ page = 1, limit = 30, search, sortBy, sortOrder, supplier_id, payment_status, from_date, to_date }) => ({
         url: '/purchase-invoices',
         method: 'GET',
         params: {

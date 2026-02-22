@@ -91,7 +91,7 @@ export const itemApi = baseApi.injectEndpoints({
     }),
 
     getAllItems: builder.query<ItemsResponse, GetItemsParams>({
-      query: ({ page = 1, limit = 10, search, sortBy, sortOrder, category_id, item_type, stock_status }) => ({
+      query: ({ page = 1, limit = 30, search, sortBy, sortOrder, category_id, item_type, stock_status }) => ({
         url: '/items',
         method: 'GET',
         params: {

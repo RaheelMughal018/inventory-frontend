@@ -73,7 +73,7 @@ export const supplierApi = baseApi.injectEndpoints({
     }),
 
     getAllSuppliers: builder.query<SuppliersResponse, GetSuppliersParams>({
-      query: ({ page = 1, limit = 10, search, sortBy, sortOrder }) => ({
+      query: ({ page = 1, limit = 30, search, sortBy, sortOrder }) => ({
         url: '/suppliers',
         method: 'GET',
         params: {
