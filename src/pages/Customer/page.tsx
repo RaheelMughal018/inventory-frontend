@@ -128,7 +128,7 @@ const CustomerPage = () => {
             <Pagination
               currentPage={page}
               pageSize={limit}
-              total={data?.meta?.totalItems ?? data?.data?.length ?? 0}
+              total={data?.meta?.totalItems ?? 0}
               onPageChange={setPage}
             />
           </div>

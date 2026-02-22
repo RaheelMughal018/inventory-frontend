@@ -81,6 +81,15 @@ export const paymentApi = baseApi.injectEndpoints({
           to_date: params?.to_date,
         },
       }),
+      transformResponse: (response: { data: Payment[] | { data: Payment[]; meta: PaymentMeta } }) => {
+        if (Array.isArray(response.data)) {
+          return { data: response.data, meta: { page: 1, limit: response.data.length, totalItems: response.data.length, totalPages: 1, hasNextPage: false, hasPreviousPage: false } };
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return { data: response.data.data, meta: response.data.meta };
+        }
+        return { data: [], meta: { page: 1, limit: 10, totalItems: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false } };
+      },
       providesTags: (result) =>
         result?.data
           ? [

@@ -84,7 +84,15 @@ export const accountApi = baseApi.injectEndpoints({
         method: 'GET',
         params,
       }),
-      transformResponse: (response: AccountsResponse) => response,
+      transformResponse: (response: { data: Account[] | { data: Account[]; meta: AccountsResponse['meta'] } }) => {
+        if (Array.isArray(response.data)) {
+          return { data: response.data, meta: { currentPage: 1, totalPages: 1, totalItems: response.data.length, itemsPerPage: response.data.length } };
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return { data: response.data.data, meta: response.data.meta };
+        }
+        return { data: [], meta: { currentPage: 1, totalPages: 0, totalItems: 0, itemsPerPage: 10 } };
+      },
       providesTags: ['account']
     }),
 
