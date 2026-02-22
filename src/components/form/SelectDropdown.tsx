@@ -17,6 +17,10 @@ interface SelectDropdownProps {
   required?: boolean;
   disabled?: boolean;
   searchable?: boolean;
+  /** When searchable, called when user types in the search input (e.g. to trigger API search) */
+  onSearchChange?: (term: string) => void;
+  /** When true and onSearchChange is provided, options are from API (no client-side filter) */
+  optionsAreFiltered?: boolean;
   error?: string;
   name?: string;
   displayKey?: string; // Custom display key (default: "name")
@@ -35,6 +39,8 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
   required = false,
   disabled = false,
   searchable = true,
+  onSearchChange,
+  optionsAreFiltered = false,
   error,
   name,
   displayKey = "name",
@@ -54,14 +60,17 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
     (opt) => String(opt[valueKey]) === String(value),
   );
 
-  // Filter options based on search term
-  const filteredOptions = searchable
-    ? options.filter((option) =>
-        String(option[displayKey])
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()),
-      )
-    : options;
+  // Filter options: use API-filtered list when optionsAreFiltered, else client-side filter
+  const filteredOptions =
+    searchable && optionsAreFiltered
+      ? options
+      : searchable
+        ? options.filter((option) =>
+            String(option[displayKey])
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()),
+          )
+        : options;
 
   // Handle click outside
   useEffect(() => {
@@ -73,6 +82,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
         setIsOpen(false);
         setSearchTerm("");
         setFocusedIndex(-1);
+        onSearchChange?.("");
       }
     };
 
@@ -81,7 +91,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
       return () =>
         document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isOpen]);
+  }, [isOpen, onSearchChange]);
 
   // Focus input when dropdown opens
   useEffect(() => {
@@ -95,6 +105,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
     setIsOpen(false);
     setSearchTerm("");
     setFocusedIndex(-1);
+    onSearchChange?.("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -207,8 +218,10 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
                   placeholder={`Search ${label?.toLowerCase() || "options"}...`}
                   value={searchTerm}
                   onChange={(e) => {
-                    setSearchTerm(e.target.value);
+                    const term = e.target.value;
+                    setSearchTerm(term);
                     setFocusedIndex(-1);
+                    onSearchChange?.(term);
                   }}
                   onKeyDown={handleKeyDown}
                   className="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"

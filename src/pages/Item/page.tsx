@@ -24,7 +24,18 @@ const ItemPage = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
 
-  const { data: categoriesData } = useGetAllCategoriesQuery({});
+  const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
+  const { data: categoriesFilterData } = useGetAllCategoriesQuery({
+    page: 1,
+    limit: 10,
+    search: categoryFilterSearch || undefined,
+    sortBy: "created_at",
+    sortOrder: "desc",
+  });
+  const { data: categoriesModalData } = useGetAllCategoriesQuery({
+    page: 1,
+    limit: 100,
+  });
   const [createItem] = useCreateItemMutation();
   const [updateItem] = useUpdateItemMutation();
   
@@ -154,12 +165,12 @@ const ItemPage = () => {
                   />
                 </div>
 
-                {/* Category Filter */}
+                {/* Category Filter - search triggers API with pagination */}
                 <div className="w-full sm:w-48">
                   <SelectDropdown
                     options={[
                       { id: "", name: "All Categories" },
-                      ...(categoriesData?.data || []).map((cat) => ({
+                      ...(categoriesFilterData?.data || []).map((cat) => ({
                         id: cat.id,
                         name: cat.name,
                       })),
@@ -171,6 +182,8 @@ const ItemPage = () => {
                     }}
                     placeholder="All Categories"
                     searchable={true}
+                    onSearchChange={setCategoryFilterSearch}
+                    optionsAreFiltered={true}
                   />
                 </div>
 
@@ -204,7 +217,7 @@ const ItemPage = () => {
             <Pagination
               currentPage={page}
               pageSize={limit}
-              total={itemsData?.meta?.totalItems ?? itemsData?.data?.length ?? 0}
+              total={itemsData?.meta?.totalItems ?? 0}
               onPageChange={setPage}
             />
           </div>
@@ -217,7 +230,7 @@ const ItemPage = () => {
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleAddItem}
         mode="add"
-        categories={categoriesData?.data ?? []}
+        categories={categoriesModalData?.data ?? []}
       />
 
       {/* Modal - Opens when edit button is clicked */}
@@ -231,7 +244,7 @@ const ItemPage = () => {
         onSubmit={handleEditItem}
         initialData={selectedItem}
         mode="edit"
-        categories={categoriesData?.data ?? []}
+        categories={categoriesModalData?.data ?? []}
         categoryId={selectedCategoryId}
       />
     </>
