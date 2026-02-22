@@ -31,7 +31,12 @@ const CreatePurchaseInvoicePage = () => {
   const navigate = useNavigate();
   const [createPurchaseInvoice, { isLoading }] = useCreatePurchaseInvoiceMutation();
 
-  const { data: itemsData, isLoading: itemLoading } = useGetAllItemsQuery({});
+  const [itemSearch, setItemSearch] = useState("");
+  const { data: itemsData, isLoading: itemLoading } = useGetAllItemsQuery({
+    search: itemSearch || undefined,
+    limit: 30,
+    page: 1,
+  });
   const { data: supplierData, isLoading: supplierLoading } = useGetAllSuppliersQuery({});
   const { data: accountsData, isLoading: accountsLoading } = useGetAllAccountsQuery({});
 
@@ -208,12 +213,17 @@ const CreatePurchaseInvoicePage = () => {
       name: supplier.name,
     })) || [];
 
-  // Transform items for SelectDropdown
-  const itemOptions =
-    itemsData?.data?.map((item) => ({
-      id: item.id,
-      name: item.name,
-    })) || [];
+  // Transform items for SelectDropdown (include selected row items so they stay visible when not in search results)
+  const apiItemOptions =
+    itemsData?.data?.map((item) => ({ id: item.id, name: item.name })) || [];
+  const apiIds = new Set(apiItemOptions.map((o) => o.id));
+  const selectedOnly = items
+    .filter((row) => row.item_id && !apiIds.has(row.item_id))
+    .map((row) => ({ id: row.item_id, name: row.item_name || `Item #${row.item_id}` }));
+  const itemOptions = [...apiItemOptions];
+  selectedOnly.forEach((opt) => {
+    if (!itemOptions.some((o) => o.id === opt.id)) itemOptions.push(opt);
+  });
 
   // Transform accounts for SelectDropdown
   const accountOptions =
@@ -357,6 +367,8 @@ const CreatePurchaseInvoicePage = () => {
                                 : "Search and select item..."
                             }
                             searchable
+                            onSearchChange={setItemSearch}
+                            optionsAreFiltered={true}
                             disabled={itemLoading}
                             className="w-72"
                             triggerClassName="h-9 px-3 py-1 text-xs"
