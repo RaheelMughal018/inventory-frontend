@@ -45,7 +45,7 @@ const EditRecipePage = () => {
 
   const rawItemOptions = rawItems.map((item) => ({
     id: item.id,
-    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)}, Price: $${Number(item.avg_price).toFixed(2)})`,
+    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)}, Price: ${Number(item.avg_price).toFixed(2)})`,
   }));
 
   // Initialize form with recipe data
@@ -187,7 +187,7 @@ const EditRecipePage = () => {
                   {recipe.final_product.name}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Stock: {Number(recipe.final_product.quantity).toFixed(0)} | Avg Price: $
+                  Stock: {Number(recipe.final_product.quantity).toFixed(0)} | Avg Price:{" "}
                   {Number(recipe.final_product.avg_price).toFixed(2)}
                 </p>
               </div>
@@ -244,7 +244,7 @@ const EditRecipePage = () => {
                     </p>
                   </div>
                   <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-                    ${cost.cost_per_unit.toFixed(2)}
+                    {cost.cost_per_unit.toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -266,10 +266,10 @@ const EditRecipePage = () => {
                       </span>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         <span>
-                          {item.quantity} × ${item.avg_price.toFixed(2)} ={" "}
+                          {item.quantity} × {item.avg_price.toFixed(2)} ={" "}
                         </span>
                         <span className="font-medium text-gray-800 dark:text-white">
-                          ${item.line_cost.toFixed(2)}
+                          {item.line_cost.toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -332,7 +332,6 @@ const EditRecipePage = () => {
                   <Label className="text-xs mb-1">Line Cost</Label>
                   <div className="h-11 flex items-center px-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700">
                     <span className="text-sm text-gray-800 dark:text-white/90">
-                      $
                       {ingredient.item_id > 0
                         ? (
                             Number(
@@ -381,7 +380,7 @@ const EditRecipePage = () => {
                   </p>
                 </div>
                 <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                  ${estimatedCost.toFixed(2)}
+                  {estimatedCost.toFixed(2)}
                 </div>
               </div>
             </div>

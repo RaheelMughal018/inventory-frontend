@@ -4,86 +4,90 @@ import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import Pagination from "../../components/common/Pagination";
-import PaymentsTable from "../../components/tables/BasicTables/PaymentsTable";
-import { useGetPaymentsQuery } from "../../redux/services/payment";
+import ReceiptsTable from "../../components/tables/BasicTables/ReceiptsTable";
+import { useGetAllReceiptsQuery } from "../../redux/services/receipt";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import DatePicker from "../../components/form/date-picker";
 import Label from "../../components/form/Label";
 import SearchBar from "../../components/common/SearchBar";
-import { useGetAllSuppliersQuery } from "../../redux/services/supplier";
+import { useGetAllCustomersQuery } from "../../redux/services/customer";
 import { useGetAllAccountsQuery } from "../../redux/services/account";
 
-const PaymentsPage = () => {
+const ReceiptsPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [limit] = useState(30);
   const [search, setSearch] = useState("");
-  const [supplierId, setSupplierId] = useState<number | "">("");
+  const [customerId, setCustomerId] = useState<number | "">("");
   const [accountId, setAccountId] = useState<number | "">("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  const { data, isLoading } = useGetPaymentsQuery({
+  const { data, isLoading } = useGetAllReceiptsQuery({
     page,
     limit,
     search: search.trim() || undefined,
-    supplier_id: supplierId === "" ? undefined : supplierId,
+    customer_id: customerId === "" ? undefined : customerId,
     account_id: accountId === "" ? undefined : accountId,
     from_date: fromDate || undefined,
     to_date: toDate || undefined,
-    sortBy: "created_at",
-    sortOrder: "desc",
   });
 
-  const { data: suppliersData } = useGetAllSuppliersQuery({});
+  const { data: customersData } = useGetAllCustomersQuery({});
   const { data: accountsData } = useGetAllAccountsQuery({});
 
-  const payments = data?.data ?? [];
-  const meta = data?.meta;
-  const totalItems = meta?.totalItems ?? 0;
+  const receipts = data?.data ?? [];
+  const totalItems = data?.meta?.totalItems ?? 0;
 
-  const supplierOptions =
-    suppliersData?.data?.map((s) => ({ id: s.id, name: s.name })) ?? [];
+  const customerOptions =
+    customersData?.data?.map((c) => ({ id: c.id, name: c.name })) ?? [];
   const accountOptions =
     accountsData?.data?.map((a) => ({ id: a.id, name: a.name })) ?? [];
 
-  
-
   return (
     <>
-      <PageMeta title="Payments" description="View and manage supplier payments" />
-      <PageBreadcrumb pageTitle="Payments" />
+      <PageMeta
+        title="Receipts"
+        description="View and manage customer receipts (received amount without invoice)"
+      />
+      <PageBreadcrumb pageTitle="Receipts" />
 
       <div className="space-y-6">
         <ComponentCard
-          title="Payments"
-          addButtonText="Add Payment"
-          onAddClick={() => navigate("/payments/create")}
+          title="Receipts"
+          addButtonText="Add Receipt"
+          onAddClick={() => navigate("/receipts/create")}
           extra={
             <div className="flex flex-wrap items-end gap-3">
               <SearchBar
                 value={search}
                 onChange={setSearch}
                 onSubmit={() => setPage(1)}
-                placeholder="Search by payment # or supplier..."
+                placeholder="Search by receipt # or customer..."
               />
               <div className="w-44">
-                <Label>Supplier</Label>
+                <Label>Customer</Label>
                 <SelectDropdown
-                  options={[{ id: "" as const, name: "All" }, ...supplierOptions]}
-                  value={supplierId}
+                  options={[
+                    { id: "" as const, name: "All" },
+                    ...customerOptions,
+                  ]}
+                  value={customerId}
                   onChange={(v) => {
-                    setSupplierId(v === "" ? "" : Number(v));
+                    setCustomerId(v === "" ? "" : Number(v));
                     setPage(1);
                   }}
-                  placeholder="All suppliers"
+                  placeholder="All customers"
                   searchable
                 />
               </div>
               <div className="w-44">
                 <Label>Account</Label>
                 <SelectDropdown
-                  options={[{ id: "" as const, name: "All" }, ...accountOptions]}
+                  options={[
+                    { id: "" as const, name: "All" },
+                    ...accountOptions,
+                  ]}
                   value={accountId}
                   onChange={(v) => {
                     setAccountId(v === "" ? "" : Number(v));
@@ -93,11 +97,10 @@ const PaymentsPage = () => {
                   searchable
                 />
               </div>
-              
               <div className="w-40">
                 <Label>From</Label>
                 <DatePicker
-                  id="payments-from"
+                  id="receipts-from"
                   placeholder="From date"
                   onChange={(_d, dateStr) => {
                     setFromDate(dateStr ?? "");
@@ -108,7 +111,7 @@ const PaymentsPage = () => {
               <div className="w-40">
                 <Label>To</Label>
                 <DatePicker
-                  id="payments-to"
+                  id="receipts-to"
                   placeholder="To date"
                   onChange={(_d, dateStr) => {
                     setToDate(dateStr ?? "");
@@ -119,10 +122,10 @@ const PaymentsPage = () => {
             </div>
           }
         >
-          <PaymentsTable
-            payments={payments}
+          <ReceiptsTable
+            receipts={receipts}
             loading={isLoading}
-            onView={(payment) => navigate(`/payments/view/${payment.id}`)}
+            onView={(receipt) => navigate(`/receipts/view/${receipt.id}`)}
           />
           <div className="pt-4">
             <Pagination
@@ -138,4 +141,4 @@ const PaymentsPage = () => {
   );
 };
 
-export default PaymentsPage;
+export default ReceiptsPage;

@@ -424,7 +424,7 @@ const EditPurchaseInvoicePage = () => {
                           />
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                          ${item.line_total.toFixed(2)}
+                          {item.line_total.toFixed(2)}
                         </td>
                         <td className="px-4 py-3">
                           <button
@@ -455,7 +455,7 @@ const EditPurchaseInvoicePage = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    ${subtotal.toFixed(2)}
+                    {subtotal.toFixed(2)}
                   </span>
                 </div>
 
@@ -491,7 +491,7 @@ const EditPurchaseInvoicePage = () => {
                   <div className="flex justify-between text-lg font-bold">
                     <span className="text-gray-900 dark:text-white">Total Amount</span>
                     <span className="text-brand-600 dark:text-brand-400">
-                      ${totalAmount.toFixed(2)}
+                      {totalAmount.toFixed(2)}
                     </span>
                   </div>
                 </div>

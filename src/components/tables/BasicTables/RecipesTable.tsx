@@ -127,7 +127,6 @@ export default function RecipesTable({
                       {recipe.ingredients.length} item{recipe.ingredients.length !== 1 ? 's' : ''}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
-                      $
                       {recipe.final_product.avg_price
                         ? Number(recipe.final_product.avg_price).toFixed(2)
                         : "0.00"}

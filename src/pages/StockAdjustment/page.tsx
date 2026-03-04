@@ -123,7 +123,7 @@ const StockAdjustmentPage = () => {
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Average Price:</span>
                     <p className="font-semibold text-blue-600 dark:text-blue-400 mt-1 text-lg">
-                      ${Number(selectedItem.avg_price).toFixed(2)}
+                      {Number(selectedItem.avg_price).toFixed(2)}
                     </p>
                   </div>
                   <div>

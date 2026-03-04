@@ -393,7 +393,7 @@ const ProductionPage = () => {
                         </span>
                       </TableCell>
                       <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-300">
-                        ${Number(production.total_cost).toFixed(2)}
+                        {Number(production.total_cost).toFixed(2)}
                       </TableCell>
                       <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400 text-sm">
                         {formatDateTime(production.created_at)}

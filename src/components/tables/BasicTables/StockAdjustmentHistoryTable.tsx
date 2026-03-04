@@ -130,7 +130,7 @@ export default function StockAdjustmentHistoryTable({
                     </span>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 font-medium">
-                    ${avgPrice.toLocaleString(undefined, {
+                    {avgPrice.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}

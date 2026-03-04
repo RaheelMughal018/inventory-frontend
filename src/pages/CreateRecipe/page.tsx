@@ -35,7 +35,7 @@ const CreateRecipePage = () => {
 
   const rawItemOptions = rawItems.map((item) => ({
     id: item.id,
-    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)}, Price: $${Number(item.avg_price).toFixed(2)})`,
+    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)}, Price: ${Number(item.avg_price).toFixed(2)})`,
   }));
 
   const addIngredient = () => {
@@ -227,7 +227,6 @@ const CreateRecipePage = () => {
                   <Label className="text-xs mb-1">Line Cost</Label>
                   <div className="h-11 flex items-center px-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700">
                     <span className="text-sm text-gray-800 dark:text-white/90">
-                      $
                       {ingredient.item_id > 0
                         ? (
                             Number(
@@ -276,7 +275,7 @@ const CreateRecipePage = () => {
                   </p>
                 </div>
                 <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                  ${estimatedCost.toFixed(2)}
+                  {estimatedCost.toFixed(2)}
                 </div>
               </div>
             </div>

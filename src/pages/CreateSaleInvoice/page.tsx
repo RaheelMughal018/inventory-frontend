@@ -1,35 +1,39 @@
-// pages/CreatePurchaseInvoicePage.tsx
+// pages/CreateSaleInvoicePage.tsx – same UI as CreatePurchaseInvoice with Serial + Unit Type columns
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { useGetAllItemsQuery } from "../../redux/services/item";
-import { useGetAllSuppliersQuery } from "../../redux/services/supplier";
+import { useGetAllCustomersQuery } from "../../redux/services/customer";
 import { useGetAllAccountsQuery } from "../../redux/services/account";
 import {
-  type CreatePurchaseInvoice,
-  type PurchaseInvoiceItemDto,
+  CreateSaleInvoice,
   PaymentStatus,
-  useCreatePurchaseInvoiceMutation,
-} from "../../redux/services/purchaseInvoice";
+  SaleInvoiceItemDto,
+  useCreateSaleInvoiceMutation,
+} from "../../redux/services/saleInvoice";
 import Button from "../../components/ui/button/Button";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import DatePicker from "../../components/form/date-picker";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
+import { ItemType, UnitType } from "../../redux/services/item";
 
-interface InvoiceItem {
+interface SaleInvoiceItem {
   item_id: number;
   item_name: string;
+  item_type: ItemType;
+  unit_type: UnitType;
+  serial_number: string;
   quantity: number;
   unit_price: number;
   line_total: number;
 }
 
-const CreatePurchaseInvoicePage = () => {
+const CreateSaleInvoicePage = () => {
   const navigate = useNavigate();
-  const [createPurchaseInvoice, { isLoading }] = useCreatePurchaseInvoiceMutation();
+  const [createSaleInvoice, { isLoading }] = useCreateSaleInvoiceMutation();
 
   const [itemSearch, setItemSearch] = useState("");
   const { data: itemsData, isLoading: itemLoading } = useGetAllItemsQuery({
@@ -37,40 +41,42 @@ const CreatePurchaseInvoicePage = () => {
     limit: 30,
     page: 1,
   });
-  const { data: supplierData, isLoading: supplierLoading } = useGetAllSuppliersQuery({});
+  const { data: customersData, isLoading: customerLoading } = useGetAllCustomersQuery({});
   const { data: accountsData, isLoading: accountsLoading } = useGetAllAccountsQuery({});
 
-  // Form state
-  const [supplierId, setSupplierId] = useState<number | string>("");
+  const [customerId, setCustomerId] = useState<number | string>("");
   const [invoiceDate, setInvoiceDate] = useState<string>(new Date().toISOString());
   const [dueDate, setDueDate] = useState<string>("");
   const [tax, setTax] = useState<number>(0);
   const [discount, setDiscount] = useState<number>(0);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.UNPAID);
   const [accountId, setAccountId] = useState<string>("");
-  const [paidAmount, setPaidAmount] = useState<number>(0);
+  const [receivedAmount, setReceivedAmount] = useState<number>(0);
   const [notes, setNotes] = useState<string>("");
 
-  // Items state
-  const [items, setItems] = useState<InvoiceItem[]>([
+  const [items, setItems] = useState<SaleInvoiceItem[]>([
     {
       item_id: 0,
       item_name: "",
+      item_type: ItemType.RAW,
+      unit_type: UnitType.PCS,
+      serial_number: "",
       quantity: 0,
-      unit_price: 0.0,
-      line_total: 0.0,
+      unit_price: 0,
+      line_total: 0,
     },
   ]);
 
-  // Calculations
   const subtotal = items.reduce((sum, item) => sum + item.line_total, 0);
   const totalAmount = subtotal + tax - discount;
 
-  // Add new item row
   const handleAddItem = () => {
-    const newItem: InvoiceItem = {
+    const newItem: SaleInvoiceItem = {
       item_id: 0,
       item_name: "",
+      item_type: ItemType.RAW,
+      unit_type: UnitType.PCS,
+      serial_number: "",
       quantity: 0,
       unit_price: 0,
       line_total: 0,
@@ -78,39 +84,47 @@ const CreatePurchaseInvoicePage = () => {
     setItems([...items, newItem]);
   };
 
-  // Update item
   const handleUpdateItem = (
     index: number,
-    field: keyof InvoiceItem,
+    field: keyof SaleInvoiceItem,
     value: string | number,
   ) => {
     const updatedItems = [...items];
     const existing = updatedItems[index];
     if (!existing) return;
 
-    const item: InvoiceItem = { ...existing };
+    const item: SaleInvoiceItem = { ...existing };
 
     if (field === "item_name") item.item_name = String(value);
     if (field === "quantity") item.quantity = Number(value);
     if (field === "unit_price") item.unit_price = Number(value);
     if (field === "line_total") item.line_total = Number(value);
+    if (field === "serial_number") item.serial_number = String(value);
     if (field === "item_id") item.item_id = Number(value);
+    if (field === "item_type") item.item_type = value as ItemType;
+    if (field === "unit_type") item.unit_type = value as UnitType;
 
-    // Recalculate line total if quantity or unit_price changes
     if (field === "quantity" || field === "unit_price") {
       item.line_total = item.quantity * item.unit_price;
     }
 
-    // Update item name if item_id changes
     if (field === "item_id") {
       const selectedItem = itemsData?.data?.find((i) => i.id === Number(value));
       if (selectedItem) {
         item.item_name = selectedItem.name;
-        const avgPrice = typeof selectedItem.avg_price === 'string' 
-          ? parseFloat(selectedItem.avg_price) 
-          : selectedItem.avg_price;
+        item.item_type = selectedItem.item_type;
+        item.unit_type = selectedItem.unit_type;
+        const avgPrice =
+          typeof selectedItem.avg_price === "string"
+            ? parseFloat(selectedItem.avg_price)
+            : selectedItem.avg_price;
         item.unit_price = avgPrice || 0;
-        item.line_total = item.quantity * item.unit_price;
+        if (selectedItem.item_type === ItemType.FINAL) {
+          item.quantity = 1;
+          item.line_total = item.unit_price;
+        } else {
+          item.line_total = item.quantity * item.unit_price;
+        }
       }
     }
 
@@ -118,114 +132,123 @@ const CreatePurchaseInvoicePage = () => {
     setItems(updatedItems);
   };
 
-  // Remove item
   const handleRemoveItem = (index: number) => {
     if (items.length > 1) {
-      const updatedItems = items.filter((_, i) => i !== index);
-      setItems(updatedItems);
+      setItems(items.filter((_, i) => i !== index));
     } else {
       handleApiError(null, "At least one item is required");
     }
   };
 
-  // Handle form submission
+  const buildItemsPayload = (): SaleInvoiceItemDto[] => {
+    return items
+      .filter((r) => r.item_id > 0)
+      .map((r) => {
+        if (r.item_type === ItemType.FINAL) {
+          return {
+            item_id: r.item_id,
+            serial_number: r.serial_number || undefined,
+            quantity: 1,
+          };
+        }
+        return { item_id: r.item_id, quantity: r.quantity || undefined };
+      })
+      .filter(
+        (d) =>
+          (d.serial_number !== undefined && d.serial_number !== "") ||
+          (d.quantity !== undefined && d.quantity > 0),
+      );
+  };
+
   const handleSubmit = async () => {
-    // Validation
-    if (!supplierId) {
-      handleApiError(null, "Please select a supplier");
+    if (!customerId) {
+      handleApiError(null, "Please select a customer");
+      return;
+    }
+    const payloadItems = buildItemsPayload();
+    if (payloadItems.length === 0) {
+      handleApiError(null, "Please add at least one item with serial number (FINAL) or quantity (RAW)");
       return;
     }
 
-    if (items.length === 0) {
-      handleApiError(null, "Please add at least one item");
+    if (paymentStatus === PaymentStatus.PAID && receivedAmount !== totalAmount) {
+      handleApiError(null, "Received amount must equal total amount for PAID status");
       return;
     }
-
-    if (items.some((item) => !item.item_id || item.quantity <= 0)) {
-      handleApiError(null, "Please fill all item details correctly");
+    if (
+      paymentStatus === PaymentStatus.PARTIAL &&
+      (receivedAmount <= 0 || receivedAmount >= totalAmount)
+    ) {
+      handleApiError(
+        null,
+        "Received amount must be between 0 and total amount for PARTIAL status",
+      );
       return;
     }
-
-    // Validate payment data
-    if (paymentStatus === PaymentStatus.PAID && paidAmount !== totalAmount) {
-      handleApiError(null, "Paid amount must equal total amount for PAID status");
-      return;
-    }
-
-    if (paymentStatus === PaymentStatus.PARTIAL && (paidAmount <= 0 || paidAmount >= totalAmount)) {
-      handleApiError(null, "Paid amount must be between 0 and total amount for PARTIAL status");
-      return;
-    }
-
-    if ((paymentStatus === PaymentStatus.PAID || paymentStatus === PaymentStatus.PARTIAL) && !accountId) {
+    if (
+      (paymentStatus === PaymentStatus.PAID ||
+        paymentStatus === PaymentStatus.PARTIAL) &&
+      !accountId
+    ) {
       handleApiError(null, "Please select an account for payment");
       return;
     }
 
+    const payload: CreateSaleInvoice = {
+      customer_id: Number(customerId),
+      invoice_date: invoiceDate,
+      due_date: dueDate || undefined,
+      items: payloadItems,
+      tax: tax || 0,
+      discount: discount || 0,
+      payment_status: paymentStatus,
+      account_id: accountId ? Number(accountId) : undefined,
+      received_amount: receivedAmount || 0,
+      notes: notes || undefined,
+    };
+
     try {
-      // Transform data to match API payload
-      const invoiceItems: PurchaseInvoiceItemDto[] = items.map((item) => ({
-        item_id: item.item_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-      }));
-
-      const payload: CreatePurchaseInvoice = {
-        supplier_id: Number(supplierId),
-        items: invoiceItems,
-        invoice_date: invoiceDate,
-        due_date: dueDate || undefined,
-        tax: tax || 0,
-        discount: discount || 0,
-        payment_status: paymentStatus,
-        account_id: accountId ? Number(accountId) : undefined,
-        paid_amount: paidAmount || 0,
-        notes: notes || undefined,
-      };
-
-      const response = await createPurchaseInvoice(payload).unwrap();
-      handleApiSuccess(`Invoice ${response.data.invoice_number} created successfully`);
-      navigate("/purchase-invoices");
+      const response = await createSaleInvoice(payload).unwrap();
+      handleApiSuccess(
+        `Sale invoice ${response.data.invoice_number} created successfully`,
+      );
+      navigate("/sale-invoices");
     } catch (error) {
-      handleApiError(error, "Failed to create invoice");
+      handleApiError(error, "Failed to create sale invoice");
     }
   };
 
-  // Handle cancel
   const handleCancel = () => {
-    if (items.length > 0 || supplierId) {
+    if (items.length > 0 || customerId) {
       if (
         window.confirm(
           "Are you sure you want to cancel? All changes will be lost.",
         )
       ) {
-        navigate("/purchase-invoices");
+        navigate("/sale-invoices");
       }
     } else {
-      navigate("/purchase-invoices");
+      navigate("/sale-invoices");
     }
   };
 
-  // Transform suppliers for SelectDropdown
-  const supplierOptions =
-    supplierData?.data?.map((supplier) => ({
-      id: supplier.id,
-      name: supplier.name,
-    })) || [];
+  const customerOptions =
+    customersData?.data?.map((c) => ({ id: c.id, name: c.name })) || [];
 
-  // Transform items for SelectDropdown (include selected row items so they stay visible when not in search results)
   const apiItemOptions =
     itemsData?.data?.map((item) => ({ id: item.id, name: item.name })) || [];
   const apiIds = new Set(apiItemOptions.map((o) => o.id));
   const selectedOnly = items
     .filter((row) => row.item_id && !apiIds.has(row.item_id))
-    .map((row) => ({ id: row.item_id, name: row.item_name || `Item #${row.item_id}` }));
+    .map((row) => ({
+      id: row.item_id,
+      name: row.item_name || `Item #${row.item_id}`,
+    }));
   const itemOptions = [...apiItemOptions];
   selectedOnly.forEach((opt) => {
     if (!itemOptions.some((o) => o.id === opt.id)) itemOptions.push(opt);
   });
 
-  // Transform accounts for SelectDropdown
   const accountOptions =
     accountsData?.data?.map((account) => ({
       id: account.id,
@@ -235,20 +258,21 @@ const CreatePurchaseInvoicePage = () => {
   return (
     <>
       <PageMeta
-        title="Create Purchase Invoice"
-        description="Create a new purchase invoice"
+        title="Create Sale Invoice"
+        description="Create a new sale invoice"
       />
-      <PageBreadcrumb pageTitle="Create Purchase Invoice" />
+      <PageBreadcrumb pageTitle="Create Sale Invoice" />
 
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Create Purchase Invoice
+              Create Sale Invoice
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Fill in the details below to create a new purchase invoice
+              Fill in the details below to create a new sale invoice. FINAL: use
+              serial number (qty=1). RAW: use quantity.
             </p>
           </div>
           <div className="flex gap-3">
@@ -269,27 +293,25 @@ const CreatePurchaseInvoicePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Basic Information */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Supplier & Date Selection */}
+            {/* Customer & Date Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Supplier Selection */}
               <div>
                 <SelectDropdown
-                  label="Supplier"
+                  label="Customer"
                   required
-                  options={supplierOptions}
-                  value={supplierId}
-                  onChange={(value) => setSupplierId(Number(value))}
+                  options={customerOptions}
+                  value={customerId}
+                  onChange={(value) => setCustomerId(Number(value))}
                   placeholder={
-                    supplierLoading
-                      ? "Loading suppliers..."
-                      : "Search and select supplier..."
+                    customerLoading
+                      ? "Loading customers..."
+                      : "Search and select customer..."
                   }
                   searchable
-                  disabled={supplierLoading}
+                  disabled={customerLoading}
                 />
               </div>
 
-              {/* Invoice Date */}
               <div>
                 <DatePicker
                   id="invoice-date"
@@ -302,7 +324,6 @@ const CreatePurchaseInvoicePage = () => {
                 />
               </div>
 
-              {/* Due Date */}
               <div>
                 <DatePicker
                   id="due-date"
@@ -336,6 +357,12 @@ const CreatePurchaseInvoicePage = () => {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Item
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Serial
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Unit Type
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Quantity
@@ -375,19 +402,46 @@ const CreatePurchaseInvoicePage = () => {
                           />
                         </td>
                         <td className="px-4 py-3">
+                          {item.item_type === ItemType.FINAL ? (
+                            <input
+                              type="text"
+                              value={item.serial_number}
+                              onChange={(e) =>
+                                handleUpdateItem(
+                                  index,
+                                  "serial_number",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Serial number"
+                              className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white min-w-[100px]"
+                            />
+                          ) : (
+                            <span className="text-gray-400 text-sm">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                          {item.item_id ? item.unit_type : "—"}
+                        </td>
+                        <td className="px-4 py-3">
                           <input
                             type="number"
                             min="0.001"
                             step="0.001"
-                            value={item.quantity === 0 ? "" : item.quantity}
+                            value={
+                              item.quantity === 0 ? "" : item.quantity
+                            }
                             onChange={(e) =>
                               handleUpdateItem(
                                 index,
                                 "quantity",
-                                e.target.value === "" ? 0 : Number(e.target.value),
+                                e.target.value === ""
+                                  ? 0
+                                  : Number(e.target.value),
                               )
                             }
-                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white"
+                            disabled={item.item_type === ItemType.FINAL}
+                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white disabled:opacity-70"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -395,12 +449,16 @@ const CreatePurchaseInvoicePage = () => {
                             type="number"
                             min="0"
                             step="0.01"
-                            value={item.unit_price === 0 ? "" : item.unit_price}
+                            value={
+                              item.unit_price === 0 ? "" : item.unit_price
+                            }
                             onChange={(e) =>
                               handleUpdateItem(
                                 index,
                                 "unit_price",
-                                e.target.value === "" ? 0 : Number(e.target.value),
+                                e.target.value === ""
+                                  ? 0
+                                  : Number(e.target.value),
                               )
                             }
                             className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white"
@@ -433,16 +491,17 @@ const CreatePurchaseInvoicePage = () => {
               <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
                 Invoice Summary
               </h3>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Subtotal
+                  </span>
                   <span className="font-medium text-gray-900 dark:text-white">
                     {subtotal.toFixed(2)}
                   </span>
                 </div>
 
-                {/* Tax Input */}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Tax</span>
                   <input
@@ -450,21 +509,28 @@ const CreatePurchaseInvoicePage = () => {
                     min="0"
                     step="0.01"
                     value={tax === 0 ? "" : tax}
-                    onChange={(e) => setTax(e.target.value === "" ? 0 : Number(e.target.value))}
+                    onChange={(e) =>
+                      setTax(e.target.value === "" ? 0 : Number(e.target.value))
+                    }
                     className="w-24 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white text-sm"
                     placeholder="0.00"
                   />
                 </div>
 
-                {/* Discount Input */}
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Discount</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Discount
+                  </span>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={discount === 0 ? "" : discount}
-                    onChange={(e) => setDiscount(e.target.value === "" ? 0 : Number(e.target.value))}
+                    onChange={(e) =>
+                      setDiscount(
+                        e.target.value === "" ? 0 : Number(e.target.value),
+                      )
+                    }
                     className="w-24 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white text-sm"
                     placeholder="0.00"
                   />
@@ -472,7 +538,9 @@ const CreatePurchaseInvoicePage = () => {
 
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
                   <div className="flex justify-between text-lg font-bold">
-                    <span className="text-gray-900 dark:text-white">Total Amount</span>
+                    <span className="text-gray-900 dark:text-white">
+                      Total Amount
+                    </span>
                     <span className="text-brand-600 dark:text-brand-400">
                       {totalAmount.toFixed(2)}
                     </span>
@@ -487,14 +555,15 @@ const CreatePurchaseInvoicePage = () => {
                 Payment Details
               </h3>
 
-              {/* Payment Status */}
               <div>
-                <Label>Payment Status <span className="text-red-500">*</span></Label>
+                <Label>
+                  Payment Status <span className="text-red-500">*</span>
+                </Label>
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={() => {
                       setPaymentStatus(PaymentStatus.UNPAID);
-                      setPaidAmount(0);
+                      setReceivedAmount(0);
                       setAccountId("");
                     }}
                     className={`flex-1 px-3 py-2 text-sm rounded border ${
@@ -518,7 +587,7 @@ const CreatePurchaseInvoicePage = () => {
                   <button
                     onClick={() => {
                       setPaymentStatus(PaymentStatus.PAID);
-                      setPaidAmount(totalAmount);
+                      setReceivedAmount(totalAmount);
                     }}
                     className={`flex-1 px-3 py-2 text-sm rounded border ${
                       paymentStatus === PaymentStatus.PAID
@@ -531,10 +600,9 @@ const CreatePurchaseInvoicePage = () => {
                 </div>
               </div>
 
-              {/* Show payment fields if PAID or PARTIAL */}
-              {(paymentStatus === PaymentStatus.PAID || paymentStatus === PaymentStatus.PARTIAL) && (
+              {(paymentStatus === PaymentStatus.PAID ||
+                paymentStatus === PaymentStatus.PARTIAL) && (
                 <>
-                  {/* Account Selection */}
                   <div>
                     <SelectDropdown
                       label="Payment Account"
@@ -552,21 +620,32 @@ const CreatePurchaseInvoicePage = () => {
                     />
                   </div>
 
-                  {/* Paid Amount */}
                   <div>
-                    <Label>Paid Amount <span className="text-red-500">*</span></Label>
+                    <Label>
+                      Received Amount <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       type="number"
                       min="0"
-                      value={paidAmount === 0 ? "" : paidAmount}
-                      onChange={(e) => setPaidAmount(e.target.value === "" ? 0 : Number(e.target.value))}
+                      value={
+                        receivedAmount === 0 ? "" : receivedAmount
+                      }
+                      onChange={(e) =>
+                        setReceivedAmount(
+                          e.target.value === ""
+                            ? 0
+                            : Number(e.target.value),
+                        )
+                      }
                       placeholder="0.00"
                     />
-                    {paymentStatus === PaymentStatus.PAID && paidAmount !== totalAmount && (
-                      <p className="text-xs text-red-500 mt-1">
-                        Must equal total amount ({totalAmount.toFixed(2)})
-                      </p>
-                    )}
+                    {paymentStatus === PaymentStatus.PAID &&
+                      receivedAmount !== totalAmount && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Must equal total amount (
+                          {totalAmount.toFixed(2)})
+                        </p>
+                      )}
                   </div>
                 </>
               )}
@@ -578,13 +657,21 @@ const CreatePurchaseInvoicePage = () => {
                 Quick Stats
               </h3>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Items Count</span>
-                <span className="font-medium text-gray-900 dark:text-white">{items.length}</span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  Items Count
+                </span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {items.length}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Total Quantity</span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  Total Quantity
+                </span>
                 <span className="font-medium text-gray-900 dark:text-white">
-                  {items.reduce((sum, item) => sum + item.quantity, 0).toFixed(3)}
+                  {items
+                    .reduce((sum, item) => sum + item.quantity, 0)
+                    .toFixed(1)}
                 </span>
               </div>
             </div>
@@ -607,4 +694,4 @@ const CreatePurchaseInvoicePage = () => {
   );
 };
 
-export default CreatePurchaseInvoicePage;
+export default CreateSaleInvoicePage;

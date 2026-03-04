@@ -25,7 +25,13 @@ type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  subItems?: {
+    name: string;
+    path: string;
+    pro?: boolean;
+    new?: boolean;
+    isStatement?: boolean;
+  }[];
 };
 
 const navItems: NavItem[] = [
@@ -44,8 +50,19 @@ const navItems: NavItem[] = [
     name: "People",
     subItems: [
       { name: "Supplier", path: "/supplier", pro: false },
-      { name: "Supplier Statement", path: "/supplier-statement", pro: false },
+      {
+        name: "Supplier Statement",
+        path: "/supplier-statement",
+        pro: false,
+        isStatement: true,
+      },
       { name: "Customer", path: "/customer", pro: false },
+      {
+        name: "Customer Statement",
+        path: "/customer-statement",
+        pro: false,
+        isStatement: true,
+      },
     ],
   },
   {
@@ -67,14 +84,17 @@ const navItems: NavItem[] = [
     icon: <NotebookText />,
     name: "Invoices",
     subItems: [
-      { name: "Sale invoice", path: "/sale-invoice", pro: false },
+      { name: "Sale invoice", path: "/sale-invoices", pro: false },
       { name: "Purchase invoice", path: "/purchase-invoices", pro: false },
     ],
   },
   {
     icon: <BadgeDollarSign />,
     name: "Sales & Payments",
-    path: "/payments",
+    subItems: [
+      { name: "Payments", path: "/payments", pro: false },
+      { name: "Receipts", path: "/receipts", pro: false },
+    ],
   },
   // {
   //   icon: <BadgeDollarSign />,
@@ -301,17 +321,35 @@ const AppSidebar: React.FC = () => {
             >
               <ul className="mt-2 space-y-1 ml-9">
                 {nav.subItems.map((subItem) => (
-                  <li key={subItem.name}>
+                  <li
+                    key={subItem.name}
+                    className={
+                      subItem.isStatement
+                        ? "border-l-2 border-blue-300 dark:border-blue-600 pl-2 ml-1 rounded-r"
+                        : undefined
+                    }
+                  >
                     <Link
                       to={subItem.path}
                       className={`menu-dropdown-item ${
                         isActive(subItem.path)
                           ? "menu-dropdown-item-active"
                           : "menu-dropdown-item-inactive"
-                      }`}
+                      } ${subItem.isStatement ? "menu-dropdown-item-statement" : ""}`}
                     >
                       {subItem.name}
                       <span className="flex items-center gap-1 ml-auto">
+                        {subItem.isStatement && (
+                          <span
+                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                              isActive(subItem.path)
+                                ? "bg-blue-500/20 text-blue-300"
+                                : "bg-gray-200/80 text-gray-500 dark:bg-gray-700/80 dark:text-gray-400"
+                            }`}
+                          >
+                            Statement
+                          </span>
+                        )}
                         {subItem.new && (
                           <span
                             className={`ml-auto ${

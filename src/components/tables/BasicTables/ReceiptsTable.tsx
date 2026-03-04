@@ -10,42 +10,45 @@ import { TailSpin } from "react-loader-spinner";
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
 import { Modal } from "../../ui/modal";
-import { Payment, useDeletePaymentMutation } from "../../../redux/services/payment";
+import { Receipt, useDeleteReceiptMutation } from "../../../redux/services/receipt";
 import { handleApiError, handleApiSuccess } from "../../../helper/error_handler";
 
-interface PaymentsTableProps {
-  payments: Payment[];
+interface ReceiptsTableProps {
+  receipts: Receipt[];
   loading: boolean;
-  onPageChange?: (page: number) => void;
-  onView?: (payment: Payment) => void;
-  canDelete?: (payment: Payment) => boolean;
+  onView?: (receipt: Receipt) => void;
 }
 
-export default function PaymentsTable({
-  payments,
+export default function ReceiptsTable({
+  receipts,
   loading,
   onView,
-  canDelete = (p) => !p.purchase_invoice_id,
-}: PaymentsTableProps) {
+}: ReceiptsTableProps) {
   const { isOpen, closeModal, openModal } = useModal();
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [deletePayment, { isLoading: deleting }] = useDeletePaymentMutation();
+  const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
+  const [deleteReceipt, { isLoading: deleting }] = useDeleteReceiptMutation();
 
-  const handleDeleteClick = (payment: Payment) => {
-    setSelectedPayment(payment);
+  const handleDeleteClick = (receipt: Receipt) => {
+    setSelectedReceipt(receipt);
     openModal();
   };
 
   const handleDelete = async () => {
-    if (!selectedPayment) return;
+    if (!selectedReceipt) return;
     try {
-      await deletePayment(selectedPayment.id).unwrap();
-      handleApiSuccess("Payment deleted successfully");
+      await deleteReceipt(selectedReceipt.id).unwrap();
+      handleApiSuccess("Receipt deleted successfully");
       closeModal();
-      setSelectedPayment(null);
+      setSelectedReceipt(null);
     } catch (error: unknown) {
-      handleApiError(error, "Failed to delete payment");
+      handleApiError(error, "Failed to delete receipt");
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    return typeof dateString === "string"
+      ? dateString.slice(0, 10)
+      : new Date(dateString).toISOString().slice(0, 10);
   };
 
   return (
@@ -59,7 +62,7 @@ export default function PaymentsTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Payment #
+                  Receipt #
                 </TableCell>
                 <TableCell
                   isHeader
@@ -71,7 +74,7 @@ export default function PaymentsTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Supplier
+                  Customer
                 </TableCell>
                 <TableCell
                   isHeader
@@ -89,13 +92,7 @@ export default function PaymentsTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Invoice
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Created by
+                  Notes
                 </TableCell>
                 <TableCell
                   isHeader
@@ -108,73 +105,70 @@ export default function PaymentsTable({
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={7}>
                     <div className="flex justify-center items-center py-10">
-                      <TailSpin height={40} width={40} color="#667085" ariaLabel="loading" />
+                      <TailSpin
+                        height={40}
+                        width={40}
+                        color="#667085"
+                        ariaLabel="loading"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : payments.length === 0 ? (
+              ) : receipts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-6 text-gray-500">
-                    No payments found
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-6 text-gray-500"
+                  >
+                    No receipts found
                   </TableCell>
                 </TableRow>
               ) : (
-                payments.map((payment) => (
+                receipts.map((receipt) => (
                   <TableRow
-                    key={payment.id}
+                    key={receipt.id}
                     className="border-b border-gray-100 last:border-0 dark:border-white/[0.05]"
                   >
                     <TableCell className="px-5 py-3 font-mono text-sm text-gray-800 dark:text-white/90">
-                      {payment.payment_number}
+                      {receipt.receipt_number ?? `#${receipt.id}`}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400 text-sm">
-                      {typeof payment.payment_date === "string"
-                        ? payment.payment_date.slice(0, 10)
-                        : new Date(payment.payment_date).toISOString().slice(0, 10)}
+                      {formatDate(receipt.receipt_date)}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
-                      {payment.supplier_name ?? "—"}
+                      {receipt.customer_name ?? `Customer #${receipt.customer_id}`}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400">
-                      {payment.account_name ?? "—"}
+                      {receipt.account_name ?? "—"}
                     </TableCell>
                     <TableCell className="px-5 py-3 font-medium text-gray-800 dark:text-white/90">
-                      {Number(payment.amount).toFixed(2)}
+                      {Number(receipt.amount).toFixed(2)}
                     </TableCell>
-                    <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400">
-                      {payment.invoice_number ?? (
-                        <span className="text-amber-600 dark:text-amber-400">Direct</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400 text-sm">
-                      {payment.admin_name ?? "—"}
+                    <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400 text-sm max-w-xs truncate">
+                      {receipt.notes ?? "—"}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-end">
                       <div className="flex items-center justify-end gap-1">
                         {onView && (
                           <button
                             type="button"
-                            onClick={() => onView(payment)}
+                            onClick={() => onView(receipt)}
                             className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400"
-                            title="View payment"
+                            title="View receipt"
                           >
                             <EyeIcon className="w-4 h-4" />
                           </button>
                         )}
-                        {canDelete(payment) ? (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteClick(payment)}
-                            className="p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            title="Delete (direct payments only)"
-                          >
-                            <CloseIcon className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteClick(receipt)}
+                          className="p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          title="Delete receipt"
+                        >
+                          <CloseIcon className="w-4 h-4" />
+                        </button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -189,28 +183,29 @@ export default function PaymentsTable({
         isOpen={isOpen}
         onClose={() => {
           closeModal();
-          setSelectedPayment(null);
+          setSelectedReceipt(null);
         }}
         className="max-w-sm"
       >
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Delete Payment
+            Delete Receipt
           </h3>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Are you sure you want to delete payment{" "}
+            Are you sure you want to delete receipt{" "}
             <span className="font-medium text-gray-800 dark:text-white">
-              {selectedPayment?.payment_number}
+              {selectedReceipt?.receipt_number ?? `#${selectedReceipt?.id}`}
             </span>{" "}
-            ({selectedPayment?.supplier_name}, {Number(selectedPayment?.amount ?? 0).toFixed(2)})?
-            This will reverse the supplier and account balances.
+            ({selectedReceipt?.customer_name},{" "}
+            {Number(selectedReceipt?.amount ?? 0).toFixed(2)})? This will
+            reverse the customer and account balances.
           </p>
           <div className="mt-6 flex justify-end gap-3">
             <button
               type="button"
               onClick={() => {
                 closeModal();
-                setSelectedPayment(null);
+                setSelectedReceipt(null);
               }}
               className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             >

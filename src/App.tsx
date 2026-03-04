@@ -40,8 +40,16 @@ import ProductionPage from "./pages/Production/page";
 import ViewProductionPage from "./pages/ViewProduction/page";
 import StockAdjustmentPage from "./pages/StockAdjustment/page";
 import SupplierStatementPage from "./pages/SupplierStatement/page";
+import CustomerStatementPage from "./pages/CustomerStatement/page";
 import PaymentsPage from "./pages/Payments/page";
 import CreatePaymentPage from "./pages/CreatePayment/page";
+import ViewPaymentPage from "./pages/ViewPayment";
+import ReceiptsPage from "./pages/Receipts/page";
+import CreateReceiptPage from "./pages/CreateReceipt/page";
+import ViewReceiptPage from "./pages/ViewReceipt";
+import SaleInvoicePage from "./pages/SaleInvoice/page";
+import CreateSaleInvoicePage from "./pages/CreateSaleInvoice/page";
+import ViewSaleInvoicePage from "./pages/ViewSaleInvoice";
 
 export default function App() {
   return (
@@ -60,10 +68,20 @@ export default function App() {
               <Route path="/supplier" element={<SupplierPage />} />
               <Route path="/supplier-statement" element={<SupplierStatementPage />} />
               <Route path="/customer" element={<CustomerPage />} />
+              <Route path="/customer-statement" element={<CustomerStatementPage />} />
               <Route path="/categories" element={<CategoryPage />} />
               <Route path="/items" element={<ItemPage />} />
               <Route path="/accounts" element={<AccountPage />} />
               <Route path="/purchase-invoices" element={<PurchaseInvoicePage />} />
+              <Route path="/sale-invoices" element={<SaleInvoicePage />} />
+              <Route
+                path="/sale-invoices/create"
+                element={<CreateSaleInvoicePage />}
+              />
+              <Route
+                path="/sale-invoices/view/:id"
+                element={<ViewSaleInvoicePage />}
+              />
               <Route
                 path="/purchase-invoices/create"
                 element={<CreatePurchaseInvoicePage />}
@@ -78,6 +96,10 @@ export default function App() {
               />
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/payments/create" element={<CreatePaymentPage />} />
+              <Route path="/payments/view/:id" element={<ViewPaymentPage />} />
+              <Route path="/receipts" element={<ReceiptsPage />} />
+              <Route path="/receipts/create" element={<CreateReceiptPage />} />
+              <Route path="/receipts/view/:id" element={<ViewReceiptPage />} />
               <Route path="/financial-ledger" element={<FinancialLedgerPage />} />
               <Route path="/stock-ledger" element={<StockLedgerPage />} />
               <Route path="/stock-adjustment" element={<StockAdjustmentPage />} />
