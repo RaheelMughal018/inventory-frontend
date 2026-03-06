@@ -86,6 +86,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Sale invoice", path: "/sale-invoices", pro: false },
       { name: "Purchase invoice", path: "/purchase-invoices", pro: false },
+      { name: "Repair invoice", path: "/repair-invoices", pro: false },
     ],
   },
   {

@@ -50,6 +50,9 @@ import ViewReceiptPage from "./pages/ViewReceipt";
 import SaleInvoicePage from "./pages/SaleInvoice/page";
 import CreateSaleInvoicePage from "./pages/CreateSaleInvoice/page";
 import ViewSaleInvoicePage from "./pages/ViewSaleInvoice";
+import RepairInvoicePage from "./pages/RepairInvoice/page";
+import CreateRepairInvoicePage from "./pages/CreateRepairInvoice/page";
+import ViewRepairInvoicePage from "./pages/ViewRepairInvoice";
 
 export default function App() {
   return (
@@ -81,6 +84,15 @@ export default function App() {
               <Route
                 path="/sale-invoices/view/:id"
                 element={<ViewSaleInvoicePage />}
+              />
+              <Route path="/repair-invoices" element={<RepairInvoicePage />} />
+              <Route
+                path="/repair-invoices/create"
+                element={<CreateRepairInvoicePage />}
+              />
+              <Route
+                path="/repair-invoices/view/:id"
+                element={<ViewRepairInvoicePage />}
               />
               <Route
                 path="/purchase-invoices/create"
