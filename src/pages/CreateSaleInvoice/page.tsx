@@ -265,24 +265,24 @@ const CreateSaleInvoicePage = () => {
 
       <div className="space-y-6">
         {/* Header with actions */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
               Create Sale Invoice
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 sm:text-base">
               Fill in the details below to create a new sale invoice. FINAL: use
               serial number (qty=1). RAW: use quantity.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={handleCancel} className="px-6">
+          <div className="flex flex-shrink-0 gap-2 sm:gap-3">
+            <Button variant="outline" onClick={handleCancel} className="px-4 sm:px-6">
               Cancel
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="px-6"
+              className="px-4 sm:px-6"
             >
               {isLoading ? "Creating..." : "Save Invoice"}
             </Button>
@@ -290,12 +290,12 @@ const CreateSaleInvoicePage = () => {
         </div>
 
         {/* Main Form */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Left Column - Basic Information */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="min-w-0 space-y-6 lg:col-span-2">
             {/* Customer & Date Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+              <div className="min-w-0">
                 <SelectDropdown
                   label="Customer"
                   required
@@ -312,7 +312,7 @@ const CreateSaleInvoicePage = () => {
                 />
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <DatePicker
                   id="invoice-date"
                   label="Invoice Date"
@@ -324,7 +324,7 @@ const CreateSaleInvoicePage = () => {
                 />
               </div>
 
-              <div>
+              <div className="min-w-0 md:col-span-2 md:max-w-sm">
                 <DatePicker
                   id="due-date"
                   label="Due Date (Optional)"
@@ -337,22 +337,22 @@ const CreateSaleInvoicePage = () => {
             </div>
 
             {/* Items Section */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
+            <div className="min-w-0">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
                   Invoice Items
                 </h3>
                 <Button
                   variant="outline"
                   onClick={handleAddItem}
-                  className="text-sm"
+                  className="text-sm w-full sm:w-auto"
                 >
                   + Add Item
                 </Button>
               </div>
 
-              <div className="">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="overflow-x-auto -mx-2 sm:mx-0 rounded-lg border border-gray-200 dark:border-gray-700">
+                <table className="min-w-[700px] w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -397,7 +397,7 @@ const CreateSaleInvoicePage = () => {
                             onSearchChange={setItemSearch}
                             optionsAreFiltered={true}
                             disabled={itemLoading}
-                            className="w-72"
+                            className="w-full min-w-[140px] max-w-[18rem]"
                             triggerClassName="h-9 px-3 py-1 text-xs"
                           />
                         </td>
@@ -485,9 +485,9 @@ const CreateSaleInvoicePage = () => {
           </div>
 
           {/* Right Column - Summary & Payment */}
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             {/* Invoice Summary */}
-            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg min-w-0">
               <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
                 Invoice Summary
               </h3>
@@ -502,7 +502,7 @@ const CreateSaleInvoicePage = () => {
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap justify-between items-center gap-2">
                   <span className="text-gray-600 dark:text-gray-400">Tax</span>
                   <input
                     type="number"
@@ -512,12 +512,12 @@ const CreateSaleInvoicePage = () => {
                     onChange={(e) =>
                       setTax(e.target.value === "" ? 0 : Number(e.target.value))
                     }
-                    className="w-24 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white text-sm"
+                    className="w-20 min-w-0 flex-1 max-w-28 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white text-sm"
                     placeholder="0.00"
                   />
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap justify-between items-center gap-2">
                   <span className="text-gray-600 dark:text-gray-400">
                     Discount
                   </span>
@@ -531,7 +531,7 @@ const CreateSaleInvoicePage = () => {
                         e.target.value === "" ? 0 : Number(e.target.value),
                       )
                     }
-                    className="w-24 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white text-sm"
+                    className="w-20 min-w-0 flex-1 max-w-28 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white text-sm"
                     placeholder="0.00"
                   />
                 </div>
@@ -555,18 +555,19 @@ const CreateSaleInvoicePage = () => {
                 Payment Details
               </h3>
 
-              <div>
+              <div className="min-w-0">
                 <Label>
                   Payment Status <span className="text-red-500">*</span>
                 </Label>
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-col gap-2 mt-2 sm:flex-row sm:flex-wrap">
                   <button
+                    type="button"
                     onClick={() => {
                       setPaymentStatus(PaymentStatus.UNPAID);
                       setReceivedAmount(0);
                       setAccountId("");
                     }}
-                    className={`flex-1 px-3 py-2 text-sm rounded border ${
+                    className={`flex-1 min-w-[6rem] px-3 py-2 text-sm rounded border ${
                       paymentStatus === PaymentStatus.UNPAID
                         ? "bg-red-50 border-red-500 text-red-700 dark:bg-red-900/20 dark:border-red-500 dark:text-red-400"
                         : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
@@ -575,8 +576,9 @@ const CreateSaleInvoicePage = () => {
                     Unpaid
                   </button>
                   <button
+                    type="button"
                     onClick={() => setPaymentStatus(PaymentStatus.PARTIAL)}
-                    className={`flex-1 px-3 py-2 text-sm rounded border ${
+                    className={`flex-1 min-w-[6rem] px-3 py-2 text-sm rounded border ${
                       paymentStatus === PaymentStatus.PARTIAL
                         ? "bg-yellow-50 border-yellow-500 text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-500 dark:text-yellow-400"
                         : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
@@ -585,11 +587,12 @@ const CreateSaleInvoicePage = () => {
                     Partial
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setPaymentStatus(PaymentStatus.PAID);
                       setReceivedAmount(totalAmount);
                     }}
-                    className={`flex-1 px-3 py-2 text-sm rounded border ${
+                    className={`flex-1 min-w-[6rem] px-3 py-2 text-sm rounded border ${
                       paymentStatus === PaymentStatus.PAID
                         ? "bg-green-50 border-green-500 text-green-700 dark:bg-green-900/20 dark:border-green-500 dark:text-green-400"
                         : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
