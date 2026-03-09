@@ -24,6 +24,7 @@ const EditRecipePage = () => {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [extraExpense, setExtraExpense] = useState<number>(0);
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([
     { item_id: 0, quantity: 1 },
   ]);
@@ -53,6 +54,7 @@ const EditRecipePage = () => {
     if (recipe) {
       setName(recipe.name || "");
       setDescription(recipe.description || "");
+      setExtraExpense(Number(recipe.extra_expense) || 0);
       setIngredients(
         recipe.ingredients.map((ing) => ({
           item_id: ing.item_id,
@@ -130,6 +132,7 @@ const EditRecipePage = () => {
           name: name.trim(),
           description: description.trim() || undefined,
           ingredients: validIngredients,
+          extra_expense: extraExpense || 0,
         },
       }).unwrap();
       handleApiSuccess("Recipe updated successfully");
@@ -169,6 +172,7 @@ const EditRecipePage = () => {
   }
 
   const estimatedCost = calculateEstimatedCost();
+  const totalWithExtra = estimatedCost + (extraExpense || 0);
 
   return (
     <>
@@ -368,21 +372,57 @@ const EditRecipePage = () => {
               </div>
             ))}
 
+            {/* Extra Expense */}
+            <div>
+              <Label htmlFor="extra_expense">Extra expense (optional)</Label>
+              <Input
+                id="extra_expense"
+                type="number"
+                min={0}
+                step={0.01}
+                value={extraExpense === 0 ? "" : extraExpense}
+                onChange={(e) =>
+                  setExtraExpense(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)
+                }
+                placeholder="0.00"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Amount to add to the total cost per unit
+              </p>
+            </div>
+
             {/* Estimated Cost with New Changes */}
-            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 space-y-2">
               <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium text-blue-900 dark:text-blue-100">
-                    New Estimated Cost per Unit
-                  </p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                    Based on current form data (not saved yet)
-                  </p>
-                </div>
-                <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                <span className="text-sm text-blue-800 dark:text-blue-200">
+                  Ingredients cost per unit
+                </span>
+                <span className="font-medium text-blue-900 dark:text-blue-100">
                   {estimatedCost.toFixed(2)}
-                </div>
+                </span>
               </div>
+              {(extraExpense ?? 0) > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-800 dark:text-blue-200">
+                    Extra expense
+                  </span>
+                  <span className="font-medium text-blue-900 dark:text-blue-100">
+                    {(extraExpense || 0).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-blue-200 dark:border-blue-700">
+                <p className="font-medium text-blue-900 dark:text-blue-100">
+                  Total cost per unit
+                </p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                  {totalWithExtra.toFixed(2)}
+                </p>
+              </div>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Based on current form data (not saved yet)
+                {(extraExpense ?? 0) > 0 ? " plus extra expense" : ""}
+              </p>
             </div>
           </div>
         </SimpleComponentCard>
