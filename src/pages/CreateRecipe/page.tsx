@@ -11,6 +11,11 @@ import { useCreateRecipeMutation, RecipeIngredient } from "../../redux/services/
 import { useGetAllItemsQuery, ItemType } from "../../redux/services/item";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
+/** Local row type: same as RecipeIngredient + item_name for display (like purchase invoice) */
+interface RecipeIngredientRow extends RecipeIngredient {
+  item_name: string;
+}
+
 const CreateRecipePage = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -20,8 +25,8 @@ const CreateRecipePage = () => {
   const [finalProductLabel, setFinalProductLabel] = useState("");
   const [rawItemSearch, setRawItemSearch] = useState("");
   const [selectedRawItemPrices, setSelectedRawItemPrices] = useState<Record<number, number>>({});
-  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([
-    { item_id: 0, quantity: 1 },
+  const [ingredients, setIngredients] = useState<RecipeIngredientRow[]>([
+    { item_id: 0, quantity: 1, item_name: "" },
   ]);
 
   // Fetch items by search (like Stock Adjustment / Purchase Invoice)
@@ -46,7 +51,7 @@ const CreateRecipePage = () => {
   // Final product options: API results + selected if not in results
   const apiFinalOptions = finalProducts.map((item) => ({
     id: item.id,
-    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`,
+    name: item.name,
   }));
   const finalIds = new Set(apiFinalOptions.map((o) => o.id));
   const finalProductOptions =
@@ -61,32 +66,22 @@ const CreateRecipePage = () => {
     if (item) setFinalProductLabel(`${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`);
   }, [finalProductId, finalProductsData?.data]);
 
-  // Raw item options: API results + selected ingredient items not in results
+  // Raw item options: API results + selected row items so they stay visible (like purchase invoice)
   const apiRawOptions = rawItems.map((item) => ({
     id: item.id,
-    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)}, Price: ${Number(item.avg_price).toFixed(2)})`,
+    name: item.name,
   }));
   const rawIds = new Set(apiRawOptions.map((o) => o.id));
-  const selectedRawIdsNotInResults = ingredients
-    .filter((ing) => ing.item_id > 0 && !rawIds.has(ing.item_id))
-    .map((ing) => ing.item_id);
-  const uniqueSelectedRawIds = [...new Set(selectedRawIdsNotInResults)];
-  const extraRawOptions = uniqueSelectedRawIds.map((id) => {
-    const fromApi = rawItems.find((r) => r.id === id);
-    if (fromApi)
-      return {
-        id,
-        name: `${fromApi.name} (Stock: ${Number(fromApi.quantity).toFixed(0)}, Price: ${Number(fromApi.avg_price).toFixed(2)})`,
-      };
-    return { id, name: `Item #${id}` };
+  const selectedOnly = ingredients
+    .filter((row) => row.item_id > 0 && !rawIds.has(row.item_id))
+    .map((row) => ({ id: row.item_id, name: row.item_name || `Item #${row.item_id}` }));
+  const rawItemOptions = [...apiRawOptions];
+  selectedOnly.forEach((opt) => {
+    if (!rawItemOptions.some((o) => o.id === opt.id)) rawItemOptions.push(opt);
   });
-  const rawItemOptions = [
-    ...extraRawOptions.filter((o) => !apiRawOptions.some((a) => a.id === o.id)),
-    ...apiRawOptions,
-  ];
 
   const addIngredient = () => {
-    setIngredients((prev) => [...prev, { item_id: 0, quantity: 1 }]);
+    setIngredients((prev) => [...prev, { item_id: 0, quantity: 1, item_name: "" }]);
   };
 
   const removeIngredient = (index: number) => {
@@ -96,20 +91,30 @@ const CreateRecipePage = () => {
 
   const updateIngredient = (
     index: number,
-    field: keyof RecipeIngredient,
-    value: number
+    field: keyof RecipeIngredientRow,
+    value: number | string,
+    opts?: { item_name?: string }
   ) => {
     setIngredients((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
+      const row = { ...updated[index] };
+      if (field === "item_id") {
+        row.item_id = Number(value);
+        if (opts?.item_name != null) row.item_name = opts.item_name;
+      } else if (field === "quantity") {
+        row.quantity = Number(value);
+      } else if (field === "item_name") {
+        row.item_name = String(value);
+      }
+      updated[index] = row;
       return updated;
     });
-    if (field === "item_id" && value > 0) {
-      const item = rawItems.find((r) => r.id === value);
+    if (field === "item_id" && Number(value) > 0) {
+      const item = rawItems.find((r) => r.id === Number(value));
       if (item)
         setSelectedRawItemPrices((prev) => ({
           ...prev,
-          [value]: Number(item.avg_price),
+          [Number(value)]: Number(item.avg_price),
         }));
     }
   };
@@ -167,7 +172,7 @@ const CreateRecipePage = () => {
         name: name.trim(),
         description: description.trim() || undefined,
         final_product_id: finalProductId,
-        ingredients: validIngredients,
+        ingredients: validIngredients.map(({ item_id, quantity }) => ({ item_id, quantity })),
       }).unwrap();
       handleApiSuccess("Recipe created successfully");
       navigate("/recipes");
@@ -262,9 +267,13 @@ const CreateRecipePage = () => {
                   <SelectDropdown
                     options={rawItemOptions}
                     value={ingredient.item_id}
-                    onChange={(value) =>
-                      updateIngredient(index, "item_id", Number(value))
-                    }
+                    onChange={(value) => {
+                      const id = Number(value);
+                      const opt = rawItemOptions.find((o) => o.id === id);
+                      updateIngredient(index, "item_id", id, {
+                        item_name: opt ? String(opt.name) : "",
+                      });
+                    }}
                     placeholder={rawItemsLoading ? "Loading..." : "Search and select raw item..."}
                     searchable
                     onSearchChange={setRawItemSearch}
