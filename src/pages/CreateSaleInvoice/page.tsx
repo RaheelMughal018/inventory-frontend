@@ -290,9 +290,9 @@ const CreateSaleInvoicePage = () => {
         </div>
 
         {/* Main Form */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Left Column - Basic Information */}
-          <div className="min-w-0 space-y-6 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Left Column - Basic Information (wider for items table) */}
+          <div className="min-w-0 space-y-6 lg:col-span-8">
             {/* Customer & Date Selection */}
             <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
               <div className="min-w-0">
@@ -351,29 +351,38 @@ const CreateSaleInvoicePage = () => {
                 </Button>
               </div>
 
-              <div className="overflow-x-auto -mx-2 sm:mx-0 rounded-lg border border-gray-200 dark:border-gray-700">
-                <table className="min-w-[700px] w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700">
+                <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                  <colgroup>
+                    <col style={{ width: "26%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "14%" }} />
+                  </colgroup>
                   <thead>
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Item
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Serial
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Unit Type
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Quantity
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Unit Price
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Total
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -381,7 +390,7 @@ const CreateSaleInvoicePage = () => {
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {items?.map((item, index) => (
                       <tr key={index}>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3">
                           <SelectDropdown
                             options={itemOptions}
                             value={item.item_id || ""}
@@ -397,11 +406,11 @@ const CreateSaleInvoicePage = () => {
                             onSearchChange={setItemSearch}
                             optionsAreFiltered={true}
                             disabled={itemLoading}
-                            className="w-full min-w-[140px] max-w-[18rem]"
-                            triggerClassName="h-9 px-3 py-1 text-xs"
+                            className="w-full max-w-full min-w-0"
+                            triggerClassName="h-9 px-3 py-1 text-xs truncate text-left"
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3">
                           {item.item_type === ItemType.FINAL ? (
                             <input
                               type="text"
@@ -413,17 +422,17 @@ const CreateSaleInvoicePage = () => {
                                   e.target.value,
                                 )
                               }
-                              placeholder="Serial number"
-                              className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white min-w-[100px]"
+                              placeholder="Serial"
+                              className="w-full min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white box-border"
                             />
                           ) : (
                             <span className="text-gray-400 text-sm">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                           {item.item_id ? item.unit_type : "—"}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3">
                           <input
                             type="number"
                             min="0.001"
@@ -441,10 +450,10 @@ const CreateSaleInvoicePage = () => {
                               )
                             }
                             disabled={item.item_type === ItemType.FINAL}
-                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white disabled:opacity-70"
+                            className="w-full min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white box-border disabled:opacity-70"
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3">
                           <input
                             type="number"
                             min="0"
@@ -461,16 +470,17 @@ const CreateSaleInvoicePage = () => {
                                   : Number(e.target.value),
                               )
                             }
-                            className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white"
+                            className="w-full min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:bg-gray-800 dark:text-white box-border"
                           />
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        <td className="px-3 py-3 font-medium text-gray-900 dark:text-white truncate tabular-nums">
                           {item.line_total.toFixed(2)}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3">
                           <button
+                            type="button"
                             onClick={() => handleRemoveItem(index)}
-                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm whitespace-nowrap"
                             disabled={items.length === 1}
                           >
                             Remove
@@ -485,7 +495,7 @@ const CreateSaleInvoicePage = () => {
           </div>
 
           {/* Right Column - Summary & Payment */}
-          <div className="min-w-0 space-y-6">
+          <div className="min-w-0 space-y-6 lg:col-span-4">
             {/* Invoice Summary */}
             <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg min-w-0">
               <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
