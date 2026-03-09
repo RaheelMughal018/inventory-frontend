@@ -38,7 +38,13 @@ const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
   onSubmit,
   preSelectedItemId,
 }) => {
-  const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery({});
+  const [itemSearch, setItemSearch] = useState("");
+  const [selectedItemLabel, setSelectedItemLabel] = useState("");
+  const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery({
+    page: 1,
+    limit: 30,
+    search: itemSearch || undefined,
+  });
 
   const [formData, setFormData] = useState<StockAdjustmentFormData>({
     item_id: 0,
@@ -59,6 +65,7 @@ const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
           reason: "",
           notes: "",
         });
+        setSelectedItemLabel("");
       } else {
         setFormData({
           item_id: 0,
@@ -67,9 +74,20 @@ const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
           reason: "",
           notes: "",
         });
+        setSelectedItemLabel("");
       }
+      setItemSearch("");
     }
   }, [isOpen, preSelectedItemId]);
+
+  // Sync selected item label when it appears in API results
+  useEffect(() => {
+    if (formData.item_id && itemsData?.data) {
+      const item = itemsData.data.find((i) => i.id === formData.item_id);
+      if (item)
+        setSelectedItemLabel(`${item.name} (Current: ${Number(item.quantity).toFixed(0)})`);
+    }
+  }, [formData.item_id, itemsData?.data]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,11 +117,29 @@ const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const itemOptions =
+  const apiItemOptions =
     itemsData?.data?.map((item) => ({
       id: item.id,
       name: `${item.name} (Current: ${Number(item.quantity).toFixed(0)})`,
     })) || [];
+  const apiIds = new Set(apiItemOptions.map((o) => o.id));
+  const selectedId = formData.item_id;
+  const selectedNotInResults = selectedId && !apiIds.has(selectedId);
+  const selectedItemFromData = selectedId && itemsData?.data?.find((i) => i.id === selectedId);
+  const selectedItemOption =
+    selectedNotInResults
+      ? selectedItemFromData
+        ? {
+            id: selectedItemFromData.id,
+            name: `${selectedItemFromData.name} (Current: ${Number(selectedItemFromData.quantity).toFixed(0)})`,
+          }
+        : selectedItemLabel
+          ? { id: selectedId, name: selectedItemLabel }
+          : { id: selectedId, name: `Item #${selectedId}` }
+      : null;
+  const itemOptions = selectedItemOption
+    ? [selectedItemOption, ...apiItemOptions]
+    : apiItemOptions;
 
   const isAddingStock = formData.quantity > 0;
   const isRemovingStock = formData.quantity < 0;
@@ -129,9 +165,16 @@ const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
               label="Select Item"
               options={itemOptions}
               value={formData.item_id}
-              onChange={(value) => handleChange("item_id", Number(value))}
+              onChange={(value) => {
+                const id = Number(value);
+                handleChange("item_id", id);
+                const opt = itemOptions.find((o) => o.id === id);
+                setSelectedItemLabel(opt ? String(opt.name) : "");
+              }}
               placeholder={itemsLoading ? "Loading items..." : "Search and select item..."}
               searchable
+              onSearchChange={setItemSearch}
+              optionsAreFiltered={true}
               disabled={itemsLoading || !!preSelectedItemId}
             />
             {preSelectedItemId && (

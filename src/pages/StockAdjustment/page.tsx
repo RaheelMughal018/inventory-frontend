@@ -1,5 +1,5 @@
 // pages/StockAdjustmentPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SimpleComponentCard from "../../components/common/SimpleCardComponent";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -20,10 +20,24 @@ import Button from "../../components/ui/button/Button";
 
 const StockAdjustmentPage = () => {
   const [selectedItemId, setSelectedItemId] = useState<number>(0);
+  const [selectedItemLabel, setSelectedItemLabel] = useState<string>("");
+  const [itemSearch, setItemSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(30);
 
-  const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery({});
+  const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery({
+    page: 1,
+    limit: 30,
+    search: itemSearch || undefined,
+  });
+  // Keep selected item label in sync when it appears in API results (e.g. after clearing search)
+  useEffect(() => {
+    if (selectedItemId && itemsData?.data) {
+      const item = itemsData.data.find((i) => i.id === selectedItemId);
+      if (item)
+        setSelectedItemLabel(`${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`);
+    }
+  }, [selectedItemId, itemsData?.data]);
   const { data: historyData, isLoading: historyLoading } = useGetStockHistoryQuery(
     {
       item_id: selectedItemId,
@@ -52,12 +66,21 @@ const StockAdjustmentPage = () => {
     }
   };
 
-  // Transform items for dropdown
-  const itemOptions =
+  // Transform items for dropdown; keep selected item in list if not in search results
+  const apiItemOptions =
     itemsData?.data?.map((item) => ({
       id: item.id,
       name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`,
     })) || [];
+  const apiIds = new Set(apiItemOptions.map((o) => o.id));
+  const selectedOptionNotInResults = selectedItemId && !apiIds.has(selectedItemId);
+  const selectedItemOption =
+    selectedOptionNotInResults && selectedItemLabel
+      ? { id: selectedItemId, name: selectedItemLabel }
+      : null;
+  const itemOptions = selectedItemOption
+    ? [selectedItemOption, ...apiItemOptions]
+    : apiItemOptions;
 
   // Get selected item details
   const selectedItem = itemsData?.data?.find((item) => item.id === selectedItemId);
@@ -88,11 +111,16 @@ const StockAdjustmentPage = () => {
                 options={itemOptions}
                 value={selectedItemId}
                 onChange={(value) => {
-                  setSelectedItemId(Number(value));
+                  const id = Number(value);
+                  setSelectedItemId(id);
                   setPage(1);
+                  const opt = itemOptions.find((o) => o.id === id);
+                  setSelectedItemLabel(opt ? String(opt.name) : "");
                 }}
                 placeholder={itemsLoading ? "Loading items..." : "Search and select item..."}
                 searchable
+                onSearchChange={setItemSearch}
+                optionsAreFiltered={true}
                 disabled={itemsLoading}
               />
             </div>
