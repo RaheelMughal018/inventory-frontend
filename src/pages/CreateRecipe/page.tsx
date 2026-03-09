@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -16,27 +16,74 @@ const CreateRecipePage = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [finalProductId, setFinalProductId] = useState<number>(0);
+  const [finalProductSearch, setFinalProductSearch] = useState("");
+  const [finalProductLabel, setFinalProductLabel] = useState("");
+  const [rawItemSearch, setRawItemSearch] = useState("");
+  const [selectedRawItemPrices, setSelectedRawItemPrices] = useState<Record<number, number>>({});
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([
     { item_id: 0, quantity: 1 },
   ]);
 
-  // Fetch items
-  const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery({});
+  // Fetch items by search (like Stock Adjustment / Purchase Invoice)
+  const { data: finalProductsData, isLoading: finalProductsLoading } = useGetAllItemsQuery({
+    page: 1,
+    limit: 30,
+    search: finalProductSearch || undefined,
+    item_type: ItemType.FINAL,
+  });
+  const { data: rawItemsData, isLoading: rawItemsLoading } = useGetAllItemsQuery({
+    page: 1,
+    limit: 30,
+    search: rawItemSearch || undefined,
+    item_type: ItemType.RAW,
+  });
   const [createRecipe, { isLoading: creating }] = useCreateRecipeMutation();
 
-  const items = itemsData?.data ?? [];
-  const finalProducts = items.filter((item) => item.item_type === ItemType.FINAL);
-  const rawItems = items.filter((item) => item.item_type === ItemType.RAW);
+  const finalProducts = finalProductsData?.data ?? [];
+  const rawItems = rawItemsData?.data ?? [];
+  const itemsLoading = finalProductsLoading || rawItemsLoading;
 
-  const finalProductOptions = finalProducts.map((item) => ({
+  // Final product options: API results + selected if not in results
+  const apiFinalOptions = finalProducts.map((item) => ({
     id: item.id,
     name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`,
   }));
+  const finalIds = new Set(apiFinalOptions.map((o) => o.id));
+  const finalProductOptions =
+    finalProductId && !finalIds.has(finalProductId) && finalProductLabel
+      ? [{ id: finalProductId, name: finalProductLabel }, ...apiFinalOptions]
+      : apiFinalOptions;
 
-  const rawItemOptions = rawItems.map((item) => ({
+  // Sync final product label when it appears in API results
+  useEffect(() => {
+    if (!finalProductId || !finalProductsData?.data?.length) return;
+    const item = finalProductsData.data.find((i) => i.id === finalProductId);
+    if (item) setFinalProductLabel(`${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`);
+  }, [finalProductId, finalProductsData?.data]);
+
+  // Raw item options: API results + selected ingredient items not in results
+  const apiRawOptions = rawItems.map((item) => ({
     id: item.id,
     name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)}, Price: ${Number(item.avg_price).toFixed(2)})`,
   }));
+  const rawIds = new Set(apiRawOptions.map((o) => o.id));
+  const selectedRawIdsNotInResults = ingredients
+    .filter((ing) => ing.item_id > 0 && !rawIds.has(ing.item_id))
+    .map((ing) => ing.item_id);
+  const uniqueSelectedRawIds = [...new Set(selectedRawIdsNotInResults)];
+  const extraRawOptions = uniqueSelectedRawIds.map((id) => {
+    const fromApi = rawItems.find((r) => r.id === id);
+    if (fromApi)
+      return {
+        id,
+        name: `${fromApi.name} (Stock: ${Number(fromApi.quantity).toFixed(0)}, Price: ${Number(fromApi.avg_price).toFixed(2)})`,
+      };
+    return { id, name: `Item #${id}` };
+  });
+  const rawItemOptions = [
+    ...extraRawOptions.filter((o) => !apiRawOptions.some((a) => a.id === o.id)),
+    ...apiRawOptions,
+  ];
 
   const addIngredient = () => {
     setIngredients((prev) => [...prev, { item_id: 0, quantity: 1 }]);
@@ -57,17 +104,28 @@ const CreateRecipePage = () => {
       updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
+    if (field === "item_id" && value > 0) {
+      const item = rawItems.find((r) => r.id === value);
+      if (item)
+        setSelectedRawItemPrices((prev) => ({
+          ...prev,
+          [value]: Number(item.avg_price),
+        }));
+    }
   };
 
-  // Calculate estimated cost
+  // Calculate estimated cost (use API result or stored price when item not in search results)
+  const getRawItemPrice = (itemId: number): number => {
+    const fromApi = rawItems.find((r) => r.id === itemId);
+    if (fromApi) return Number(fromApi.avg_price);
+    return selectedRawItemPrices[itemId] ?? 0;
+  };
   const calculateEstimatedCost = () => {
     let total = 0;
     ingredients.forEach((ing) => {
       if (ing.item_id > 0 && ing.quantity > 0) {
-        const item = rawItems.find((r) => r.id === ing.item_id);
-        if (item) {
-          total += Number(item.avg_price) * ing.quantity;
-        }
+        const price = getRawItemPrice(ing.item_id);
+        total += price * ing.quantity;
       }
     });
     return total;
@@ -137,9 +195,16 @@ const CreateRecipePage = () => {
               <SelectDropdown
                 options={finalProductOptions}
                 value={finalProductId}
-                onChange={(value) => setFinalProductId(Number(value))}
-                placeholder={itemsLoading ? "Loading products..." : "Select final product..."}
+                onChange={(value) => {
+                  const id = Number(value);
+                  setFinalProductId(id);
+                  const opt = finalProductOptions.find((o) => o.id === id);
+                  setFinalProductLabel(opt ? String(opt.name) : "");
+                }}
+                placeholder={itemsLoading ? "Loading products..." : "Search and select final product..."}
                 searchable
+                onSearchChange={setFinalProductSearch}
+                optionsAreFiltered={true}
                 disabled={itemsLoading}
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -200,8 +265,11 @@ const CreateRecipePage = () => {
                     onChange={(value) =>
                       updateIngredient(index, "item_id", Number(value))
                     }
-                    placeholder="Select raw item..."
+                    placeholder={rawItemsLoading ? "Loading..." : "Search and select raw item..."}
                     searchable
+                    onSearchChange={setRawItemSearch}
+                    optionsAreFiltered={true}
+                    disabled={rawItemsLoading}
                   />
                 </div>
 
@@ -229,10 +297,7 @@ const CreateRecipePage = () => {
                     <span className="text-sm text-gray-800 dark:text-white/90">
                       {ingredient.item_id > 0
                         ? (
-                            Number(
-                              rawItems.find((r) => r.id === ingredient.item_id)
-                                ?.avg_price || 0
-                            ) * ingredient.quantity
+                            getRawItemPrice(ingredient.item_id) * ingredient.quantity
                           ).toFixed(2)
                         : "0.00"}
                     </span>
