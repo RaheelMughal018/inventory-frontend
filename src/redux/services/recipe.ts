@@ -13,14 +13,14 @@ export interface CreateRecipe {
   description?: string
   final_product_id: number
   ingredients: RecipeIngredient[]
-  extra_expense?: number
+  extra_expenses?: number
 }
 
 export interface UpdateRecipe {
   name?: string
   description?: string
   ingredients?: RecipeIngredient[]
-  extra_expense?: number
+  extra_expenses?: number
 }
 
 export interface AddIngredient {
@@ -57,7 +57,7 @@ export interface Recipe {
   final_product_id: number
   created_at: string
   updated_at: string
-  extra_expense?: number
+  extra_expenses?: number
   final_product: {
     id: number
     name: string

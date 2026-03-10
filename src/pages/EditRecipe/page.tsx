@@ -54,7 +54,7 @@ const EditRecipePage = () => {
     if (recipe) {
       setName(recipe.name || "");
       setDescription(recipe.description || "");
-      setExtraExpense(Number(recipe.extra_expense) || 0);
+      setExtraExpense(Number(recipe.extra_expenses) || 0);
       setIngredients(
         recipe.ingredients.map((ing) => ({
           item_id: ing.item_id,
@@ -132,7 +132,7 @@ const EditRecipePage = () => {
           name: name.trim(),
           description: description.trim() || undefined,
           ingredients: validIngredients,
-          extra_expense: extraExpense || 0,
+          extra_expenses: extraExpense || 0,
         },
       }).unwrap();
       handleApiSuccess("Recipe updated successfully");

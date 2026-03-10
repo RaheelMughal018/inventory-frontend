@@ -174,7 +174,7 @@ const CreateRecipePage = () => {
         description: description.trim() || undefined,
         final_product_id: finalProductId,
         ingredients: validIngredients.map(({ item_id, quantity }) => ({ item_id, quantity })),
-        extra_expense: extraExpense || 0,
+        extra_expenses: extraExpense || 0,
       }).unwrap();
       handleApiSuccess("Recipe created successfully");
       navigate("/recipes");
