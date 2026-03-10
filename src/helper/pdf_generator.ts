@@ -780,12 +780,20 @@ export const generateSupplierStatementPDF = (
   
   yPosition += 10;
   
-  const cardWidth = (pageWidth - 40) / 4;
+  const cardWidth = (pageWidth - 40) / 5;
   const cardHeight = 28;
   const cardSpacing = 3;
   
-  // Summary cards data with modern colors
+  // Summary cards data with modern colors (Opening Balance first, then others)
   const summaryCards = [
+    {
+      title: "Opening Balance",
+      value: formatCurrency(statement.opening_balance),
+      subtitle: "Balance at period start",
+      bgColor: [241, 245, 249], // Slate-100
+      borderColor: [203, 213, 225], // Slate-300
+      textColor: [51, 65, 85], // Slate-700
+    },
     {
       title: "Total Purchases",
       value: formatCurrency(statement.summary.total_purchases),
@@ -813,7 +821,7 @@ export const generateSupplierStatementPDF = (
     {
       title: "Current Balance",
       value: formatCurrency(statement.current_balance),
-      subtitle: `Open: ${formatCurrency(statement.opening_balance)}`,
+      subtitle: "Balance as of now",
       bgColor: [250, 245, 255], // Purple-50
       borderColor: [216, 180, 254], // Purple-300
       textColor: [126, 34, 206], // Purple-700
@@ -1157,10 +1165,18 @@ export const generateCustomerStatementPDF = (
   doc.setTextColor(30, 41, 59);
   doc.text("FINANCIAL SUMMARY", 15, yPosition);
   yPosition += 10;
-  const cardWidth = (pageWidth - 40) / 4;
+  const cardWidth = (pageWidth - 40) / 5;
   const cardHeight = 28;
   const cardSpacing = 3;
   const summaryCards = [
+    {
+      title: "Opening Balance",
+      value: formatCurrency(statement.opening_balance),
+      subtitle: "Balance at period start",
+      bgColor: [241, 245, 249],
+      borderColor: [203, 213, 225],
+      textColor: [51, 65, 85],
+    },
     {
       title: "Total Sales",
       value: formatCurrency(statement.summary.total_sales),
@@ -1188,7 +1204,7 @@ export const generateCustomerStatementPDF = (
     {
       title: "Current Balance",
       value: formatCurrency(statement.current_balance),
-      subtitle: `Open: ${formatCurrency(statement.opening_balance)}`,
+      subtitle: "Balance as of now",
       bgColor: [250, 245, 255],
       borderColor: [216, 180, 254],
       textColor: [126, 34, 206],
