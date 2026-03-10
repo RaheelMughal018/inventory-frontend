@@ -196,9 +196,11 @@ const SupplierStatementPage = () => {
               </div>
             </SimpleComponentCard>
 
-            {/* Balance Summary Card */}
-            <SimpleComponentCard title="Opening Balance">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         
+
+            <SimpleComponentCard title="Balance Summary">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                {/* Box 1: Opening Balance */}
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/20 rounded-lg border border-slate-200 dark:border-slate-800">
                   <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                     Opening Balance
@@ -207,52 +209,27 @@ const SupplierStatementPage = () => {
                     {formatCurrency(statement.opening_balance)}
                   </p>
                 </div>
-
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Purchases</p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-2">
-                    {formatCurrency(statement.summary.total_purchases)}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <p className="text-sm text-green-600 dark:text-green-400 font-medium">Total Payments</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300 mt-2">
-                    {formatCurrency(statement.summary.total_payments)}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Current Balance</p>
-                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-2">
-                    {formatCurrency(statement.current_balance)}
-                  </p>
-                </div>
-              </div>
-            </SimpleComponentCard>
-
-            <SimpleComponentCard title="Balance Summary">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Box 2: Total Purchases */}
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Purchases</p>
                   <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-2">
                     {formatCurrency(statement.summary.total_purchases)}
                   </p>
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    {/* {statement.summary.invoice_count} invoices */}
+                    {statement.summary.invoice_count} invoices
                   </p>
                 </div>
-
+                {/* Box 3: Total Payments */}
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                   <p className="text-sm text-green-600 dark:text-green-400 font-medium">Total Payments</p>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-300 mt-2">
                     {formatCurrency(statement.summary.total_payments)}
                   </p>
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                    {/* {statement.summary.payment_count} payments */}
+                    {statement.summary.payment_count} payments
                   </p>
                 </div>
-
+                {/* Box 4: Outstanding Balance */}
                 <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                   <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Outstanding Balance</p>
                   <p className="text-2xl font-bold text-orange-700 dark:text-orange-300 mt-2">
@@ -262,7 +239,7 @@ const SupplierStatementPage = () => {
                     {statement.summary.unpaid_invoice_count} unpaid, {statement.summary.partial_invoice_count} partial
                   </p>
                 </div>
-
+                {/* Box 5: Current Balance */}
                 <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
                   <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Current Balance</p>
                   <p className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-2">
