@@ -7,7 +7,8 @@ import Button from "../components/ui/button/Button";
 import { DownloadIcon } from "../icons";
 import SimpleComponentCard from "../components/common/SimpleCardComponent";
 import formatDateTime from "../helper/date_converter";
-import { handleQueryError } from "../helper/error_handler";
+import { handleQueryError, handleApiError, handleApiSuccess } from "../helper/error_handler";
+import { generateInvoicePDF } from "../helper/pdf_generator";
 
 // Payment status badge component
 const PaymentStatusBadge = ({ status }: { status: PaymentStatus }) => {
@@ -74,7 +75,8 @@ const ViewPurchaseInvoicePage = () => {
   }
 
   const formatCurrency = (amount: string | number) => {
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (Number.isNaN(numAmount)) return "";
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -82,8 +84,12 @@ const ViewPurchaseInvoicePage = () => {
   };
 
   const handleGeneratePDF = () => {
-    // TODO: Implement PDF generation
-    console.log("Generate PDF for invoice", invoice.invoice_number);
+    try {
+      generateInvoicePDF(invoice);
+      handleApiSuccess("PDF generated successfully");
+    } catch (error) {
+      handleApiError(error, "Failed to generate PDF");
+    }
   };
 
   const handleEdit = () => {

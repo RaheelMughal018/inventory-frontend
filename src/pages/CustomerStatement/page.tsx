@@ -45,7 +45,12 @@ const CustomerStatementPage = () => {
     })) || [];
 
   const formatCurrency = (amount: string | number) => {
-    return typeof amount === "string" ? amount : amount.toString();
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (Number.isNaN(numAmount)) return "";
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numAmount);
   };
 
   const handleGeneratePDF = () => {
@@ -215,6 +220,46 @@ const CustomerStatementPage = () => {
                     </p>
                   </div>
                 )}
+              </div>
+            </SimpleComponentCard>
+
+            <SimpleComponentCard title="Opening Balance">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/20 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                    Opening Balance
+                  </p>
+                  <p className="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-2">
+                    {formatCurrency(statement.opening_balance)}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                    Total Sales
+                  </p>
+                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-2">
+                    {formatCurrency(statement.summary.total_sales)}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                    Total Receipts
+                  </p>
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-300 mt-2">
+                    {formatCurrency(statement.summary.total_receipts)}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+                    Current Balance
+                  </p>
+                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-2">
+                    {formatCurrency(statement.current_balance)}
+                  </p>
+                </div>
               </div>
             </SimpleComponentCard>
 

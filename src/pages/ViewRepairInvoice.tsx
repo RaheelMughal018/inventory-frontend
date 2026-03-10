@@ -16,6 +16,8 @@ import {
   handleApiError,
 } from "../helper/error_handler";
 import SelectDropdown from "../components/form/SelectDropdown";
+import { DownloadIcon } from "../icons";
+import { generateRepairInvoicePDF } from "../helper/pdf_generator";
 
 const ALLOWED_NEXT_STATUS: Record<RepairStatus, RepairStatus | ""> = {
   PENDING: "IN_PROGRESS",
@@ -124,9 +126,29 @@ const ViewRepairInvoicePage = () => {
               Received {formatDateTime(invoice.received_date)}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate("/repair-invoices")} className="px-6">
-            Back
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/repair-invoices")}
+              className="px-6"
+            >
+              Back
+            </Button>
+            <Button
+              variant="green"
+              onClick={() => {
+                try {
+                  generateRepairInvoicePDF(invoice);
+                  handleApiSuccess("PDF generated successfully");
+                } catch (error) {
+                  handleApiError(error, "Failed to generate PDF");
+                }
+              }}
+              className="px-6"
+            >
+              PDF <DownloadIcon height={25} width={20} />
+            </Button>
+          </div>
         </div>
 
         <SimpleComponentCard title="Customer & Item">

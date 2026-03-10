@@ -270,34 +270,36 @@ const CreateRepairInvoicePage = () => {
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
                     <tr>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Part (optional)</th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Description *</th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Qty</th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Unit price</th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total</th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Inventory count</th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"></th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-[200px] min-w-[200px]">Part (optional)</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase min-w-[140px]">Description *</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-20">Qty</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-28">Unit price</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-24">Total</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-28">Inventory count</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-20"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {lines.map((line, index) => (
                       <tr key={index}>
-                        <td className="px-2 py-2">
-                          <SelectDropdown
-                            options={[{ id: 0, name: "—" }, ...rawItemOptions]}
-                            value={line.item_id || ""}
-                            onChange={(v) => {
-                              const id = Number(v);
-                              handleUpdateLine(index, "item_id", id);
-                              const item = itemsData?.data?.find((i) => i.id === id);
-                              handleUpdateLine(index, "item_name", item?.name ?? "");
-                            }}
-                            placeholder="Part from stock"
-                            searchable
-                            onSearchChange={setItemSearch}
-                            optionsAreFiltered
-                            triggerClassName="h-9 text-sm"
-                          />
+                        <td className="px-2 py-2 align-top w-[200px] min-w-[200px]">
+                          <div className="min-w-0">
+                            <SelectDropdown
+                              options={[{ id: 0, name: "—" }, ...rawItemOptions]}
+                              value={line.item_id || ""}
+                              onChange={(v) => {
+                                const id = Number(v);
+                                handleUpdateLine(index, "item_id", id);
+                                const item = itemsData?.data?.find((i) => i.id === id);
+                                handleUpdateLine(index, "item_name", item?.name ?? "");
+                              }}
+                              placeholder="Part from stock"
+                              searchable
+                              onSearchChange={setItemSearch}
+                              optionsAreFiltered
+                              triggerClassName="h-9 min-h-9 text-sm min-w-0 overflow-hidden"
+                            />
+                          </div>
                         </td>
                         <td className="px-2 py-2">
                           <input

@@ -236,7 +236,7 @@ const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
             />
             {isAddingStock && formData.unit_price > 0 && (
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Total value: ${(formData.quantity * formData.unit_price).toFixed(2)}
+                Total value: {(formData.quantity * formData.unit_price).toFixed(2)}
               </p>
             )}
           </div>
@@ -286,8 +286,8 @@ const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
                   : "text-red-700 dark:text-red-400"
               }`}>
                 <li>• {isAddingStock ? "Adding" : "Removing"} {Math.abs(formData.quantity)} units</li>
-                {isAddingStock && <li>• At ${formData.unit_price.toFixed(2)} per unit</li>}
-                {isAddingStock && <li>• Total value: ${(formData.quantity * formData.unit_price).toFixed(2)}</li>}
+                {isAddingStock && <li>• At {formData.unit_price.toFixed(2)} per unit</li>}
+                {isAddingStock && <li>• Total value: {(formData.quantity * formData.unit_price).toFixed(2)}</li>}
                 <li>• Reason: {formData.reason || "Not selected"}</li>
               </ul>
             </div>

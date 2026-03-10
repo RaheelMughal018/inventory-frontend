@@ -172,7 +172,10 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
             } ${triggerClassName}`}
           >
             {selectedOption ? (
-              <span className="text-gray-800 dark:text-white/90">
+              <span
+                className="text-gray-800 dark:text-white/90 block min-w-0 truncate pr-6"
+                title={getDisplayValue(selectedOption)}
+              >
                 {getDisplayValue(selectedOption)}
               </span>
             ) : (

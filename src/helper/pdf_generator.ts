@@ -5,8 +5,10 @@ import autoTable from "jspdf-autotable";
 // Import types from your API service
 import type { PurchaseInvoice } from "../redux/services/purchaseInvoice";
 import type { SaleInvoice } from "../redux/services/saleInvoice";
+import type { RepairInvoice } from "../redux/services/repairInvoice";
 import type { SupplierStatement } from "../redux/services/supplierStatement";
 import type { CustomerStatement } from "../redux/services/customerStatement";
+import type { Item } from "../redux/services/item";
 
 export const generateInvoicePDF = (invoice: PurchaseInvoice) => {
   const doc = new jsPDF();
@@ -23,9 +25,11 @@ export const generateInvoicePDF = (invoice: PurchaseInvoice) => {
     });
   };
 
-  // Helper function to format currency
+  // Helper function to format numeric amounts (no currency symbol)
   const formatCurrency = (amount: string | number) => {
-    return `${parseFloat(String(amount)).toFixed(2)}`;
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (Number.isNaN(numAmount)) return "";
+    return numAmount.toFixed(2);
   };
 
   let yPosition = 20;
@@ -238,7 +242,9 @@ export const generateSaleInvoicePDF = (invoice: SaleInvoice) => {
   };
 
   const formatCurrency = (amount: string | number) => {
-    return `${parseFloat(String(amount)).toFixed(2)}`;
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (Number.isNaN(numAmount)) return "";
+    return numAmount.toFixed(2);
   };
 
   let yPosition = 20;
@@ -384,6 +390,236 @@ export const generateSaleInvoicePDF = (invoice: SaleInvoice) => {
 };
 
 // ============================================
+// REPAIR INVOICE PDF GENERATOR
+// ============================================
+
+export const generateRepairInvoicePDF = (invoice: RepairInvoice) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatCurrency = (amount: string | number) => {
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (Number.isNaN(numAmount)) return "";
+    return numAmount.toFixed(2);
+  };
+
+  let yPosition = 20;
+
+  // Header
+  doc.setFontSize(24);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(31, 41, 55);
+  doc.text("POWER-GENIX", 12, yPosition);
+
+  yPosition += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+  doc.text("123 Business Street, Lahore", 15, yPosition);
+  yPosition += 5;
+  doc.text("Phone: (123) 456-7890", 15, yPosition);
+
+  // Title and invoice info (right)
+  yPosition = 20;
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(37, 99, 235);
+  doc.text("REPAIR INVOICE", pageWidth - 15, yPosition, { align: "right" });
+
+  yPosition += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+  doc.text(`Invoice #: ${invoice.invoice_number}`, pageWidth - 15, yPosition, {
+    align: "right",
+  });
+  yPosition += 5;
+  doc.text(
+    `Received: ${formatDate(invoice.received_date)}`,
+    pageWidth - 15,
+    yPosition,
+    { align: "right" }
+  );
+
+  // Separator
+  yPosition += 10;
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.line(15, yPosition, pageWidth - 15, yPosition);
+
+  // Customer / item info
+  yPosition += 10;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(31, 41, 55);
+  doc.text("CUSTOMER:", 15, yPosition);
+  yPosition += 7;
+  doc.setFontSize(11);
+  doc.text(
+    invoice.customer_name || `Customer #${invoice.customer_id}`,
+    15,
+    yPosition
+  );
+
+  yPosition += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("SERIAL / ITEM:", 15, yPosition);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    invoice.serial_number || invoice.item_description || "-",
+    50,
+    yPosition
+  );
+
+  // Items table
+  yPosition += 12;
+  const itemsTableData =
+    invoice.items?.map((item) => [
+      item.item_name || "",
+      item.description || "",
+      String(item.quantity),
+      formatCurrency(item.unit_price),
+      formatCurrency(item.total_price),
+      item.inventory_count ? "Yes" : "No",
+    ]) || [];
+
+  autoTable(doc, {
+    startY: yPosition,
+    head: [["Name", "Description", "Qty", "Unit Price", "Total", "Inventory"]],
+    body: itemsTableData,
+    theme: "striped",
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 10,
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [31, 41, 55],
+    },
+    alternateRowStyles: {
+      fillColor: [249, 250, 251],
+    },
+    margin: { left: 15, right: 15 },
+    columnStyles: {
+      0: { cellWidth: 35 },
+      1: { cellWidth: 55 },
+      2: { cellWidth: 15, halign: "center" },
+      3: { cellWidth: 25, halign: "right" },
+      4: { cellWidth: 25, halign: "right" },
+      5: { cellWidth: 20, halign: "center" },
+    },
+  });
+
+  yPosition = doc.lastAutoTable.finalY + 10;
+
+  // Amounts summary
+  const summaryX = pageWidth - 70;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+
+  if (!invoice.is_foc) {
+    doc.text("Parts Cost:", summaryX, yPosition);
+    doc.text(
+      formatCurrency(invoice.parts_cost ?? 0),
+      pageWidth - 15,
+      yPosition,
+      { align: "right" }
+    );
+    yPosition += 7;
+
+    doc.text("Service Charges:", summaryX, yPosition);
+    doc.text(
+      formatCurrency(invoice.service_charges ?? 0),
+      pageWidth - 15,
+      yPosition,
+      { align: "right" }
+    );
+    yPosition += 7;
+  }
+
+  doc.text("Total Amount:", summaryX, yPosition);
+  doc.text(
+    invoice.is_foc ? "FOC" : formatCurrency(invoice.total_amount),
+    pageWidth - 15,
+    yPosition,
+    { align: "right" }
+  );
+  yPosition += 7;
+
+  if (!invoice.is_foc) {
+    doc.text("Received Amount:", summaryX, yPosition);
+    doc.text(
+      formatCurrency(invoice.received_amount ?? 0),
+      pageWidth - 15,
+      yPosition,
+      { align: "right" }
+    );
+    yPosition += 7;
+  }
+
+  // Optional dates
+  doc.setFontSize(9);
+  doc.setTextColor(75, 85, 99);
+  if (invoice.repair_date) {
+    doc.text(
+      `Repair Date: ${formatDate(invoice.repair_date)}`,
+      15,
+      yPosition
+    );
+    yPosition += 5;
+  }
+  if (invoice.delivery_date) {
+    doc.text(
+      `Delivery Date: ${formatDate(invoice.delivery_date)}`,
+      15,
+      yPosition
+    );
+    yPosition += 5;
+  }
+
+  // Footer
+  const footerY = pageHeight - 20;
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.line(15, footerY - 5, pageWidth - 15, footerY - 5);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+  doc.text(
+    "Thank you for your business!",
+    pageWidth / 2,
+    footerY,
+    { align: "center" }
+  );
+  doc.text(
+    `Generated on ${new Date().toLocaleDateString("en-US")}`,
+    pageWidth / 2,
+    footerY + 4,
+    { align: "center" }
+  );
+
+  doc.save(
+    `Repair_Invoice_${invoice.invoice_number}_${
+      new Date().toISOString().split("T")[0]
+    }.pdf`
+  );
+};
+
+// ============================================
 // SUPPLIER STATEMENT PDF GENERATOR
 // ============================================
 
@@ -408,8 +644,9 @@ export const generateSupplierStatementPDF = (
 
   // Helper function to format currency
   const formatCurrency = (amount: string | number) => {
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return `${numAmount.toFixed(2)}`;
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (Number.isNaN(numAmount)) return "";
+    return numAmount.toFixed(2);
   };
 
   let yPosition = 20;
@@ -814,7 +1051,8 @@ export const generateCustomerStatementPDF = (
 
   const formatCurrency = (amount: string | number) => {
     const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-    return `${numAmount.toFixed(2)}`;
+    if (Number.isNaN(numAmount)) return "";
+    return numAmount.toFixed(2);
   };
 
   let yPosition = 20;
@@ -1135,5 +1373,94 @@ export const generateCustomerStatementPDF = (
   );
 
   const fileName = `Customer_Statement_${statement.customer_name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+  doc.save(fileName);
+};
+
+// ============================================
+// ITEMS LIST PDF (simple table, no UI)
+// ============================================
+
+export const generateItemsPDF = (items: Item[]) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  let yPosition = 20;
+
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("Items List", 15, yPosition);
+
+  yPosition += 10;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Generated on ${new Date().toLocaleString()}`,
+    pageWidth - 15,
+    yPosition,
+    { align: "right" }
+  );
+
+  yPosition += 6;
+
+  const formatNumber = (value: string | number) => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (Number.isNaN(num)) return "";
+    return num.toString();
+  };
+
+  const tableData = items.map((item) => [
+    String(item.id),
+    item.name ?? "",
+    item.category?.name ?? "",
+    item.item_type ?? "",
+    item.unit_type ?? "",
+    formatNumber(item.avg_price),
+    formatNumber(item.quantity),
+    item.created_at ?? "",
+  ]);
+
+  autoTable(doc, {
+    startY: yPosition,
+    head: [
+      [
+        "ID",
+        "Name",
+        "Category",
+        "Type",
+        "Unit",
+        "Avg Price",
+        "Total Qty",
+        "Created At",
+      ],
+    ],
+    body: tableData,
+    theme: "grid",
+    headStyles: {
+      fontSize: 8,
+      halign: "left",
+      fillColor: [255, 255, 255],
+      textColor: [0, 0, 0],
+      fontStyle: "bold",
+    },
+    bodyStyles: {
+      fontSize: 8,
+    },
+    styles: {
+      overflow: "linebreak",
+    },
+    columnStyles: {
+      0: { cellWidth: 12 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 18 },
+      4: { cellWidth: 15 },
+      5: { cellWidth: 20 },
+      6: { cellWidth: 20 },
+      7: { cellWidth: 35 },
+    },
+    margin: { left: 10, right: 10 },
+  });
+
+  const fileName = `Items_${new Date().toISOString().split("T")[0]}.pdf`;
   doc.save(fileName);
 };

@@ -18,6 +18,7 @@ import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 import SelectDropdown from "../../components/form/SelectDropdown";
+import { generateItemsPDF } from "../../helper/pdf_generator";
 
 const ItemPage = () => {
   const [search, setSearch] = useState("");
@@ -59,10 +60,50 @@ const ItemPage = () => {
     stock_status: stockStatusFilter ? (stockStatusFilter as 'in_stock' | 'out_of_stock') : undefined,
   });
 
-  // Handle export CSV
-  const handleExportCSV = () => {
-    console.log("Exporting items to CSV");
-    // Your export logic here
+  // Handle export as PDF (all items, simple table)
+  const handleExportPDF = async () => {
+    try {
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:3333/api/v1";
+
+      const params = new URLSearchParams();
+      params.set("page", "1");
+      params.set("limit", "100000");
+      if (search) params.set("search", search);
+      if (itemTypeFilter) params.set("item_type", itemTypeFilter);
+      if (categoryFilter) params.set("category_id", categoryFilter);
+      if (stockStatusFilter) params.set("stock_status", stockStatusFilter);
+
+      const token = localStorage.getItem("access_token");
+
+      const response = await fetch(`${API_BASE_URL}/items?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch items (${response.status})`);
+      }
+
+      const json = await response.json();
+      // Response may be { data: Item[] } or { data: { data: Item[] } }
+      const rawData = json?.data;
+      const allItems =
+        Array.isArray(rawData) && rawData.length
+          ? rawData
+          : Array.isArray(rawData?.data)
+            ? rawData.data
+            : [];
+
+      generateItemsPDF(allItems);
+      handleApiSuccess("Items PDF generated successfully");
+    } catch (error) {
+      handleApiError(error, "Failed to generate items PDF");
+    }
   };
 
   const handleSearch = () => {
@@ -129,9 +170,9 @@ const ItemPage = () => {
       <div className="space-y-6">
         <ComponentCard
           title="Item Table"
-          exportButtonText="Export Items CSV"
+          exportButtonText="Export Items PDF"
           addButtonText="Add New Item"
-          onExportClick={handleExportCSV}
+          onExportClick={handleExportPDF}
           onAddClick={() => setIsAddModalOpen(true)}
           extra={
             <div className="flex flex-col lg:flex-row gap-3 w-full lg:items-center">
