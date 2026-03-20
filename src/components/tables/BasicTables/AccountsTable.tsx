@@ -7,6 +7,7 @@ import {
 } from "../../ui/table";
 import {
   useDeleteAccountMutation,
+  useClearOpeningBalanceMutation,
   Account,
   AccountType,
 } from "../../../redux/services/account";
@@ -22,16 +23,28 @@ interface AccountsTableProps {
   accounts: Account[];
   loading: boolean;
   onEdit?: (account: Account) => void;
+  onClearOpeningBalance?: (account: Account) => void;
 }
 
 export default function AccountsTable({
   accounts,
   loading,
   onEdit,
+  onClearOpeningBalance,
 }: AccountsTableProps) {
   const { isOpen, openModal, closeModal } = useModal();
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation();
+
+  const {
+    isOpen: isClearModalOpen,
+    openModal: openClearModal,
+    closeModal: closeClearModal,
+  } = useModal();
+  const [clearAccount, setClearAccount] = useState<Account | null>(null);
+  const [clearAmount, setClearAmount] = useState<string>("");
+  const [clearOpeningBalance, { isLoading: isClearing }] =
+    useClearOpeningBalanceMutation();
 
   const handleDelete = async () => {
     if (!selectedAccount) return;
@@ -43,6 +56,26 @@ export default function AccountsTable({
       setSelectedAccount(null);
     } catch (error) {
       handleApiError(error, "Failed to delete account");
+    }
+  };
+
+  const handleClearOpeningBalance = async () => {
+    if (!clearAccount) return;
+    const amount = parseFloat(clearAmount);
+    if (Number.isNaN(amount) || amount <= 0) {
+      handleApiError(null, "Please enter a valid amount");
+      return;
+    }
+
+    try {
+      await clearOpeningBalance({ accountId: clearAccount.id, amount }).unwrap();
+      handleApiSuccess("Opening balance cleared successfully");
+      closeClearModal();
+      setClearAccount(null);
+      setClearAmount("");
+      onClearOpeningBalance?.(clearAccount);
+    } catch (error) {
+      handleApiError(error, "Failed to clear opening balance");
     }
   };
 
@@ -202,6 +235,18 @@ export default function AccountsTable({
 
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                       <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClearAccount(account);
+                            setClearAmount("");
+                            openClearModal();
+                          }}
+                          className="text-xs px-2 py-1 rounded border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                          title="Clear opening balance"
+                        >
+                          Clear
+                        </button>
                         <span
                           className="cursor-pointer hover:opacity-70 transition-opacity"
                           onClick={() => onEdit?.(account)}
@@ -228,6 +273,67 @@ export default function AccountsTable({
           </Table>
         </div>
       </div>
+
+      {/* Clear Opening Balance Modal */}
+      <Modal
+        isOpen={isClearModalOpen}
+        onClose={() => {
+          closeClearModal();
+          setClearAccount(null);
+          setClearAmount("");
+        }}
+      >
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Clear Opening Balance
+          </h3>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Enter the amount to pay/clear from{" "}
+            <span className="font-medium text-gray-800 dark:text-white">
+              {clearAccount?.name}
+            </span>
+            . Current balance:{" "}
+            <span className="font-semibold">
+              {clearAccount
+                ? Number(clearAccount.current_balance).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : "—"}
+            </span>
+            . Balance can go negative (overdraft).
+          </p>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Amount
+            </label>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={clearAmount}
+              onChange={(e) => setClearAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              onClick={closeClearModal}
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={isClearing || !clearAmount}
+              onClick={handleClearOpeningBalance}
+              className="px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isClearing ? "Clearing..." : "Clear"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal isOpen={isOpen} onClose={closeModal}>

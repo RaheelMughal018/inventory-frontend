@@ -9,6 +9,7 @@ import type { RepairInvoice } from "../redux/services/repairInvoice";
 import type { SupplierStatement } from "../redux/services/supplierStatement";
 import type { CustomerStatement } from "../redux/services/customerStatement";
 import type { Item } from "../redux/services/item";
+import type { Recipe, RecipeCost } from "../redux/services/recipe";
 
 export const generateInvoicePDF = (invoice: PurchaseInvoice) => {
   const doc = new jsPDF();
@@ -451,6 +452,38 @@ export const generateRepairInvoicePDF = (invoice: RepairInvoice) => {
     { align: "right" }
   );
 
+  // Status badge: FOC or Payment status (PAID/UNPAID/PARTIAL)
+  yPosition += 7;
+  const statusText = invoice.is_foc
+    ? "FOC"
+    : (invoice.payment_status ?? "UNPAID").toUpperCase();
+  const statusColors: Record<string, { bg: number[]; text: number[] }> = {
+    FOC: { bg: [243, 244, 246], text: [75, 85, 99] },
+    PAID: { bg: [220, 252, 231], text: [21, 128, 61] },
+    PARTIAL: { bg: [254, 249, 195], text: [161, 98, 7] },
+    UNPAID: { bg: [254, 226, 226], text: [220, 38, 38] },
+  };
+  const statusColor = statusColors[statusText] ?? statusColors.UNPAID;
+  const statusWidth = doc.getTextWidth(statusText) + 8;
+  doc.setFillColor(statusColor.bg[0], statusColor.bg[1], statusColor.bg[2]);
+  doc.roundedRect(
+    pageWidth - 15 - statusWidth,
+    yPosition - 4,
+    statusWidth,
+    7,
+    2,
+    2,
+    "F"
+  );
+  doc.setTextColor(statusColor.text[0], statusColor.text[1], statusColor.text[2]);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(statusText, pageWidth - 15 - statusWidth / 2, yPosition, {
+    align: "center",
+  });
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+
   // Separator
   yPosition += 10;
   doc.setDrawColor(229, 231, 235);
@@ -531,14 +564,20 @@ export const generateRepairInvoicePDF = (invoice: RepairInvoice) => {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(107, 114, 128);
 
+  const itemsTotal = (invoice.items ?? []).reduce(
+    (sum, i) =>
+      sum +
+      (typeof i.total_price === "number"
+        ? i.total_price
+        : parseFloat(String(i.total_price)) || 0),
+    0
+  );
+
   if (!invoice.is_foc) {
-    doc.text("Parts Cost:", summaryX, yPosition);
-    doc.text(
-      formatCurrency(invoice.parts_cost ?? 0),
-      pageWidth - 15,
-      yPosition,
-      { align: "right" }
-    );
+    doc.text("Items Total:", summaryX, yPosition);
+    doc.text(formatCurrency(itemsTotal), pageWidth - 15, yPosition, {
+      align: "right",
+    });
     yPosition += 7;
 
     doc.text("Service Charges:", summaryX, yPosition);
@@ -569,6 +608,41 @@ export const generateRepairInvoicePDF = (invoice: RepairInvoice) => {
       { align: "right" }
     );
     yPosition += 7;
+  }
+
+  // Notes
+  if (invoice.notes || invoice.technician_notes) {
+    yPosition += 5;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(31, 41, 55);
+    doc.text("Notes", 15, yPosition);
+    yPosition += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(75, 85, 99);
+    doc.setFontSize(9);
+    if (invoice.notes) {
+      const notesLines = doc.splitTextToSize(invoice.notes, pageWidth - 30);
+      notesLines.forEach((line: string) => {
+        doc.text(line, 15, yPosition);
+        yPosition += 5;
+      });
+      yPosition += 2;
+    }
+    if (invoice.technician_notes) {
+      doc.setFont("helvetica", "bold");
+      doc.text("Technician Notes:", 15, yPosition);
+      yPosition += 5;
+      doc.setFont("helvetica", "normal");
+      const techLines = doc.splitTextToSize(
+        invoice.technician_notes,
+        pageWidth - 30
+      );
+      techLines.forEach((line: string) => {
+        doc.text(line, 15, yPosition);
+        yPosition += 5;
+      });
+    }
+    yPosition += 5;
   }
 
   // Optional dates
@@ -1165,7 +1239,7 @@ export const generateCustomerStatementPDF = (
   doc.setTextColor(30, 41, 59);
   doc.text("FINANCIAL SUMMARY", 15, yPosition);
   yPosition += 10;
-  const cardWidth = (pageWidth - 40) / 5;
+  const cardWidth = (pageWidth - 40) / 6;
   const cardHeight = 28;
   const cardSpacing = 3;
   const summaryCards = [
@@ -1184,6 +1258,14 @@ export const generateCustomerStatementPDF = (
       bgColor: [239, 246, 255],
       borderColor: [147, 197, 253],
       textColor: [29, 78, 216],
+    },
+    {
+      title: "Total Repairs",
+      value: formatCurrency(statement.summary.total_repairs ?? 0),
+      subtitle: `${statement.summary.repair_invoice_count ?? 0} repair invoices`,
+      bgColor: [255, 251, 235],
+      borderColor: [253, 186, 116],
+      textColor: [194, 65, 12],
     },
     {
       title: "Total Receipts",
@@ -1318,6 +1400,90 @@ export const generateCustomerStatementPDF = (
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 41, 59);
+  doc.text(
+    `REPAIR INVOICES (${statement.repair_invoices?.length ?? 0})`,
+    15,
+    yPosition
+  );
+  yPosition += 5;
+
+  if (statement.repair_invoices && statement.repair_invoices.length > 0) {
+    const repairTableData = statement.repair_invoices.map((repair) => [
+      repair.invoice_number,
+      formatDate(repair.received_date),
+      repair.is_foc ? "FOC" : formatCurrency(repair.total_amount),
+      repair.is_foc ? "—" : formatCurrency(repair.received_amount),
+      repair.is_foc ? "—" : formatCurrency(repair.outstanding_amount),
+      repair.is_foc ? "FOC" : repair.payment_status,
+    ]);
+    autoTable(doc, {
+      startY: yPosition,
+      head: [
+        [
+          "Invoice #",
+          "Received Date",
+          "Total",
+          "Received Amt",
+          "Outstanding",
+          "Status",
+        ],
+      ],
+      body: repairTableData,
+      theme: "grid",
+      headStyles: {
+        fillColor: [245, 158, 11],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 8,
+        halign: "center",
+      },
+      bodyStyles: { fontSize: 8, textColor: [30, 41, 59] },
+      alternateRowStyles: { fillColor: [255, 251, 235] },
+      columnStyles: {
+        0: { cellWidth: 30, fontStyle: "bold" },
+        1: { cellWidth: 28, halign: "center" },
+        2: { cellWidth: 22, halign: "right" },
+        3: { cellWidth: 22, halign: "right", textColor: [21, 128, 61] },
+        4: { cellWidth: 22, halign: "right", textColor: [220, 38, 38] },
+        5: { cellWidth: 20, halign: "center", fontStyle: "bold" },
+      },
+      margin: { left: 15, right: 15 },
+      didParseCell: function (data) {
+        if (data.column.index === 5 && data.section === "body") {
+          const status = data.cell.raw as string;
+          if (status === "FOC") {
+            data.cell.styles.textColor = [75, 85, 99];
+            data.cell.styles.fillColor = [243, 244, 246];
+          } else if (status === "PAID") {
+            data.cell.styles.textColor = [21, 128, 61];
+            data.cell.styles.fillColor = [220, 252, 231];
+          } else if (status === "PARTIAL") {
+            data.cell.styles.textColor = [161, 98, 7];
+            data.cell.styles.fillColor = [254, 249, 195];
+          } else if (status === "UNPAID") {
+            data.cell.styles.textColor = [220, 38, 38];
+            data.cell.styles.fillColor = [254, 226, 226];
+          }
+        }
+      },
+    });
+    yPosition = doc.lastAutoTable.finalY + 12;
+  } else {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text("No repair invoices found", 15, yPosition + 5);
+    yPosition += 15;
+  }
+
+  if (yPosition > pageHeight - 80) {
+    doc.addPage();
+    yPosition = 20;
+  }
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 41, 59);
   doc.text(`RECEIPTS (${statement.receipts.length})`, 15, yPosition);
   yPosition += 5;
 
@@ -1326,12 +1492,13 @@ export const generateCustomerStatementPDF = (
       receipt.receipt_number,
       formatDate(receipt.receipt_date),
       formatCurrency(receipt.amount),
+      receipt.invoice_number || receipt.repair_invoice_number || "—",
       receipt.account_name,
       receipt.notes || "—",
     ]);
     autoTable(doc, {
       startY: yPosition,
-      head: [["Receipt #", "Date", "Amount", "Account", "Notes"]],
+      head: [["Receipt #", "Date", "Amount", "Reference", "Account", "Notes"]],
       body: receiptsTableData,
       theme: "grid",
       headStyles: {
@@ -1344,11 +1511,12 @@ export const generateCustomerStatementPDF = (
       bodyStyles: { fontSize: 8, textColor: [30, 41, 59] },
       alternateRowStyles: { fillColor: [240, 253, 244] },
       columnStyles: {
-        0: { cellWidth: 32, fontStyle: "bold" },
-        1: { cellWidth: 28, halign: "center" },
-        2: { cellWidth: 28, halign: "right", fontStyle: "bold", textColor: [21, 128, 61] },
-        3: { cellWidth: 35 },
-        4: { cellWidth: 57 },
+        0: { cellWidth: 28, fontStyle: "bold" },
+        1: { cellWidth: 25, halign: "center" },
+        2: { cellWidth: 25, halign: "right", fontStyle: "bold", textColor: [21, 128, 61] },
+        3: { cellWidth: 28 },
+        4: { cellWidth: 32 },
+        5: { cellWidth: 44 },
       },
       margin: { left: 15, right: 15 },
     });
@@ -1478,5 +1646,188 @@ export const generateItemsPDF = (items: Item[]) => {
   });
 
   const fileName = `Items_${new Date().toISOString().split("T")[0]}.pdf`;
+  doc.save(fileName);
+};
+
+// ============================================
+// RECIPE PDF GENERATOR
+// ============================================
+
+export const generateRecipePDF = (recipe: Recipe, cost: RecipeCost | null) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+
+  const formatNumber = (value: string | number) => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (Number.isNaN(num)) return "0";
+    return num.toFixed(2);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  let yPosition = 20;
+
+  // Header
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(31, 41, 55);
+  doc.text("Recipe", margin, yPosition);
+
+  yPosition += 8;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+  doc.text(
+    `Generated on ${new Date().toLocaleString()}`,
+    pageWidth - margin,
+    yPosition,
+    { align: "right" }
+  );
+
+  yPosition += 12;
+
+  // Recipe Information
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(31, 41, 55);
+  doc.text("Recipe Information", margin, yPosition);
+  yPosition += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const infoLines = [
+    ["Recipe Name:", recipe.name || "—"],
+    ["Final Product:", recipe.final_product?.name || "—"],
+    ["Description:", recipe.description || "—"],
+    ["Extra Expenses / unit:", formatNumber(recipe.extra_expenses ?? 0)],
+    ["Final Product Stock:", formatNumber(recipe.final_product?.quantity ?? 0)],
+    ["Created:", formatDate(recipe.created_at)],
+  ];
+
+  infoLines.forEach(([label, value]) => {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(75, 85, 99);
+    doc.text(label, margin, yPosition);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(31, 41, 55);
+    const labelWidth = doc.getTextWidth(label);
+    doc.text(String(value), margin + labelWidth + 4, yPosition);
+    yPosition += 6;
+  });
+
+  yPosition += 8;
+
+  // Ingredients Table
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(31, 41, 55);
+  doc.text("Ingredients", margin, yPosition);
+  yPosition += 8;
+
+  if (recipe.ingredients && recipe.ingredients.length > 0) {
+    const ingredientsData = recipe.ingredients.map((ing) => [
+      ing.item?.name ?? "—",
+      formatNumber(ing.quantity),
+      formatNumber(ing.item?.avg_price ?? 0),
+    ]);
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [["Raw Item", "Qty / Unit", "Avg Price"]],
+      body: ingredientsData,
+      theme: "grid",
+      headStyles: {
+        fontSize: 9,
+        halign: "left",
+        fillColor: [243, 244, 246],
+        textColor: [31, 41, 55],
+        fontStyle: "bold",
+      },
+      bodyStyles: { fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 80 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 40 },
+      },
+      margin: { left: margin, right: margin },
+    });
+
+    yPosition = doc.lastAutoTable.finalY + 12;
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("No ingredients added yet.", margin, yPosition);
+    yPosition += 12;
+  }
+
+  // Cost Analysis (if available)
+  if (cost) {
+    if (yPosition > 240) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(31, 41, 55);
+    doc.text("Cost Analysis", margin, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(21, 128, 61);
+    doc.text(`Total Cost per Unit: ${cost.cost_per_unit.toFixed(2)}`, margin, yPosition);
+    yPosition += 10;
+
+    if (cost.breakdown && cost.breakdown.length > 0) {
+      const costData = cost.breakdown.map((item) => [
+        item.item_name,
+        item.quantity.toString(),
+        item.avg_price.toFixed(2),
+        item.line_cost.toFixed(2),
+      ]);
+
+      if (Number(recipe.extra_expenses ?? 0) > 0) {
+        costData.push([
+          "Extra expenses",
+          "—",
+          "—",
+          Number(recipe.extra_expenses).toFixed(2),
+        ]);
+      }
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [["Raw Item", "Qty / Unit", "Avg Price", "Line Cost"]],
+        body: costData,
+        theme: "grid",
+        headStyles: {
+          fontSize: 9,
+          halign: "left",
+          fillColor: [243, 244, 246],
+          textColor: [31, 41, 55],
+          fontStyle: "bold",
+        },
+        bodyStyles: { fontSize: 9 },
+        columnStyles: {
+          0: { cellWidth: 70 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 40 },
+        },
+        margin: { left: margin, right: margin },
+      });
+    }
+  }
+
+  const fileName = `Recipe_${(recipe.name || recipe.final_product?.name || "Recipe").replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
   doc.save(fileName);
 };

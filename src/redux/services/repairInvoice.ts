@@ -29,6 +29,7 @@ export interface CreateRepairInvoiceDto {
   item_description?: string
   received_date: string
   items: CreateRepairInvoiceItemDto[]
+  service_charges?: number
   payment_status?: PaymentStatusRepair
   account_id?: number
   received_amount?: number

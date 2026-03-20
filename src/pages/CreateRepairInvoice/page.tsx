@@ -57,12 +57,14 @@ const CreateRepairInvoicePage = () => {
   const [receivedAmount, setReceivedAmount] = useState<number>(0);
   const [notes, setNotes] = useState("");
   const [technicianNotes, setTechnicianNotes] = useState("");
+  const [serviceCharges, setServiceCharges] = useState<number>(0);
 
   const [lines, setLines] = useState<LineItem[]>([
     { item_id: 0, item_name: "", description: "", quantity: 1, unit_price: 0, total: 0, inventory_count: true },
   ]);
 
-  const totalAmount = lines.reduce((sum, l) => sum + l.total, 0);
+  const itemsTotal = lines.reduce((sum, l) => sum + l.total, 0);
+  const totalAmount = itemsTotal + serviceCharges;
 
   const handleAddLine = () => {
     setLines([
@@ -108,7 +110,7 @@ const CreateRepairInvoicePage = () => {
       quantity: l.quantity,
       unit_price: l.unit_price,
       ...(l.item_id > 0 && { item_id: l.item_id }),
-      ...(l.inventory_count && { inventory_count: true }),
+      inventory_count: l.inventory_count,
     }));
 
     const payload: CreateRepairInvoiceDto = {
@@ -116,6 +118,7 @@ const CreateRepairInvoicePage = () => {
       is_foc: isFoc,
       received_date: receivedDateIso,
       items,
+      service_charges: serviceCharges,
       ...(serialNumber.trim() && { serial_number: serialNumber.trim() }),
       ...(itemDescription.trim() && { item_description: itemDescription.trim() }),
       ...(notes.trim() && { notes: notes.trim() }),
@@ -177,8 +180,21 @@ const CreateRepairInvoicePage = () => {
   const customerOptions = customersData?.data?.map((c) => ({ id: c.id, name: c.name })) ?? [];
   const accountOptions =
     accountsData?.data?.map((a) => ({ id: a.id, name: `${a.name} (${a.account_type})` })) ?? [];
-  const rawItemOptions =
+  const apiRawItems =
     itemsData?.data?.filter((i) => i.item_type === ItemType.RAW).map((i) => ({ id: i.id, name: i.name })) ?? [];
+
+  // Ensure selected item is always in options (e.g. after search clears, selected item may not be in API results)
+  const getPartOptionsForLine = (line: LineItem) => {
+    const base = [{ id: 0, name: "—" }, ...apiRawItems];
+    if (
+      line.item_id > 0 &&
+      line.item_name &&
+      !base.some((o) => Number(o.id) === line.item_id)
+    ) {
+      return [{ id: line.item_id, name: line.item_name }, ...base];
+    }
+    return base;
+  };
 
   return (
     <>
@@ -285,7 +301,7 @@ const CreateRepairInvoicePage = () => {
                         <td className="px-2 py-2 align-top w-[200px] min-w-[200px]">
                           <div className="min-w-0">
                             <SelectDropdown
-                              options={[{ id: 0, name: "—" }, ...rawItemOptions]}
+                              options={getPartOptionsForLine(line)}
                               value={line.item_id || ""}
                               onChange={(v) => {
                                 const id = Number(v);
@@ -438,8 +454,27 @@ const CreateRepairInvoicePage = () => {
             )}
 
             <SimpleComponentCard title="Summary">
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Items total</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {itemsTotal.toFixed(2)}
+                  </span>
+                </div>
+                <div>
+                  <Label>Service charges</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={serviceCharges === 0 ? "" : serviceCharges}
+                    onChange={(e) =>
+                      setServiceCharges(e.target.value === "" ? 0 : Number(e.target.value))
+                    }
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
                   <span>Total amount</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {isFoc ? "FOC" : totalAmount.toFixed(2)}

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import SimpleComponentCard from "../../components/common/SimpleCardComponent";
@@ -7,146 +7,192 @@ import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import Button from "../../components/ui/button/Button";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
+import { Modal } from "../../components/ui/modal";
+import { useModal } from "../../hooks/useModal";
 import {
   useGetRecipeByIdQuery,
-  useUpdateRecipeMutation,
   useGetRecipeCostQuery,
-  RecipeIngredient,
+  useUpdateRecipeMutation,
+  useAddIngredientMutation,
+  useUpdateIngredientMutation,
+  useRemoveIngredientMutation,
+  RecipeIngredientResponse,
 } from "../../redux/services/recipe";
 import { useGetAllItemsQuery, ItemType } from "../../redux/services/item";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 import { TailSpin } from "react-loader-spinner";
+import { PencilIcon, CloseIcon } from "../../icons";
+import formatDateTime from "../../helper/date_converter";
 
 const EditRecipePage = () => {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const recipeId = Number(id);
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [extraExpense, setExtraExpense] = useState<number>(0);
-  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([
-    { item_id: 0, quantity: 1 },
-  ]);
+  // Edit recipe info state
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editExtraExpense, setEditExtraExpense] = useState<number>(0);
 
-  // Fetch recipe and items
+  // Inline ingredient editing
+  const [editingIngredientId, setEditingIngredientId] = useState<number | null>(null);
+  const [editingQty, setEditingQty] = useState<number>(0);
+
+  // Add ingredient
+  const [addItemId, setAddItemId] = useState<number>(0);
+  const [addItemName, setAddItemName] = useState("");
+  const [addQty, setAddQty] = useState<number>(1);
+  const [addSearch, setAddSearch] = useState("");
+
+  // Remove ingredient confirmation
+  const { isOpen: isRemoveOpen, openModal: openRemove, closeModal: closeRemove } = useModal();
+  const [removingIngredient, setRemovingIngredient] = useState<RecipeIngredientResponse | null>(null);
+
+  // Queries
   const { data: recipeData, isLoading: recipeLoading } = useGetRecipeByIdQuery(recipeId, {
     skip: !recipeId,
   });
   const { data: costData, isLoading: costLoading } = useGetRecipeCostQuery(recipeId, {
     skip: !recipeId,
   });
-  const { data: itemsData, isLoading: itemsLoading } = useGetAllItemsQuery({});
-  const [updateRecipe, { isLoading: updating }] = useUpdateRecipeMutation();
+  const { data: addItemsData, isLoading: addItemsLoading } = useGetAllItemsQuery({
+    page: 1,
+    limit: 30,
+    search: addSearch || undefined,
+    item_type: ItemType.RAW,
+  });
+
+  // Mutations
+  const [updateRecipe, { isLoading: updatingInfo }] = useUpdateRecipeMutation();
+  const [addIngredient, { isLoading: adding }] = useAddIngredientMutation();
+  const [updateIngredient, { isLoading: updatingIngredient }] = useUpdateIngredientMutation();
+  const [removeIngredient, { isLoading: removing }] = useRemoveIngredientMutation();
 
   const recipe = recipeData?.data;
   const cost = costData?.data;
-  const items = itemsData?.data ?? [];
-  const rawItems = items.filter((item) => item.item_type === ItemType.RAW);
 
-  const rawItemOptions = rawItems.map((item) => ({
+  // Add item options: API results + currently selected item (to keep it visible)
+  const apiAddOptions = (addItemsData?.data ?? []).map((item) => ({
     id: item.id,
-    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)}, Price: ${Number(item.avg_price).toFixed(2)})`,
+    name: item.name,
   }));
+  const addOptions =
+    addItemId > 0 && !apiAddOptions.some((o) => o.id === addItemId)
+      ? [{ id: addItemId, name: addItemName }, ...apiAddOptions]
+      : apiAddOptions;
 
-  // Initialize form with recipe data
-  useEffect(() => {
-    if (recipe) {
-      setName(recipe.name || "");
-      setDescription(recipe.description || "");
-      setExtraExpense(Number(recipe.extra_expenses) || 0);
-      setIngredients(
-        recipe.ingredients.map((ing) => ({
-          item_id: ing.item_id,
-          quantity: Number(ing.quantity),
-        }))
-      );
-    }
-  }, [recipe]);
+  // Already-used item IDs to prevent duplicates
+  const usedItemIds = new Set((recipe?.ingredients ?? []).map((ing) => ing.item_id));
 
-  const addIngredient = () => {
-    setIngredients((prev) => [...prev, { item_id: 0, quantity: 1 }]);
+  // Handlers — edit recipe info
+  const handleStartEditInfo = () => {
+    if (!recipe) return;
+    setEditName(recipe.name || "");
+    setEditDescription(recipe.description || "");
+    setEditExtraExpense(Number(recipe.extra_expenses) || 0);
+    setIsEditingInfo(true);
   };
 
-  const removeIngredient = (index: number) => {
-    if (ingredients.length <= 1) return;
-    setIngredients((prev) => prev.filter((_, i) => i !== index));
+  const handleCancelEditInfo = () => {
+    setIsEditingInfo(false);
   };
 
-  const updateIngredient = (
-    index: number,
-    field: keyof RecipeIngredient,
-    value: number
-  ) => {
-    setIngredients((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
-
-  // Calculate estimated cost with current form data
-  const calculateEstimatedCost = () => {
-    let total = 0;
-    ingredients.forEach((ing) => {
-      if (ing.item_id > 0 && ing.quantity > 0) {
-        const item = rawItems.find((r) => r.id === ing.item_id);
-        if (item) {
-          total += Number(item.avg_price) * ing.quantity;
-        }
-      }
-    });
-    return total;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validation
-    if (!name.trim()) {
-      alert("Recipe name is required");
-      return;
-    }
-
-    const validIngredients = ingredients.filter(
-      (ing) => ing.item_id > 0 && ing.quantity > 0
-    );
-
-    if (validIngredients.length === 0) {
-      alert("Add at least one ingredient with a valid quantity");
-      return;
-    }
-
-    // Check for duplicate ingredients
-    const itemIds = validIngredients.map((ing) => ing.item_id);
-    const uniqueIds = new Set(itemIds);
-    if (itemIds.length !== uniqueIds.size) {
-      alert("Duplicate ingredients are not allowed");
-      return;
-    }
-
+  const handleSaveInfo = async () => {
     try {
       await updateRecipe({
         id: recipeId,
         data: {
-          name: name.trim(),
-          description: description.trim() || undefined,
-          ingredients: validIngredients,
-          extra_expenses: extraExpense || 0,
+          name: editName.trim() || undefined,
+          description: editDescription.trim() || undefined,
+          extra_expenses: editExtraExpense || 0,
         },
       }).unwrap();
-      handleApiSuccess("Recipe updated successfully");
-      navigate("/recipes");
+      handleApiSuccess("Recipe updated");
+      setIsEditingInfo(false);
     } catch (err: unknown) {
       handleApiError(err, "Failed to update recipe");
     }
   };
 
-  if (recipeLoading || itemsLoading) {
+  // Handlers — inline ingredient quantity edit
+  const handleStartEditIngredient = (ing: RecipeIngredientResponse) => {
+    setEditingIngredientId(ing.item_id);
+    setEditingQty(Number(ing.quantity));
+  };
+
+  const handleCancelEditIngredient = () => {
+    setEditingIngredientId(null);
+  };
+
+  const handleSaveIngredient = async (itemId: number) => {
+    if (editingQty <= 0) {
+      handleApiError(null, "Quantity must be greater than 0");
+      return;
+    }
+    try {
+      await updateIngredient({
+        id: recipeId,
+        itemId,
+        data: { quantity: editingQty },
+      }).unwrap();
+      handleApiSuccess("Ingredient updated");
+      setEditingIngredientId(null);
+    } catch (err: unknown) {
+      handleApiError(err, "Failed to update ingredient");
+    }
+  };
+
+  // Handlers — remove ingredient
+  const handleRemoveClick = (ing: RecipeIngredientResponse) => {
+    setRemovingIngredient(ing);
+    openRemove();
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!removingIngredient) return;
+    try {
+      await removeIngredient({ id: recipeId, itemId: removingIngredient.item_id }).unwrap();
+      handleApiSuccess("Ingredient removed");
+      closeRemove();
+      setRemovingIngredient(null);
+    } catch (err: unknown) {
+      handleApiError(err, "Failed to remove ingredient");
+    }
+  };
+
+  // Handlers — add ingredient
+  const handleAddIngredient = async () => {
+    if (!addItemId) {
+      handleApiError(null, "Please select a raw item");
+      return;
+    }
+    if (addQty <= 0) {
+      handleApiError(null, "Quantity must be greater than 0");
+      return;
+    }
+    if (usedItemIds.has(addItemId)) {
+      handleApiError(null, "This item is already an ingredient");
+      return;
+    }
+    try {
+      await addIngredient({ id: recipeId, data: { item_id: addItemId, quantity: addQty } }).unwrap();
+      handleApiSuccess("Ingredient added");
+      setAddItemId(0);
+      setAddItemName("");
+      setAddQty(1);
+      setAddSearch("");
+    } catch (err: unknown) {
+      handleApiError(err, "Failed to add ingredient");
+    }
+  };
+
+  if (recipeLoading || !recipeId) {
     return (
       <>
-        <PageMeta title="Edit Recipe" description="Edit recipe details" />
-        <PageBreadcrumb pageTitle="Edit Recipe" />
+        <PageMeta title="Recipe" description="View recipe details" />
+        <PageBreadcrumb pageTitle="Recipe" />
         <div className="flex justify-center items-center py-20">
           <TailSpin height={48} width={48} color="#3b82f6" />
         </div>
@@ -171,279 +217,416 @@ const EditRecipePage = () => {
     );
   }
 
-  const estimatedCost = calculateEstimatedCost();
-  const totalWithExtra = estimatedCost + (extraExpense || 0);
-
   return (
     <>
-      <PageMeta title="Edit Recipe" description="Edit recipe details and ingredients" />
-      <PageBreadcrumb pageTitle="Edit Recipe" />
+      <PageMeta
+        title={`Recipe: ${recipe.name}`}
+        description={`View recipe for ${recipe.final_product.name}`}
+      />
+      <PageBreadcrumb pageTitle={`Recipe: ${recipe.name}`} />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <SimpleComponentCard title="Basic Information" desc="Update the recipe details">
-          <div className="space-y-4">
-            {/* Final Product (Read-only) */}
-            <div>
-              <Label>Final Product</Label>
-              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                <p className="font-medium text-gray-800 dark:text-white">
+      <div className="space-y-6">
+        {/* Recipe Information */}
+        <SimpleComponentCard
+          title="Recipe Information"
+          desc="Details about this recipe"
+          extra={
+            !isEditingInfo ? (
+              <Button type="button" variant="outline" size="sm" onClick={handleStartEditInfo}>
+                <PencilIcon className="size-4 mr-1" /> Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={handleCancelEditInfo}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSaveInfo}
+                  disabled={updatingInfo}
+                >
+                  {updatingInfo ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            )
+          }
+        >
+          {!isEditingInfo ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Final Product
+                </p>
+                <p className="mt-1 font-medium text-gray-800 dark:text-white">
                   {recipe.final_product.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Stock: {Number(recipe.final_product.quantity).toFixed(0)} | Avg Price:{" "}
-                  {Number(recipe.final_product.avg_price).toFixed(2)}
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Recipe Name
+                </p>
+                <p className="mt-1 text-gray-800 dark:text-white">{recipe.name || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Description
+                </p>
+                <p className="mt-1 text-gray-600 dark:text-gray-400">
+                  {recipe.description || "—"}
                 </p>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Final product cannot be changed after creation
-              </p>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Extra Expenses / unit
+                </p>
+                <p className="mt-1 text-gray-800 dark:text-white">
+                  {Number(recipe.extra_expenses ?? 0).toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Final Product Stock
+                </p>
+                <p className="mt-1 text-gray-800 dark:text-white">
+                  {Number(recipe.final_product.quantity).toFixed(0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Created
+                </p>
+                <p className="mt-1 text-gray-600 dark:text-gray-400">
+                  {formatDateTime(recipe.created_at)}
+                </p>
+              </div>
             </div>
-
-            {/* Recipe Name */}
-            <div>
-              <Label htmlFor="name">
-                Recipe Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Standard Car Assembly"
-              />
+          ) : (
+            <div className="space-y-4 max-w-lg">
+              <div>
+                <Label htmlFor="edit-name">Recipe Name</Label>
+                <Input
+                  id="edit-name"
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="e.g., Standard Car Assembly"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-desc">Description (Optional)</Label>
+                <textarea
+                  id="edit-desc"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Optional notes..."
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-extra">Extra Expenses / unit (Optional)</Label>
+                <Input
+                  id="edit-extra"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={editExtraExpense === 0 ? "" : editExtraExpense}
+                  onChange={(e) =>
+                    setEditExtraExpense(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)
+                  }
+                  placeholder="0.00"
+                />
+              </div>
             </div>
-
-            {/* Description */}
-            <div>
-              <Label htmlFor="description">Description (Optional)</Label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional notes about this recipe..."
-                rows={3}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-            </div>
-          </div>
+          )}
         </SimpleComponentCard>
 
-        {/* Current Cost from Backend */}
-        {cost && (
-          <SimpleComponentCard 
-            title="Current Cost Analysis" 
-            desc="Based on saved recipe with current material prices"
-          >
-            <div className="space-y-3">
-              {/* Total Cost */}
-              <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-green-900 dark:text-green-100">
-                      Current Cost per Unit
-                    </p>
-                    <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                      Calculated from saved recipe ingredients
-                    </p>
-                  </div>
-                  <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-                    {cost.cost_per_unit.toFixed(2)}
-                  </div>
+        {/* Cost Analysis */}
+        <SimpleComponentCard
+          title="Cost Analysis"
+          desc="Current cost per unit based on live ingredient prices"
+        >
+          {costLoading ? (
+            <div className="flex justify-center py-8">
+              <TailSpin height={32} width={32} color="#3b82f6" />
+            </div>
+          ) : cost ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                <div>
+                  <p className="font-medium text-green-900 dark:text-green-100">
+                    Total Cost per Unit
+                  </p>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-0.5">
+                    Ingredients + extra expenses at current prices
+                  </p>
                 </div>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">
+                  {cost.cost_per_unit.toFixed(2)}
+                </p>
               </div>
 
-              {/* Breakdown */}
-              {costLoading ? (
-                <div className="flex justify-center py-4">
-                  <TailSpin height={24} width={24} color="#3b82f6" />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {cost.breakdown.map((item) => (
-                    <div
-                      key={item.item_id}
-                      className="flex justify-between items-center p-3 rounded-lg bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700"
-                    >
-                      <span className="text-sm font-medium text-gray-800 dark:text-white">
-                        {item.item_name}
-                      </span>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        <span>
-                          {item.quantity} × {item.avg_price.toFixed(2)} ={" "}
-                        </span>
-                        <span className="font-medium text-gray-800 dark:text-white">
-                          {item.line_cost.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+              {cost.breakdown.length > 0 && (
+                <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-white/5">
+                  <Table>
+                    <TableHeader className="border-b border-gray-100 dark:border-white/5">
+                      <TableRow>
+                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                          Raw Item
+                        </TableCell>
+                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">
+                          Qty / Unit
+                        </TableCell>
+                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">
+                          Avg Price
+                        </TableCell>
+                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400">
+                          Line Cost
+                        </TableCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cost.breakdown.map((item) => (
+                        <TableRow
+                          key={item.item_id}
+                          className="border-b border-gray-100 last:border-0 dark:border-white/5"
+                        >
+                          <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
+                            {item.item_name}
+                          </TableCell>
+                          <TableCell className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">
+                            {item.quantity}
+                          </TableCell>
+                          <TableCell className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">
+                            {item.avg_price.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="px-5 py-3 text-end font-medium text-gray-800 dark:text-white/90">
+                            {item.line_cost.toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {Number(recipe.extra_expenses ?? 0) > 0 && (
+                        <TableRow className="border-b border-gray-100 last:border-0 dark:border-white/5 bg-gray-50 dark:bg-white/2">
+                          <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400 italic" colSpan={3}>
+                            Extra expenses
+                          </TableCell>
+                          <TableCell className="px-5 py-3 text-end font-medium text-gray-800 dark:text-white/90">
+                            {Number(recipe.extra_expenses).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>
-          </SimpleComponentCard>
-        )}
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400 py-4">Cost data unavailable.</p>
+          )}
+        </SimpleComponentCard>
 
         {/* Ingredients */}
         <SimpleComponentCard
           title="Ingredients"
-          desc="Modify raw materials and their quantities per unit of final product"
-          extra={
-            <Button type="button" variant="primary" onClick={addIngredient}>
-              + Add Ingredient
-            </Button>
-          }
+          desc="Raw materials required per unit of final product"
         >
           <div className="space-y-4">
-          
+            {/* Existing ingredients table */}
+            {recipe.ingredients.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 py-4 text-center">
+                No ingredients added yet.
+              </p>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-white/5">
+                <Table>
+                  <TableHeader className="border-b border-gray-100 dark:border-white/5">
+                    <TableRow>
+                      <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                        Raw Item
+                      </TableCell>
+                      <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">
+                        Qty / Unit
+                      </TableCell>
+                      <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">
+                        Avg Price
+                      </TableCell>
+                      <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400">
+                        Actions
+                      </TableCell>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recipe.ingredients.map((ing) => (
+                      <TableRow
+                        key={ing.item_id}
+                        className="border-b border-gray-100 last:border-0 dark:border-white/5"
+                      >
+                        <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
+                          {ing.item.name}
+                        </TableCell>
+                        <TableCell className="px-5 py-3 text-center">
+                          {editingIngredientId === ing.item_id ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <input
+                                type="number"
+                                min={0.001}
+                                step={0.001}
+                                value={editingQty}
+                                onChange={(e) => setEditingQty(parseFloat(e.target.value) || 0)}
+                                className="w-24 h-9 rounded-lg border border-gray-300 px-2 text-sm text-center dark:border-gray-600 dark:bg-gray-900 dark:text-white/90 focus:border-brand-500 focus:outline-none"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSaveIngredient(ing.item_id)}
+                                disabled={updatingIngredient}
+                                className="px-2 py-1 text-xs rounded bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-50"
+                              >
+                                {updatingIngredient ? "…" : "Save"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelEditIngredient}
+                                className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {Number(ing.quantity)}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">
+                          {Number(ing.item.avg_price).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="px-5 py-3 text-end">
+                          <div className="flex justify-end gap-1">
+                            {editingIngredientId !== ing.item_id && (
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditIngredient(ing)}
+                                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                                title="Edit quantity"
+                              >
+                                <PencilIcon className="size-4" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveClick(ing)}
+                              className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600"
+                              title="Remove ingredient"
+                            >
+                              <CloseIcon className="size-4" />
+                            </button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
 
-            {ingredients.map((ingredient, index) => (
-              <div
-                key={index}
-                className="flex gap-3 items-start p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
-              >
-                <div className="flex-1">
+            {/* Add ingredient */}
+            <div className="p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Add Ingredient
+              </p>
+              <div className="flex gap-3 items-end flex-wrap">
+                <div className="flex-1 min-w-[200px]">
                   <Label className="text-xs mb-1">Raw Item</Label>
                   <SelectDropdown
-                    options={rawItemOptions}
-                    value={ingredient.item_id}
-                    onChange={(value) =>
-                      updateIngredient(index, "item_id", Number(value))
-                    }
-                    placeholder="Select raw item..."
+                    options={addOptions.filter((o) => !usedItemIds.has(o.id))}
+                    value={addItemId}
+                    onChange={(value) => {
+                      const numId = Number(value);
+                      setAddItemId(numId);
+                      const opt = addOptions.find((o) => o.id === numId);
+                      setAddItemName(opt ? String(opt.name) : "");
+                    }}
+                    placeholder={addItemsLoading ? "Loading..." : "Search raw item..."}
                     searchable
+                    onSearchChange={setAddSearch}
+                    optionsAreFiltered={true}
+                    disabled={addItemsLoading}
                   />
                 </div>
-
-                <div className="w-40">
-                  <Label className="text-xs mb-1">Quantity per Unit</Label>
+                <div className="w-32">
+                  <Label className="text-xs mb-1">Qty / Unit</Label>
                   <Input
                     type="number"
-                    
-                    value={ingredient.quantity}
-                    onChange={(e) =>
-                      updateIngredient(
-                        index,
-                        "quantity",
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
+                    min={0.001}
+                    step={0.001}
+                    value={addQty}
+                    onChange={(e) => setAddQty(parseFloat(e.target.value) || 0)}
                     placeholder="Qty"
                   />
                 </div>
-
-                <div className="w-32">
-                  <Label className="text-xs mb-1">Line Cost</Label>
-                  <div className="h-11 flex items-center px-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700">
-                    <span className="text-sm text-gray-800 dark:text-white/90">
-                      {ingredient.item_id > 0
-                        ? (
-                            Number(
-                              rawItems.find((r) => r.id === ingredient.item_id)
-                                ?.avg_price || 0
-                            ) * ingredient.quantity
-                          ).toFixed(2)
-                        : "0.00"}
-                    </span>
-                  </div>
-                </div>
-
-                <button
+                <Button
                   type="button"
-                  onClick={() => removeIngredient(index)}
-                  disabled={ingredients.length <= 1}
-                  className="mt-6 p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Remove ingredient"
+                  variant="primary"
+                  onClick={handleAddIngredient}
+                  disabled={adding || !addItemId}
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                  {adding ? "Adding..." : "+ Add"}
+                </Button>
               </div>
-            ))}
-
-            {/* Extra Expense */}
-            <div>
-              <Label htmlFor="extra_expense">Extra expense (optional)</Label>
-              <Input
-                id="extra_expense"
-                type="number"
-                min={0}
-                step={0.01}
-                value={extraExpense === 0 ? "" : extraExpense}
-                onChange={(e) =>
-                  setExtraExpense(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)
-                }
-                placeholder="0.00"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Amount to add to the total cost per unit
-              </p>
-            </div>
-
-            {/* Estimated Cost with New Changes */}
-            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-800 dark:text-blue-200">
-                  Ingredients cost per unit
-                </span>
-                <span className="font-medium text-blue-900 dark:text-blue-100">
-                  {estimatedCost.toFixed(2)}
-                </span>
-              </div>
-              {(extraExpense ?? 0) > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-800 dark:text-blue-200">
-                    Extra expense
-                  </span>
-                  <span className="font-medium text-blue-900 dark:text-blue-100">
-                    {(extraExpense || 0).toFixed(2)}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between items-center pt-2 border-t border-blue-200 dark:border-blue-700">
-                <p className="font-medium text-blue-900 dark:text-blue-100">
-                  Total cost per unit
-                </p>
-                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                  {totalWithExtra.toFixed(2)}
-                </p>
-              </div>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                Based on current form data (not saved yet)
-                {(extraExpense ?? 0) > 0 ? " plus extra expense" : ""}
-              </p>
             </div>
           </div>
         </SimpleComponentCard>
 
-        {/* Actions */}
-        <SimpleComponentCard title="Actions" desc="Save or cancel your changes">
-          <div className="flex gap-3 justify-end">
-            <Button
+        {/* Footer actions */}
+        {/* <div className="flex justify-between items-center">
+          <Button type="button" variant="outline" onClick={() => navigate("/recipes")}>
+            ← Back to Recipes
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => navigate(`/recipes/edit/${recipeId}`)}
+          >
+            Full Edit
+          </Button>
+        </div> */}
+      </div>
+
+      {/* Remove ingredient confirmation modal */}
+      <Modal
+        isOpen={isRemoveOpen}
+        onClose={() => { closeRemove(); setRemovingIngredient(null); }}
+        className="max-w-sm"
+      >
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+            Remove Ingredient
+          </h3>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Remove <strong>{removingIngredient?.item.name}</strong> from this recipe?
+          </p>
+          <div className="mt-6 flex gap-3 justify-end">
+            <button
               type="button"
-              variant="outline"
-              onClick={() => navigate("/recipes")}
-              disabled={updating}
+              onClick={() => { closeRemove(); setRemovingIngredient(null); }}
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm"
             >
               Cancel
-            </Button>
-            <Button type="submit" variant="primary" disabled={updating}>
-              {updating ? "Updating..." : "Update Recipe"}
-            </Button>
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmRemove}
+              disabled={removing}
+              className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 text-sm"
+            >
+              {removing ? "Removing..." : "Remove"}
+            </button>
           </div>
-        </SimpleComponentCard>
-      </form>
+        </div>
+      </Modal>
     </>
   );
 };

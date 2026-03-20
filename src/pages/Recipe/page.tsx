@@ -25,7 +25,7 @@ const RecipePage = () => {
   };
 
   const handleView = (recipe: Recipe) => {
-    navigate(`/recipes/edit/${recipe.id}`);
+    navigate(`/recipes/view/${recipe.id}`);
   };
 
   return (

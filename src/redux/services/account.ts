@@ -120,6 +120,18 @@ export const accountApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['account']
     }),
+
+    clearOpeningBalance: builder.mutation<
+      { data: Account },
+      { accountId: number; amount: number }
+    >({
+      query: ({ accountId, amount }) => ({
+        url: `/accounts/${accountId}/clear-opening-balance`,
+        method: 'POST',
+        body: { amount },
+      }),
+      invalidatesTags: ['account']
+    }),
   }),
 })
 
@@ -129,4 +141,5 @@ export const {
   useGetAccountByIdQuery,
   useUpdateAccountMutation,
   useDeleteAccountMutation,
+  useClearOpeningBalanceMutation,
 } = accountApi

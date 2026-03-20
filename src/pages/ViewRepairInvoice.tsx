@@ -169,10 +169,9 @@ const ViewRepairInvoicePage = () => {
               <p className="text-sm text-gray-500 dark:text-gray-400">Repair status</p>
               <p className="mt-1">
                 <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    REPAIR_STATUS_CLASS[invoice.repair_status as RepairStatus] ??
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${REPAIR_STATUS_CLASS[invoice.repair_status as RepairStatus] ??
                     "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                  }`}
+                    }`}
                 >
                   {REPAIR_STATUS_LABELS[invoice.repair_status as RepairStatus] ?? invoice.repair_status}
                 </span>
@@ -212,22 +211,23 @@ const ViewRepairInvoicePage = () => {
 
         <SimpleComponentCard title="Amounts">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {!invoice.is_foc && (
-              <>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Parts cost</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
-                    {formatAmount(invoice.parts_cost ?? 0)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Service charges</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
-                    {formatAmount(invoice.service_charges ?? 0)}
-                  </p>
-                </div>
-              </>
-            )}
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Items total</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
+                {formatAmount(
+                  (invoice.items ?? []).reduce(
+                    (sum, i) => sum + (typeof i.total_price === "number" ? i.total_price : parseFloat(String(i.total_price)) || 0),
+                    0
+                  )
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Service charges</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
+                {formatAmount(invoice.service_charges ?? 0)}
+              </p>
+            </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Total amount</p>
               <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
@@ -251,7 +251,7 @@ const ViewRepairInvoicePage = () => {
               <thead>
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                   Name 
+                    Name
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Description

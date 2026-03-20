@@ -36,6 +36,7 @@ import ExpensePage from "./pages/Expense/page";
 import RecipePage from "./pages/Recipe/page";
 import CreateRecipePage from "./pages/CreateRecipe/page";
 import EditRecipePage from "./pages/EditRecipe/page";
+import ViewRecipePage from "./pages/ViewRecipe";
 import ProductionPage from "./pages/Production/page";
 import ViewProductionPage from "./pages/ViewProduction/page";
 import StockAdjustmentPage from "./pages/StockAdjustment/page";
@@ -120,6 +121,7 @@ export default function App() {
               <Route path="/recipes" element={<RecipePage />} />
               <Route path="/recipes/create" element={<CreateRecipePage />} />
               <Route path="/recipes/edit/:id" element={<EditRecipePage />} />
+              <Route path="/recipes/view/:id" element={<ViewRecipePage />} />
               <Route path="/production" element={<ProductionPage />} />
               <Route path="/production/view/:id" element={<ViewProductionPage />} />
               <Route path="/blank" element={<Blank />} />

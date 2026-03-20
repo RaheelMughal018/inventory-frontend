@@ -73,7 +73,7 @@ const CreatePaymentPage = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <SimpleComponentCard
           title="Direct Payment to Supplier"
-          desc="Record a payment that reduces the supplier's outstanding balance. Money is deducted from the selected account."
+          desc="Record a payment to supplier. Money is deducted from the selected account. Overpayments are allowed (supplier balance can go negative = credit with supplier)."
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -115,7 +115,7 @@ const CreatePaymentPage = () => {
                 placeholder="0.00"
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Cannot exceed supplier outstanding balance
+                Must not exceed account available balance. Overpayments allowed.
               </p>
             </div>
             <div>

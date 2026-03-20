@@ -223,7 +223,7 @@ const CustomerStatementPage = () => {
               </div>
             </SimpleComponentCard>
 
-            <SimpleComponentCard title="Opening Balance">
+            {/* <SimpleComponentCard title="Opening Balance">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
 
@@ -233,6 +233,15 @@ const CustomerStatementPage = () => {
                   </p>
                   <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-2">
                     {formatCurrency(statement.summary.total_sales)}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                    Total Repairs
+                  </p>
+                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-2">
+                    {formatCurrency(statement.summary.total_repairs ?? 0)}
                   </p>
                 </div>
 
@@ -254,10 +263,10 @@ const CustomerStatementPage = () => {
                   </p>
                 </div>
               </div>
-            </SimpleComponentCard>
+            </SimpleComponentCard> */}
 
             <SimpleComponentCard title="Balance Summary">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
                 {/* Box 1: Opening Balance */}
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/20 rounded-lg border border-slate-200 dark:border-slate-800">
                   <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
@@ -279,7 +288,19 @@ const CustomerStatementPage = () => {
                     {statement.summary.invoice_count} invoices
                   </p>
                 </div>
-                {/* Box 3: Total Receipts */}
+                {/* Box 3: Total Repairs */}
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                    Total Repairs
+                  </p>
+                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-2">
+                    {formatCurrency(statement.summary.total_repairs ?? 0)}
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    {statement.summary.repair_invoice_count ?? 0} repair invoices
+                  </p>
+                </div>
+                {/* Box 4: Total Receipts */}
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                   <p className="text-sm text-green-600 dark:text-green-400 font-medium">
                     Total Receipts
@@ -291,7 +312,7 @@ const CustomerStatementPage = () => {
                     {statement.summary.receipt_count} receipts
                   </p>
                 </div>
-                {/* Box 4: Outstanding Balance */}
+                {/* Box 5: Outstanding Balance */}
                 <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                   <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">
                     Outstanding Balance
@@ -305,7 +326,7 @@ const CustomerStatementPage = () => {
                     {statement.summary.partial_invoice_count} partial
                   </p>
                 </div>
-                {/* Box 5: Current Balance */}
+                {/* Box 6: Current Balance */}
                 <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
                   <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">
                     Current Balance
@@ -385,15 +406,94 @@ const CustomerStatementPage = () => {
                           </td>
                           <td className="px-4 py-3">
                             <span
-                              className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                invoice.payment_status === "PAID"
+                              className={`px-2 py-1 text-xs rounded-full font-medium ${invoice.payment_status === "PAID"
                                   ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
                                   : invoice.payment_status === "PARTIAL"
                                     ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                                     : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                              }`}
+                                }`}
                             >
                               {invoice.payment_status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </SimpleComponentCard>
+
+            <SimpleComponentCard
+              title={`Repair Invoices (${statement.repair_invoices?.length ?? 0})`}
+            >
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Invoice #
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Received Date
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Total Amount
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Received Amount
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Outstanding
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                    {(!statement.repair_invoices || statement.repair_invoices.length === 0) ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
+                        >
+                          No repair invoices found
+                        </td>
+                      </tr>
+                    ) : (
+                      statement.repair_invoices.map((repair) => (
+                        <tr
+                          key={repair.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                        >
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                            {repair.invoice_number}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {formatDateTime(repair.received_date)}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">
+                            {repair.is_foc ? "FOC" : formatCurrency(repair.total_amount)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-green-600 dark:text-green-400 font-medium">
+                            {repair.is_foc ? "—" : formatCurrency(repair.received_amount)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400 font-medium">
+                            {repair.is_foc ? "—" : formatCurrency(repair.outstanding_amount)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`px-2 py-1 text-xs rounded-full font-medium ${repair.is_foc
+                                  ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                  : repair.payment_status === "PAID"
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                    : repair.payment_status === "PARTIAL"
+                                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                }`}
+                            >
+                              {repair.is_foc ? "FOC" : repair.payment_status}
                             </span>
                           </td>
                         </tr>
@@ -421,6 +521,9 @@ const CustomerStatementPage = () => {
                         Amount
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Reference
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                         Account
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
@@ -432,7 +535,7 @@ const CustomerStatementPage = () => {
                     {statement.receipts.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={6}
                           className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
                         >
                           No receipts found
@@ -452,6 +555,9 @@ const CustomerStatementPage = () => {
                           </td>
                           <td className="px-4 py-3 text-sm font-semibold text-green-600 dark:text-green-400">
                             {formatCurrency(receipt.amount)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {receipt.invoice_number || receipt.repair_invoice_number || "—"}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                             {receipt.account_name}
