@@ -524,12 +524,11 @@ export const generateRepairInvoicePDF = (invoice: RepairInvoice) => {
       String(item.quantity),
       formatCurrency(item.unit_price),
       formatCurrency(item.total_price),
-      item.inventory_count ? "Yes" : "No",
     ]) || [];
 
   autoTable(doc, {
     startY: yPosition,
-    head: [["Name", "Description", "Qty", "Unit Price", "Total", "Inventory"]],
+    head: [["Name", "Description", "Qty", "Unit Price", "Total"]],
     body: itemsTableData,
     theme: "striped",
     headStyles: {
@@ -537,6 +536,7 @@ export const generateRepairInvoicePDF = (invoice: RepairInvoice) => {
       textColor: [255, 255, 255],
       fontStyle: "bold",
       fontSize: 10,
+      halign: "center",
     },
     bodyStyles: {
       fontSize: 9,
@@ -546,13 +546,13 @@ export const generateRepairInvoicePDF = (invoice: RepairInvoice) => {
       fillColor: [249, 250, 251],
     },
     margin: { left: 15, right: 15 },
+    tableWidth: pageWidth - 30,
     columnStyles: {
-      0: { cellWidth: 35 },
-      1: { cellWidth: 55 },
-      2: { cellWidth: 15, halign: "center" },
-      3: { cellWidth: 25, halign: "right" },
-      4: { cellWidth: 25, halign: "right" },
-      5: { cellWidth: 20, halign: "center" },
+      0: { halign: "left" },
+      1: { halign: "left" },
+      2: { halign: "center" },
+      3: { halign: "center" },
+      4: { halign: "center" },
     },
   });
 

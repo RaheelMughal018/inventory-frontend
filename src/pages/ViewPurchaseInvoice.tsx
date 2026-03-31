@@ -116,7 +116,7 @@ const ViewPurchaseInvoicePage = () => {
               {invoice.invoice_number}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Created on {formatDateTime(invoice.created_at)}
+              Invoice Date: {formatDateTime(invoice.invoice_date)}
             </p>
           </div>
           <div className="flex gap-3">
@@ -286,9 +286,9 @@ const ViewPurchaseInvoicePage = () => {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Invoice Date</span>
+                  <span className="text-gray-600 dark:text-gray-400">Created On</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {formatDateTime(invoice.invoice_date)}
+                    {formatDateTime(invoice.created_at)}
                   </span>
                 </div>
                 <div className="flex justify-between">

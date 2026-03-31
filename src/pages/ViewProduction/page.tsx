@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -6,16 +7,21 @@ import Button from "../../components/ui/button/Button";
 import {
   useGetProductionByIdQuery,
   useGetProductionFeasibilityQuery,
+  useUpdateProductionIngredientsMutation,
   ProductionStatus,
 } from "../../redux/services/production";
 import formatDateTime from "../../helper/date_converter";
 import { TailSpin } from "react-loader-spinner";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
+import ProductionIngredientsModal, { IngredientRow } from "../../components/modals/ProductionIngredientsModal";
+import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 const ViewProductionPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productionId = Number(id);
+
+  const [isIngredientsModalOpen, setIsIngredientsModalOpen] = useState(false);
 
   const { data: productionData, isLoading: productionLoading } = useGetProductionByIdQuery(
     productionId,
@@ -24,9 +30,24 @@ const ViewProductionPage = () => {
   const { data: feasibilityData } = useGetProductionFeasibilityQuery(productionId, {
     skip: !productionId || !productionData?.data,
   });
+  const [updateIngredients, { isLoading: isUpdatingIngredients }] =
+    useUpdateProductionIngredientsMutation();
 
   const production = productionData?.data;
   const feasibility = feasibilityData?.data;
+
+  const handleUpdateIngredients = async (ingredients: IngredientRow[]) => {
+    try {
+      await updateIngredients({
+        id: productionId,
+        data: { ingredients },
+      }).unwrap();
+      handleApiSuccess("Ingredients updated successfully");
+      setIsIngredientsModalOpen(false);
+    } catch (error) {
+      handleApiError(error, "Failed to update ingredients");
+    }
+  };
 
   const getStatusBadge = (status: ProductionStatus) => {
     const colors = {
@@ -153,6 +174,17 @@ const ViewProductionPage = () => {
         <SimpleComponentCard
           title="Production Ingredients"
           desc="Raw materials used for this batch (quantity per unit × batch quantity)"
+          extra={
+            production.status !== ProductionStatus.DONE ? (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsIngredientsModalOpen(true)}
+              >
+                Edit Ingredients
+              </Button>
+            ) : undefined
+          }
         >
           <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <Table>
@@ -272,6 +304,18 @@ const ViewProductionPage = () => {
           </SimpleComponentCard>
         )}
       </div>
+
+      {/* Edit Ingredients Modal */}
+      {production && (
+        <ProductionIngredientsModal
+          isOpen={isIngredientsModalOpen}
+          onClose={() => setIsIngredientsModalOpen(false)}
+          onSubmit={handleUpdateIngredients}
+          currentIngredients={production.production_ingredients}
+          finalProductId={production.recipe.final_product.id}
+          isLoading={isUpdatingIngredients}
+        />
+      )}
     </>
   );
 };
