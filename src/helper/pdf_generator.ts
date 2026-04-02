@@ -1565,85 +1565,126 @@ export const generateCustomerStatementPDF = (
 // ============================================
 
 export const generateItemsPDF = (items: Item[]) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF("landscape");
   const pageWidth = doc.internal.pageSize.getWidth();
+
+  const formatCurrency = (value: string | number) => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (Number.isNaN(num)) return "0.00";
+    return num.toFixed(2);
+  };
+
+  const formatQty = (value: string | number) => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (Number.isNaN(num)) return "0";
+    return Number.isInteger(num) ? num.toString() : num.toFixed(2);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   let yPosition = 20;
 
-  doc.setFontSize(16);
+  // Header
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("Items List", 15, yPosition);
+  doc.setTextColor(31, 41, 55);
+  doc.text("POWER-GENIX", 15, yPosition);
 
-  yPosition += 10;
+  doc.setFontSize(16);
+  doc.setTextColor(37, 99, 235);
+  doc.text("ITEMS LIST", pageWidth - 15, yPosition, { align: "right" });
+
+  yPosition += 8;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+  doc.text(`Total Items: ${items.length}`, 15, yPosition);
   doc.text(
-    `Generated on ${new Date().toLocaleString()}`,
+    `Generated on ${new Date().toLocaleDateString("en-US")}`,
     pageWidth - 15,
     yPosition,
     { align: "right" }
   );
 
+  yPosition += 4;
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.line(15, yPosition, pageWidth - 15, yPosition);
+
   yPosition += 6;
 
-  const formatNumber = (value: string | number) => {
-    const num = typeof value === "string" ? parseFloat(value) : value;
-    if (Number.isNaN(num)) return "";
-    return num.toString();
-  };
+  const tableData = items.map((item) => {
+    const qty = typeof item.quantity === "string" ? parseFloat(item.quantity) : item.quantity;
+    const price = typeof item.avg_price === "string" ? parseFloat(item.avg_price) : item.avg_price;
+    const totalValue = (qty || 0) * (price || 0);
 
-  const tableData = items.map((item) => [
-    String(item.id),
-    item.name ?? "",
-    item.category?.name ?? "",
-    item.item_type ?? "",
-    item.unit_type ?? "",
-    formatNumber(item.avg_price),
-    formatNumber(item.quantity),
-    item.created_at ?? "",
-  ]);
+    return [
+      String(item.id),
+      item.name ?? "",
+      item.category?.name ?? "",
+      item.item_type ?? "",
+      item.unit_type ?? "",
+      formatCurrency(item.avg_price),
+      formatQty(item.quantity),
+      formatCurrency(totalValue),
+      formatDate(item.created_at),
+    ];
+  });
 
   autoTable(doc, {
     startY: yPosition,
     head: [
-      [
-        "ID",
-        "Name",
-        "Category",
-        "Type",
-        "Unit",
-        "Avg Price",
-        "Total Qty",
-        "Created At",
-      ],
+      ["ID", "Name", "Category", "Type", "Unit", "Avg Price", "Qty", "Total Value", "Created"],
     ],
     body: tableData,
-    theme: "grid",
+    theme: "striped",
     headStyles: {
-      fontSize: 8,
-      halign: "left",
-      fillColor: [255, 255, 255],
-      textColor: [0, 0, 0],
+      fillColor: [37, 99, 235],
+      textColor: [255, 255, 255],
       fontStyle: "bold",
+      fontSize: 9,
+      halign: "center",
     },
     bodyStyles: {
       fontSize: 8,
+      textColor: [31, 41, 55],
     },
-    styles: {
-      overflow: "linebreak",
+    alternateRowStyles: {
+      fillColor: [249, 250, 251],
     },
     columnStyles: {
-      0: { cellWidth: 12 },
-      1: { cellWidth: 35 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 18 },
-      4: { cellWidth: 15 },
-      5: { cellWidth: 20 },
-      6: { cellWidth: 20 },
-      7: { cellWidth: 35 },
+      0: { halign: "center" },
+      1: { halign: "left" },
+      2: { halign: "left" },
+      3: { halign: "center" },
+      4: { halign: "center" },
+      5: { halign: "right" },
+      6: { halign: "center" },
+      7: { halign: "right" },
+      8: { halign: "center" },
     },
-    margin: { left: 10, right: 10 },
+    margin: { left: 15, right: 15 },
+    tableWidth: pageWidth - 30,
   });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+  doc.text(
+    "POWER-GENIX - Items Report",
+    pageWidth / 2,
+    pageHeight - 10,
+    { align: "center" }
+  );
 
   const fileName = `Items_${new Date().toISOString().split("T")[0]}.pdf`;
   doc.save(fileName);
