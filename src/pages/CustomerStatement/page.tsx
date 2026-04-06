@@ -1,5 +1,6 @@
 // pages/CustomerStatement/page.tsx
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import SimpleComponentCard from "../../components/common/SimpleCardComponent";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -16,8 +17,10 @@ import formatDateTime from "../../helper/date_converter";
 import { TailSpin } from "react-loader-spinner";
 import Button from "../../components/ui/button/Button";
 import { generateCustomerStatementPDF } from "../../helper/pdf_generator";
+import { Eye } from "lucide-react";
 
 const CustomerStatementPage = () => {
+  const navigate = useNavigate();
   const [selectedCustomerId, setSelectedCustomerId] = useState<number>(0);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
@@ -366,13 +369,16 @@ const CustomerStatementPage = () => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                         Status
                       </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     {statement.invoices.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={8}
                           className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
                         >
                           No invoices found
@@ -416,6 +422,15 @@ const CustomerStatementPage = () => {
                               {invoice.payment_status}
                             </span>
                           </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => navigate(`/sale-invoices/view/${invoice.id}`)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="View Invoice"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -449,13 +464,16 @@ const CustomerStatementPage = () => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                         Status
                       </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     {(!statement.repair_invoices || statement.repair_invoices.length === 0) ? (
                       <tr>
                         <td
-                          colSpan={6}
+                          colSpan={7}
                           className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
                         >
                           No repair invoices found
@@ -496,6 +514,15 @@ const CustomerStatementPage = () => {
                               {repair.is_foc ? "FOC" : repair.payment_status}
                             </span>
                           </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => navigate(`/repair-invoices/view/${repair.id}`)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="View Repair Invoice"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -529,13 +556,16 @@ const CustomerStatementPage = () => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                         Notes
                       </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     {statement.receipts.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={6}
+                          colSpan={7}
                           className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
                         >
                           No receipts found
@@ -564,6 +594,15 @@ const CustomerStatementPage = () => {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                             {receipt.notes || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => navigate(`/receipts/view/${receipt.id}`)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="View Receipt"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                       ))

@@ -1,5 +1,6 @@
 // pages/SupplierStatementPage.tsx
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import SimpleComponentCard from "../../components/common/SimpleCardComponent";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -12,8 +13,10 @@ import formatDateTime from "../../helper/date_converter";
 import { TailSpin } from "react-loader-spinner";
 import Button from "../../components/ui/button/Button";
 import { generateSupplierStatementPDF } from "../../helper/pdf_generator";
+import { Eye } from "lucide-react";
 
 const SupplierStatementPage = () => {
+  const navigate = useNavigate();
   const [selectedSupplierId, setSelectedSupplierId] = useState<number>(0);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
@@ -276,12 +279,15 @@ const SupplierStatementPage = () => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                         Status
                       </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     {statement.invoices.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan={8} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
                           No invoices found
                         </td>
                       </tr>
@@ -319,6 +325,15 @@ const SupplierStatementPage = () => {
                               {invoice.payment_status}
                             </span>
                           </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => navigate(`/purchase-invoices/view/${invoice.id}`)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="View Invoice"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -351,12 +366,15 @@ const SupplierStatementPage = () => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                         Notes
                       </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     {statement.payments.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan={7} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
                           No payments found
                         </td>
                       </tr>
@@ -380,6 +398,15 @@ const SupplierStatementPage = () => {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                             {payment.notes || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => navigate(`/payments/view/${payment.id}`)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="View Payment"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                       ))
