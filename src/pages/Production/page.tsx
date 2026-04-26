@@ -32,6 +32,7 @@ const ProductionPage = () => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<number>(0);
   const [quantity, setQuantity] = useState<number>(1);
   const [batchNumber, setBatchNumber] = useState<string>("");
+  const [productionExpense, setProductionExpense] = useState<number>(0);
   const [notes, setNotes] = useState<string>("");
 
   // Serial numbers modal state
@@ -89,14 +90,16 @@ const ProductionPage = () => {
         recipe_id: selectedRecipeId,
         quantity,
         batch_number: batchNumber.trim(),
+        production_expense: productionExpense > 0 ? productionExpense : undefined,
         notes: notes.trim() || undefined,
       }).unwrap();
       handleApiSuccess("Production created in DRAFT status");
-      
+
       // Reset form
       setSelectedRecipeId(0);
       setQuantity(1);
       setBatchNumber("");
+      setProductionExpense(0);
       setNotes("");
     } catch (err: unknown) {
       handleApiError(err, "Failed to create production");
@@ -241,6 +244,20 @@ const ProductionPage = () => {
                   value={batchNumber}
                   onChange={(e) => setBatchNumber(e.target.value)}
                   placeholder="e.g., BATCH-2026-001"
+                />
+              </div>
+
+              {/* Per-unit production expense */}
+              <div>
+                <Label htmlFor="production_expense">Production Expense / Unit (Optional)</Label>
+                <Input
+                  id="production_expense"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={productionExpense || ""}
+                  onChange={(e) => setProductionExpense(parseFloat(e.target.value) || 0)}
+                  placeholder="Added to each unit cost (labor, electricity, etc.)"
                 />
               </div>
 

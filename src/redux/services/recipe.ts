@@ -66,6 +66,8 @@ export interface Recipe {
     avg_price: string | number
   }
   ingredients: RecipeIngredientResponse[]
+  current_cost_per_unit: number
+  has_unpriced_ingredient: boolean
 }
 
 export interface CostBreakdown {

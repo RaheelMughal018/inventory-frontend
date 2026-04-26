@@ -132,6 +132,32 @@ export const accountApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['account']
     }),
+
+    transferAccount: builder.mutation<
+      {
+        data: {
+          reference: string
+          from_account: Account
+          to_account: Account
+          amount: number
+          transfer_date: string
+        }
+      },
+      {
+        from_account_id: number
+        to_account_id: number
+        amount: number
+        transfer_date?: string
+        notes?: string
+      }
+    >({
+      query: (body) => ({
+        url: '/accounts/transfer',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['account'],
+    }),
   }),
 })
 
@@ -142,4 +168,5 @@ export const {
   useUpdateAccountMutation,
   useDeleteAccountMutation,
   useClearOpeningBalanceMutation,
+  useTransferAccountMutation,
 } = accountApi

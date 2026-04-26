@@ -166,6 +166,11 @@ const ViewRecipePage = () => {
             </div>
           ) : cost ? (
             <div className="space-y-4">
+              {recipe.has_unpriced_ingredient && (
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-200">
+                  One or more ingredients have no average price yet (stock never received). The cost shown excludes those lines and is incomplete until stock is recorded.
+                </div>
+              )}
               <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                 <div>
                   <p className="font-medium text-green-900 dark:text-green-100">

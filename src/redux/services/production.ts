@@ -16,11 +16,13 @@ export interface CreateProduction {
   recipe_id: number
   quantity: number
   batch_number: string
+  production_expense?: number
   notes?: string
 }
 
 export interface UpdateProduction {
   notes?: string
+  production_expense?: number
 }
 
 export interface ProductionIngredient {
@@ -71,6 +73,7 @@ export interface Production {
   admin_id: number
   quantity: number
   status: ProductionStatus
+  production_expense: string | number
   total_cost: string | number
   cost_per_unit: string | number
   start_date: string | null

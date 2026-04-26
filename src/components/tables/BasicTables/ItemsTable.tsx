@@ -97,6 +97,12 @@ export default function ItemsTable({
                 </TableCell>
                 <TableCell
                   isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400"
+                >
+                  Total Value
+                </TableCell>
+                <TableCell
+                  isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
                   Created on
@@ -165,6 +171,10 @@ export default function ItemsTable({
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     {typeof item.quantity === 'number' ? Math.round(item.quantity) : Math.round(parseFloat(String(item.quantity))) || 0}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-700 text-end text-theme-sm dark:text-gray-200 font-medium">
+                    {item.total_value
+                      ?? (Number(item.quantity) * Number(item.avg_price)).toFixed(2)}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                     {formatDateTime(item.created_at)}

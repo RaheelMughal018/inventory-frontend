@@ -80,7 +80,7 @@ export default function RecipesTable({
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Avg Price
+                  Cost / Unit
                 </TableCell>
                 <TableCell
                   isHeader
@@ -127,9 +127,17 @@ export default function RecipesTable({
                       {recipe.ingredients.length} item{recipe.ingredients.length !== 1 ? 's' : ''}
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-800 dark:text-white/90">
-                      {recipe.final_product.avg_price
-                        ? Number(recipe.final_product.avg_price).toFixed(2)
-                        : "0.00"}
+                      <div className="flex items-center gap-2">
+                        <span>{Number(recipe.current_cost_per_unit ?? 0).toFixed(2)}</span>
+                        {recipe.has_unpriced_ingredient && (
+                          <span
+                            title="One or more ingredients have no price yet (avg_price = 0). Cost is incomplete."
+                            className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                          >
+                            !
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-600 dark:text-gray-400">
                       {formatDateTime(recipe.created_at)}

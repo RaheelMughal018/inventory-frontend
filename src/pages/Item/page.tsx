@@ -9,6 +9,7 @@ import {
   ItemType,
   useCreateItemMutation,
   useGetAllItemsQuery,
+  useGetItemSummaryQuery,
   useUpdateItemMutation,
 } from "../../redux/services/item";
 import { ItemFormData } from "../../components/modals/ItemModal";
@@ -59,6 +60,9 @@ const ItemPage = () => {
     category_id: categoryFilter ? Number(categoryFilter) : undefined,
     stock_status: stockStatusFilter ? (stockStatusFilter as 'in_stock' | 'out_of_stock') : undefined,
   });
+
+  const { data: summaryData } = useGetItemSummaryQuery();
+  const summary = summaryData?.data;
 
   // Handle export as PDF (all items, simple table)
   const handleExportPDF = async () => {
@@ -168,6 +172,38 @@ const ItemPage = () => {
 
       <PageBreadcrumb pageTitle="Items" />
       <div className="space-y-6">
+        {summary && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03]">
+              <p className="text-xs uppercase text-gray-500 dark:text-gray-400">Total Stock Value</p>
+              <p className="mt-1 text-xl font-semibold text-gray-800 dark:text-white">
+                {Number(summary.total_stock_value).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03]">
+              <p className="text-xs uppercase text-gray-500 dark:text-gray-400">Total Units in Stock</p>
+              <p className="mt-1 text-xl font-semibold text-gray-800 dark:text-white">
+                {Number(summary.total_units).toLocaleString()}
+              </p>
+            </div>
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03]">
+              <p className="text-xs uppercase text-gray-500 dark:text-gray-400">Items In Stock</p>
+              <p className="mt-1 text-xl font-semibold text-gray-800 dark:text-white">
+                {summary.in_stock_count} <span className="text-sm font-normal text-gray-400">/ {summary.total_items}</span>
+              </p>
+            </div>
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03]">
+              <p className="text-xs uppercase text-gray-500 dark:text-gray-400">Raw / Final</p>
+              <p className="mt-1 text-xl font-semibold text-gray-800 dark:text-white">
+                {summary.raw_count} <span className="text-sm font-normal text-gray-400">/ {summary.final_count}</span>
+              </p>
+            </div>
+          </div>
+        )}
+
         <ComponentCard
           title="Item Table"
           exportButtonText="Export Items PDF"

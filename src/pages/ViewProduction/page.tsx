@@ -138,6 +138,12 @@ const ViewProductionPage = () => {
                 {Number(production.cost_per_unit).toFixed(2)}
               </p>
             </div>
+            <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Production Expense / Unit</p>
+              <p className="mt-1 text-lg font-semibold text-gray-800 dark:text-white">
+                {Number(production.production_expense ?? 0).toFixed(2)}
+              </p>
+            </div>
           </div>
 
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -175,7 +181,7 @@ const ViewProductionPage = () => {
           title="Production Ingredients"
           desc="Raw materials used for this batch (quantity per unit × batch quantity)"
           extra={
-            production.status !== ProductionStatus.DONE ? (
+            production.status === ProductionStatus.DRAFT ? (
               <Button
                 variant="primary"
                 size="sm"

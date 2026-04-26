@@ -45,10 +45,27 @@ const ProductionIngredientsModal: React.FC<ProductionIngredientsModalProps> = ({
     (item) => item.id !== finalProductId
   );
 
-  const rawItemOptions = rawItems.map((item) => ({
-    id: item.id,
-    name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`,
-  }));
+  const rawItemOptions = (() => {
+    const seen = new Map<number, { id: number; name: string }>();
+    for (const item of rawItems) {
+      seen.set(item.id, {
+        id: item.id,
+        name: `${item.name} (Stock: ${Number(item.quantity).toFixed(0)})`,
+      });
+    }
+    // Ensure every already-selected ingredient has a label even if it falls
+    // outside the paginated/searched item list returned by the API.
+    for (const ing of currentIngredients) {
+      if (ing.item_id === finalProductId) continue;
+      if (!seen.has(ing.item_id)) {
+        seen.set(ing.item_id, {
+          id: ing.item_id,
+          name: `${ing.item.name} (Stock: ${Number(ing.item.quantity).toFixed(0)})`,
+        });
+      }
+    }
+    return Array.from(seen.values());
+  })();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -175,6 +192,7 @@ const ProductionIngredientsModal: React.FC<ProductionIngredientsModalProps> = ({
                       id={`ing-qty-${index}`}
                       type="number"
                       min="0.001"
+                      step="any"
                       value={ingredient.quantity}
                       onChange={(e) =>
                         updateIngredient(

@@ -41,13 +41,28 @@ export interface UpdateRepairStatusDto {
   repair_status: RepairStatus
 }
 
-/** Matches backend findAll: customer_id, is_foc, repair_status, page, limit */
+/** Patch fields editable while repair is PENDING with no receipts. */
+export interface UpdateRepairInvoiceDto {
+  customer_id?: number
+  production_item_id?: number | null
+  serial_number?: string | null
+  item_id?: number | null
+  item_type?: string | null
+  item_description?: string | null
+  received_date?: string
+  service_charges?: number
+  notes?: string
+  technician_notes?: string
+}
+
+/** Matches backend findAll: customer_id, is_foc, repair_status, payment_status, page, limit */
 export interface GetRepairInvoicesParams {
   page?: number
   limit?: number
   customer_id?: number
   is_foc?: boolean
   repair_status?: RepairStatus
+  payment_status?: PaymentStatusRepair
 }
 
 /* =========================
@@ -139,6 +154,7 @@ export const repairInvoiceApi = baseApi.injectEndpoints({
           customer_id,
           is_foc,
           repair_status,
+          payment_status,
         }) => ({
           url: '/repair-invoices',
           method: 'GET',
@@ -148,6 +164,7 @@ export const repairInvoiceApi = baseApi.injectEndpoints({
             ...(customer_id != null && { customer_id }),
             ...(is_foc !== undefined && { is_foc }),
             ...(repair_status && { repair_status }),
+            ...(payment_status && { payment_status }),
           },
         }),
         transformResponse: (
@@ -215,6 +232,26 @@ export const repairInvoiceApi = baseApi.injectEndpoints({
           { type: 'repair_invoice', id },
         ],
       }),
+
+      updateRepairInvoice: builder.mutation<
+        { data: RepairInvoice },
+        { id: number; body: UpdateRepairInvoiceDto }
+      >({
+        query: ({ id, body }) => ({
+          url: `/repair-invoices/${id}`,
+          method: 'PATCH',
+          body,
+        }),
+        transformResponse: (raw: { data?: RepairInvoice } | RepairInvoice) => {
+          const data = (raw as { data?: RepairInvoice }).data ?? (raw as RepairInvoice)
+          return { data }
+        },
+        invalidatesTags: (_result, _err, { id }) => [
+          'repair_invoice',
+          { type: 'repair_invoice', id },
+          'customer',
+        ],
+      }),
     }
     );
   },
@@ -225,4 +262,5 @@ export const {
   useGetAllRepairInvoicesQuery,
   useGetRepairInvoiceByIdQuery,
   useUpdateRepairInvoiceStatusMutation,
+  useUpdateRepairInvoiceMutation,
 } = repairInvoiceApi

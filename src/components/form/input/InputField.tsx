@@ -11,7 +11,7 @@ interface InputProps {
   className?: string;
   min?: string | number;
   max?: string | number;
-  step?: number;
+  step?: number | "any";
   disabled?: boolean;
   success?: boolean;
   error?: boolean;

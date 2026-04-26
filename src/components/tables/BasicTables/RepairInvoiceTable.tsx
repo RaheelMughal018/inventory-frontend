@@ -6,7 +6,7 @@ import {
   TableRow,
 } from "../../ui/table";
 import type { RepairInvoice, RepairStatus, PaymentStatusRepair } from "../../../redux/services/repairInvoice";
-import { EyeIcon } from "../../../icons";
+import { EyeIcon, PencilIcon } from "../../../icons";
 import { TailSpin } from "react-loader-spinner";
 import formatDateTime from "../../../helper/date_converter";
 
@@ -14,6 +14,7 @@ interface RepairInvoiceTableProps {
   invoices: RepairInvoice[];
   loading: boolean;
   onView?: (invoice: RepairInvoice) => void;
+  onEdit?: (invoice: RepairInvoice) => void;
 }
 
 const REPAIR_STATUS_LABELS: Record<RepairStatus, string> = {
@@ -40,6 +41,7 @@ export default function RepairInvoiceTable({
   invoices,
   loading,
   onView,
+  onEdit,
 }: RepairInvoiceTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -147,6 +149,16 @@ export default function RepairInvoiceTable({
                         title="View"
                       >
                         <EyeIcon width={16} />
+                      </button>
+                    )}
+                    {onEdit && invoice.repair_status === "PENDING" && (
+                      <button
+                        type="button"
+                        onClick={() => onEdit(invoice)}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                        title="Edit"
+                      >
+                        <PencilIcon width={16} />
                       </button>
                     )}
                   </div>

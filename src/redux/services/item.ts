@@ -49,12 +49,24 @@ export interface Item {
   category_id: number
   quantity: string | number
   avg_price: string | number
+  /** quantity × avg_price, formatted to 2 decimals (computed by backend on list responses) */
+  total_value?: string
   created_at: string
   updated_at: string
   category?: {
     id: number
     name: string
   }
+}
+
+export interface ItemSummary {
+  total_items: number
+  raw_count: number
+  final_count: number
+  in_stock_count: number
+  out_of_stock_count: number
+  total_units: string
+  total_stock_value: string
 }
 
 export interface PaginationMeta {
@@ -117,6 +129,14 @@ export const itemApi = baseApi.injectEndpoints({
       providesTags: ['item']
     }),
 
+    getItemSummary: builder.query<{ data: ItemSummary }, void>({
+      query: () => ({
+        url: '/items/summary',
+        method: 'GET',
+      }),
+      providesTags: ['item'],
+    }),
+
     getItemById: builder.query<{ data: Item }, number>({
       query: (id) => ({
         url: `/items/${id}`,
@@ -147,6 +167,7 @@ export const itemApi = baseApi.injectEndpoints({
 export const {
   useCreateItemMutation,
   useGetAllItemsQuery,
+  useGetItemSummaryQuery,
   useGetItemByIdQuery,
   useUpdateItemMutation,
   useDeleteItemMutation,

@@ -11,12 +11,15 @@ import {
   useCreateAccountMutation,
   useUpdateAccountMutation,
   useGetAllAccountsQuery,
+  useTransferAccountMutation,
   CreateAccount,
   AccountType,
 } from "../../redux/services/account";
 import SearchBar from "../../components/common/SearchBar";
 import Pagination from "../../components/common/Pagination";
 import AccountsTable from "../../components/tables/BasicTables/AccountsTable";
+import TransferAccountModal from "../../components/modals/TransferAccountModal";
+import Button from "../../components/ui/button/Button";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
 // Account type options for dropdown
@@ -40,11 +43,29 @@ const AccountPage = () => {
 
   const [createAccount] = useCreateAccountMutation();
   const [updateAccount] = useUpdateAccountMutation();
+  const [transferAccount, { isLoading: isTransferring }] = useTransferAccountMutation();
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+
+  const handleTransferSubmit = async (payload: {
+    from_account_id: number;
+    to_account_id: number;
+    amount: number;
+    transfer_date?: string;
+    notes?: string;
+  }) => {
+    try {
+      const res = await transferAccount(payload).unwrap();
+      handleApiSuccess(`Transfer ${res.data.reference} completed`);
+      setIsTransferModalOpen(false);
+    } catch (error) {
+      handleApiError(error, "Transfer failed");
+    }
+  };
 
   // Handle search
   const handleSearch = () => {
@@ -123,12 +144,21 @@ const AccountPage = () => {
           onExportClick={handleExportCSV}
           onAddClick={() => setIsAddModalOpen(true)}
           extra={
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onSubmit={handleSearch}
-              placeholder="Search accounts..."
-            />
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto items-stretch sm:items-center">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                onSubmit={handleSearch}
+                placeholder="Search accounts..."
+              />
+              <Button
+                variant="outline"
+                onClick={() => setIsTransferModalOpen(true)}
+                disabled={(data?.data?.length ?? 0) < 2}
+              >
+                Transfer
+              </Button>
+            </div>
           }
         >
           <AccountsTable
@@ -167,6 +197,14 @@ const AccountPage = () => {
         initialData={selectedAccount}
         mode="edit"
         types={accountTypeOptions}
+      />
+
+      <TransferAccountModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onSubmit={handleTransferSubmit}
+        accounts={data?.data ?? []}
+        isLoading={isTransferring}
       />
     </>
   );
