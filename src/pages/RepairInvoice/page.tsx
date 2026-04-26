@@ -163,6 +163,7 @@ const RepairInvoicePage = () => {
                 />
               </div>
               <DateRangeFilter
+                idSuffix="repair"
                 fromDate={fromDate}
                 toDate={toDate}
                 onFromChange={(v) => {

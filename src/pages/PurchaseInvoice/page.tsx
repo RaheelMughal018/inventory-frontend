@@ -149,6 +149,7 @@ const PurchaseInvoicePage = () => {
 
                 {/* Date range — filters by invoice_date */}
                 <DateRangeFilter
+                  idSuffix="purchase"
                   fromDate={fromDate}
                   toDate={toDate}
                   onFromChange={(v) => {

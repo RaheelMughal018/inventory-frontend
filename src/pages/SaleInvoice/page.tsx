@@ -117,6 +117,7 @@ const SaleInvoicePage = () => {
                   />
                 </div>
                 <DateRangeFilter
+                  idSuffix="sale"
                   fromDate={fromDate}
                   toDate={toDate}
                   onFromChange={(v) => {
