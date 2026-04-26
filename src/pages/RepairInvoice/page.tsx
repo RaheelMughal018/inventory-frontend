@@ -15,6 +15,7 @@ import {
 } from "../../redux/services/repairInvoice";
 import { useGetAllCustomersQuery } from "../../redux/services/customer";
 import RepairInvoiceTable from "../../components/tables/BasicTables/RepairInvoiceTable";
+import DateRangeFilter from "../../components/common/DateRangeFilter";
 import EditRepairInvoiceModal from "../../components/modals/EditRepairInvoiceModal";
 import { handleApiError, handleApiSuccess } from "../../helper/error_handler";
 
@@ -47,6 +48,8 @@ const RepairInvoicePage = () => {
   const [repairStatusFilter, setRepairStatusFilter] = useState<string>("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("");
   const [focFilter, setFocFilter] = useState<string>("");
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
 
   const { data: customersData } = useGetAllCustomersQuery({});
 
@@ -62,6 +65,8 @@ const RepairInvoicePage = () => {
       ? (paymentStatusFilter as PaymentStatusRepair)
       : undefined,
     is_foc: focFilter === "true" ? true : focFilter === "false" ? false : undefined,
+    from_date: fromDate || undefined,
+    to_date: toDate || undefined,
   });
 
   const handleExportCSV = () => {
@@ -157,6 +162,18 @@ const RepairInvoicePage = () => {
                   searchable={false}
                 />
               </div>
+              <DateRangeFilter
+                fromDate={fromDate}
+                toDate={toDate}
+                onFromChange={(v) => {
+                  setFromDate(v);
+                  setPage(1);
+                }}
+                onToChange={(v) => {
+                  setToDate(v);
+                  setPage(1);
+                }}
+              />
             </div>
           }
         >

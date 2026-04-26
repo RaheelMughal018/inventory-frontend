@@ -5,6 +5,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import Pagination from "../../components/common/Pagination";
 import SearchBar from "../../components/common/SearchBar";
+import DateRangeFilter from "../../components/common/DateRangeFilter";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import {
   useGetAllSaleInvoicesQuery,
@@ -22,6 +23,8 @@ const SaleInvoicePage = () => {
   const [limit] = useState(30);
   const [customerFilter, setCustomerFilter] = useState<string>("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("");
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
 
   const { data: customersData } = useGetAllCustomersQuery({});
 
@@ -33,6 +36,8 @@ const SaleInvoicePage = () => {
     payment_status: paymentStatusFilter
       ? (paymentStatusFilter as PaymentStatus)
       : undefined,
+    from_date: fromDate || undefined,
+    to_date: toDate || undefined,
   });
 
   const handleExportCSV = () => {
@@ -111,6 +116,18 @@ const SaleInvoicePage = () => {
                     searchable={false}
                   />
                 </div>
+                <DateRangeFilter
+                  fromDate={fromDate}
+                  toDate={toDate}
+                  onFromChange={(v) => {
+                    setFromDate(v);
+                    setPage(1);
+                  }}
+                  onToChange={(v) => {
+                    setToDate(v);
+                    setPage(1);
+                  }}
+                />
               </div>
             </div>
           }

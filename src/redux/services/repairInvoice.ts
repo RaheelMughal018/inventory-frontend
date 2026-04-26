@@ -55,7 +55,7 @@ export interface UpdateRepairInvoiceDto {
   technician_notes?: string
 }
 
-/** Matches backend findAll: customer_id, is_foc, repair_status, payment_status, page, limit */
+/** Matches backend findAll: customer_id, is_foc, repair_status, payment_status, from_date, to_date, sortBy, sortOrder, page, limit */
 export interface GetRepairInvoicesParams {
   page?: number
   limit?: number
@@ -63,6 +63,10 @@ export interface GetRepairInvoicesParams {
   is_foc?: boolean
   repair_status?: RepairStatus
   payment_status?: PaymentStatusRepair
+  from_date?: string
+  to_date?: string
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
 
 /* =========================
@@ -155,6 +159,10 @@ export const repairInvoiceApi = baseApi.injectEndpoints({
           is_foc,
           repair_status,
           payment_status,
+          from_date,
+          to_date,
+          sortBy,
+          sortOrder,
         }) => ({
           url: '/repair-invoices',
           method: 'GET',
@@ -165,6 +173,10 @@ export const repairInvoiceApi = baseApi.injectEndpoints({
             ...(is_foc !== undefined && { is_foc }),
             ...(repair_status && { repair_status }),
             ...(payment_status && { payment_status }),
+            ...(from_date && { from_date }),
+            ...(to_date && { to_date }),
+            ...(sortBy && { sortBy }),
+            ...(sortOrder && { sortOrder }),
           },
         }),
         transformResponse: (

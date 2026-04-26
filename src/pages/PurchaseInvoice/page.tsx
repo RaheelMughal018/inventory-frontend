@@ -5,6 +5,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import Pagination from "../../components/common/Pagination";
 import SearchBar from "../../components/common/SearchBar";
+import DateRangeFilter from "../../components/common/DateRangeFilter";
 import SelectDropdown from "../../components/form/SelectDropdown";
 import {
   useGetAllPurchaseInvoicesQuery,
@@ -25,6 +26,8 @@ const PurchaseInvoicePage = () => {
   // Filter states
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("");
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
 
   const { data: suppliersData } = useGetAllSuppliersQuery({});
   const [deletePurchaseInvoice] = useDeletePurchaseInvoiceMutation();
@@ -36,6 +39,8 @@ const PurchaseInvoicePage = () => {
     page,
     supplier_id: supplierFilter ? Number(supplierFilter) : undefined,
     payment_status: paymentStatusFilter ? (paymentStatusFilter as PaymentStatus) : undefined,
+    from_date: fromDate || undefined,
+    to_date: toDate || undefined,
   });
 
   // Handle export CSV
@@ -141,6 +146,20 @@ const PurchaseInvoicePage = () => {
                     searchable={false}
                   />
                 </div>
+
+                {/* Date range — filters by invoice_date */}
+                <DateRangeFilter
+                  fromDate={fromDate}
+                  toDate={toDate}
+                  onFromChange={(v) => {
+                    setFromDate(v);
+                    setPage(1);
+                  }}
+                  onToChange={(v) => {
+                    setToDate(v);
+                    setPage(1);
+                  }}
+                />
               </div>
             </div>
           }
