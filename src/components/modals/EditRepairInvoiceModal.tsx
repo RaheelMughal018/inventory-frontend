@@ -120,7 +120,7 @@ const EditRepairInvoiceModal: React.FC<EditRepairInvoiceModalProps> = ({
             Edit Repair Invoice {invoice?.invoice_number}
           </h3>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Editable while status is PENDING and no receipts attached. Items, FOC, and payment data
+            Editable as long as no receipts are attached. Items[], FOC, and payment data
             are not editable here — cancel and recreate if those changed.
           </p>
         </div>

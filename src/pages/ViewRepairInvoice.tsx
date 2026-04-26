@@ -5,7 +5,9 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import {
   useGetRepairInvoiceByIdQuery,
   useUpdateRepairInvoiceStatusMutation,
+  useUpdateRepairInvoiceMutation,
   RepairStatus,
+  UpdateRepairInvoiceDto,
 } from "../redux/services/repairInvoice";
 import Button from "../components/ui/button/Button";
 import SimpleComponentCard from "../components/common/SimpleCardComponent";
@@ -16,6 +18,7 @@ import {
   handleApiError,
 } from "../helper/error_handler";
 import SelectDropdown from "../components/form/SelectDropdown";
+import EditRepairInvoiceModal from "../components/modals/EditRepairInvoiceModal";
 import { DownloadIcon } from "../icons";
 import { generateRepairInvoicePDF } from "../helper/pdf_generator";
 
@@ -44,6 +47,8 @@ const ViewRepairInvoicePage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [updateStatus, { isLoading: updating }] = useUpdateRepairInvoiceStatusMutation();
+  const [updateRepairInvoice, { isLoading: isUpdatingInvoice }] = useUpdateRepairInvoiceMutation();
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { data, isLoading, error } = useGetRepairInvoiceByIdQuery(Number(id) || 0, {
     skip: !id,
@@ -69,6 +74,17 @@ const ViewRepairInvoicePage = () => {
       setSelectedNextStatus("");
     } catch (err) {
       handleApiError(err, "Failed to update status");
+    }
+  };
+
+  const handleSubmitEdit = async (payload: UpdateRepairInvoiceDto) => {
+    if (!id) return;
+    try {
+      await updateRepairInvoice({ id: Number(id), body: payload }).unwrap();
+      handleApiSuccess("Repair invoice updated");
+      setIsEditOpen(false);
+    } catch (err) {
+      handleApiError(err, "Failed to update repair invoice");
     }
   };
 
@@ -133,6 +149,13 @@ const ViewRepairInvoicePage = () => {
               className="px-6"
             >
               Back
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditOpen(true)}
+              className="px-6"
+            >
+              Edit
             </Button>
             <Button
               variant="green"
@@ -348,6 +371,14 @@ const ViewRepairInvoicePage = () => {
           </SimpleComponentCard>
         )}
       </div>
+
+      <EditRepairInvoiceModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSubmit={handleSubmitEdit}
+        invoice={invoice}
+        isLoading={isUpdatingInvoice}
+      />
     </>
   );
 };

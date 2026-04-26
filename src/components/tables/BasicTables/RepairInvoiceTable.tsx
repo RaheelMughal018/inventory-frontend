@@ -151,7 +151,7 @@ export default function RepairInvoiceTable({
                         <EyeIcon width={16} />
                       </button>
                     )}
-                    {onEdit && invoice.repair_status === "PENDING" && (
+                    {onEdit && (
                       <button
                         type="button"
                         onClick={() => onEdit(invoice)}
